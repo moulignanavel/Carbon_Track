@@ -1,0 +1,10 @@
+CREATE TABLE alerts (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT,
+    alert_type VARCHAR(50) NOT NULL, -- THRESHOLD_BREACH, GOAL_OFF_TRACK
+    message TEXT NOT NULL,
+    trigger_value DECIMAL(10, 2),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
