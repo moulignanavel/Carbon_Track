@@ -32,11 +32,25 @@ const request = async (endpoint, options = {}) => {
       return null;
     }
 
-    const data = await response.json();
+    let data;
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      const text = await response.text();
+      data = { error: text || response.statusText || 'Request failed' };
+    }
 
     if (!response.ok) {
       // Return the error message from backend if available
-      const errorMsg = data.error || data.message || 'Request failed';
+      let errorMsg = data.error || data.message;
+      if (!errorMsg && typeof data === 'object' && data !== null) {
+        // Collect field validation errors
+        errorMsg = Object.values(data).filter(val => typeof val === 'string').join(', ');
+      }
+      if (!errorMsg) {
+        errorMsg = 'Request failed';
+      }
       throw new Error(errorMsg);
     }
 

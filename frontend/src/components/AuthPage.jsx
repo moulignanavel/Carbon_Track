@@ -95,6 +95,8 @@ export default function AuthPage({ onAuthSuccess }) {
                 <input
                   type="text"
                   required
+                  minLength={3}
+                  maxLength={50}
                   placeholder="sustain_champion"
                   className="w-full pl-11 pr-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
                   value={username}
@@ -130,6 +132,7 @@ export default function AuthPage({ onAuthSuccess }) {
               <input
                 type="password"
                 required
+                minLength={8}
                 placeholder="••••••••"
                 className="w-full pl-11 pr-4 py-3 bg-slate-950/40 border border-white/5 rounded-xl text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500 transition-colors"
                 value={password}
