@@ -16,6 +16,12 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+import java.util.UUID;
+import com.carbontrack.backend.dto.GoogleLoginRequest;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -82,5 +88,46 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtUtil.generateToken(user.getEmail());
 
         return new AuthResponse(token, user.getId(), user.getUsername(), user.getRole());
+    }
+
+    @Override
+    public AuthResponse googleLogin(GoogleLoginRequest request) {
+        String url = "https://oauth2.googleapis.com/tokeninfo?id_token=" + request.getIdToken();
+        RestTemplate restTemplate = new RestTemplate();
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (response.getStatusCode() != HttpStatus.OK || response.getBody() == null) {
+                throw new BadCredentialsException("Invalid Google token");
+            }
+            Map<String, Object> body = response.getBody();
+            
+            // Check for error description in body
+            if (body.containsKey("error_description")) {
+                throw new BadCredentialsException((String) body.get("error_description"));
+            }
+
+            String email = (String) body.get("email");
+            String name = (String) body.get("name");
+            
+            if (email == null) {
+                throw new BadCredentialsException("Email not provided by Google");
+            }
+            
+            // Find or create user
+            User user = userRepository.findByEmail(email).orElseGet(() -> {
+                User newUser = new User();
+                newUser.setEmail(email);
+                String fallbackUsername = name != null ? name.replaceAll("\\s+", "").toLowerCase() + "_" + (System.currentTimeMillis() % 1000) : email.split("@")[0];
+                newUser.setUsername(fallbackUsername);
+                newUser.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+                newUser.setRole("USER");
+                return userRepository.save(newUser);
+            });
+            
+            String token = jwtUtil.generateToken(user.getEmail());
+            return new AuthResponse(token, user.getId(), user.getUsername(), user.getRole());
+        } catch (Exception e) {
+            throw new BadCredentialsException("Google authentication failed: " + e.getMessage());
+        }
     }
 }
