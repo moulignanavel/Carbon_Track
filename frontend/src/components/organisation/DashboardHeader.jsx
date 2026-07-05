@@ -1,0 +1,28 @@
+import { TrendingUp } from 'lucide-react';
+
+/**
+ * DashboardHeader
+ * ─────────────────────────────────────────────────────────────
+ * Header component for organization dashboard.
+ */
+
+export default function DashboardHeader({ organisation, lastUpdated }) {
+  return (
+    <div className="mb-8">
+      <div className="flex items-center gap-3 mb-2">
+        <TrendingUp className="w-8 h-8 text-green-600" />
+        <div>
+          <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-slate-50">
+            Organization Dashboard
+          </h1>
+          <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+            {organisation?.name}
+          </p>
+        </div>
+      </div>
+      <p className="text-slate-600 dark:text-slate-400">
+        Monitor your organization's sustainability progress and employee engagement.
+      </p>
+    </div>
+  );
+}

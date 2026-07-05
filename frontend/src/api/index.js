@@ -1,0 +1,8 @@
+/**
+ * Central API export barrel.
+ * Import anything API-related from '@/api' instead of individual files.
+ */
+export * from './authApi';
+export * from './activityApi';
+export * from './userApi';
+export { default as axiosInstance } from './axiosInstance';

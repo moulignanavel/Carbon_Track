@@ -1,0 +1,86 @@
+/**
+ * MonthlyComparisonChart
+ * ─────────────────────────────────────────────────────────────
+ * Grouped bar chart comparing actual emissions vs target per month.
+ * Uses Recharts BarChart with two Bar series.
+ */
+
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer, Cell, ReferenceLine,
+} from 'recharts';
+import { COLORS } from '@/constants/theme';
+
+function CustomTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) return null;
+  const actual = payload.find((p) => p.dataKey === 'emissions');
+  const target = payload.find((p) => p.dataKey === 'target');
+  const over   = actual && target ? actual.value > target.value : false;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur px-4 py-3 shadow-xl text-xs min-w-[160px]">
+      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">{label}</p>
+      {payload.map((p) => (
+        <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
+          <div className="flex items-center gap-1.5">
+            <span className="h-2 w-2 rounded-sm shrink-0" style={{ background: p.fill }} />
+            <span className="text-slate-500 dark:text-slate-400">{p.name}</span>
+          </div>
+          <span className="font-medium text-slate-700 dark:text-slate-200 tabular-nums">
+            {p.value} kg
+          </span>
+        </div>
+      ))}
+      {actual && target && (
+        <p className={`mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 font-medium text-xs ${over ? 'text-red-500' : 'text-green-600'}`}>
+          {over
+            ? `▲ ${(actual.value - target.value).toFixed(1)} kg over target`
+            : `▼ ${(target.value - actual.value).toFixed(1)} kg under target`}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function MonthlyComparisonChart({ data = [], height = 240 }) {
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }} barGap={4} barCategoryGap="30%">
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} className="dark:stroke-slate-800" />
+        <XAxis
+          dataKey="month"
+          tick={{ fontSize: 11, fill: '#94a3b8' }}
+          axisLine={false}
+          tickLine={false}
+          dy={6}
+        />
+        <YAxis
+          tick={{ fontSize: 11, fill: '#94a3b8' }}
+          axisLine={false}
+          tickLine={false}
+          tickFormatter={(v) => `${v}`}
+          width={30}
+        />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(34,197,94,0.04)' }} />
+        <Legend
+          iconType="square"
+          iconSize={8}
+          wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+        />
+
+        {/* Actual */}
+        <Bar dataKey="emissions" name="Actual" radius={[5, 5, 0, 0]} maxBarSize={28}>
+          {data.map((entry, i) => (
+            <Cell
+              key={i}
+              fill={entry.emissions > entry.target ? '#ef4444' : COLORS.green[500]}
+            />
+          ))}
+        </Bar>
+
+        {/* Target */}
+        <Bar dataKey="target" name="Target" fill={COLORS.slate[200]} radius={[5, 5, 0, 0]} maxBarSize={28} />
+      </BarChart>
+    </ResponsiveContainer>
+  );
+}
