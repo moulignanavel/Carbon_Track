@@ -20,7 +20,7 @@
  *   ✓ Responsive    (1→2→3 col grid)
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useForm }           from 'react-hook-form';
 import { zodResolver }       from '@hookform/resolvers/zod';
 import toast                 from 'react-hot-toast';
@@ -35,7 +35,7 @@ import { useGoals }      from '@/context/GoalContext';
 import { goalSchema }    from '@/utils/validators';
 import { formatEmission, formatDate, capitalize } from '@/utils/formatters';
 import { CATEGORY_META } from '@/constants/activities';
-import { MOCK_GOAL_HISTORY } from '@/data/goalsMock';
+// MOCK_GOAL_HISTORY removed — goals are now per-user from the backend
 import { COLORS }        from '@/constants/theme';
 
 import {
@@ -247,7 +247,7 @@ function GoalFormModal({ isOpen, onClose, onSave, editingGoal }) {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(goalSchema),
-    defaultValues: editingGoal ?? {
+    defaultValues: {
       title:       '',
       description: '',
       category:    'all',
@@ -257,6 +257,46 @@ function GoalFormModal({ isOpen, onClose, onSave, editingGoal }) {
       endDate:     today,
     },
   });
+
+  useEffect(() => {
+    if (isOpen) {
+      if (editingGoal) {
+        const formatDateToInput = (d) => {
+          if (!d) return today;
+          if (Array.isArray(d)) {
+            const year = d[0];
+            const month = String(d[1]).padStart(2, '0');
+            const day = String(d[2]).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+          }
+          if (typeof d === 'string') {
+            return d.split('T')[0];
+          }
+          return today;
+        };
+
+        reset({
+          title:       editingGoal.title || '',
+          description: editingGoal.description || '',
+          category:    editingGoal.category || 'all',
+          period:      editingGoal.period || 'monthly',
+          target:      editingGoal.target ?? '',
+          startDate:   formatDateToInput(editingGoal.startDate),
+          endDate:     formatDateToInput(editingGoal.endDate),
+        });
+      } else {
+        reset({
+          title:       '',
+          description: '',
+          category:    'all',
+          period:      'monthly',
+          target:      '',
+          startDate:   today,
+          endDate:     today,
+        });
+      }
+    }
+  }, [editingGoal, isOpen, reset]);
 
   const endDate = watch('endDate');
 
@@ -423,10 +463,9 @@ export default function GoalsPage() {
 
   const handleFormSave = async (data) => {
     if (editingGoal) {
-      updateGoal(editingGoal.id, data);
-      toast.success('Goal updated');
+      await updateGoal(editingGoal.id, data);
     } else {
-      addGoalContext(data);
+      await addGoalContext(data);
     }
   };
 
@@ -435,10 +474,9 @@ export default function GoalsPage() {
     setDeleteOpen(true);
   };
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (deleteTarget) {
-      deleteGoalContext(deleteTarget.id);
-      toast.success('Goal deleted');
+      await deleteGoalContext(deleteTarget.id);
     }
   };
 
@@ -511,7 +549,7 @@ export default function GoalsPage() {
               goal={goal}
               onEdit={handleEdit}
               onDelete={(id) => handleDeleteClick(id, goal.title)}
-              history={MOCK_GOAL_HISTORY[goal.id] ?? []}
+              history={[]}
             />
           ))}
         </div>

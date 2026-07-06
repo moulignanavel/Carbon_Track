@@ -18,13 +18,13 @@ import { Card, Badge, Tabs } from '@/components/ui';
 import { ChartSkeleton }     from '@/components/skeletons';
 import { useAuth }           from '@/context/AuthContext';
 import { useActivity }       from '@/context/ActivityContext';
+import { useGoals }          from '@/context/GoalContext';
 import { TYPE_MAP }          from '@/constants/activities';
 import { getCommunityLeaderboard } from '@/api/leaderboardApi';
 
-/* ── Mock data ────────────────────────────────────────────────── */
+/* ── Mock data (charts only — goals now come from GoalContext) ────────────────── */
 import {
   MOCK_KPI,
-  MOCK_GOALS,
   MOCK_WEEKLY_TREND,
   MOCK_MONTHLY_COMPARISON,
   MOCK_CATEGORY_DATA,
@@ -58,6 +58,7 @@ const CHART_TABS = [
 export default function DashboardPage() {
   const { user }     = useAuth();
   const { logs, isLoading: logsLoading, fetchLogs } = useActivity();
+  const { goals, isLoading: goalsLoading }           = useGoals();
   
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
@@ -97,32 +98,48 @@ export default function DashboardPage() {
 
   // Calculate real KPIs from actual activity logs
   const realKpi = useMemo(() => {
-    const todayStr = new Date().toISOString().split('T')[0];
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
+    // Parse logDate whether it comes back as "2026-07-06" (string) or [2026,7,6] (array)
+    const parseLogDate = (l) => {
+      const d = l.logDate ?? l.date;
+      if (!d) return null;
+      if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2]);
+      return new Date(d);
+    };
+
+    const now           = new Date();
+    const todayStr      = now.toISOString().split('T')[0];
+    const oneWeekAgo    = new Date(now); oneWeekAgo.setDate(now.getDate() - 7);
+    const startOfMonth  = new Date(now.getFullYear(), now.getMonth(), 1);
 
     const todayEmissions = logs
-      .filter((l) => l.logDate === todayStr)
+      .filter((l) => {
+        const d = parseLogDate(l);
+        return d && d.toISOString().split('T')[0] === todayStr;
+      })
       .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
 
     const weeklyEmissions = logs
-      .filter((l) => new Date(l.logDate) >= oneWeekAgo)
+      .filter((l) => { const d = parseLogDate(l); return d && d >= oneWeekAgo; })
       .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
 
     const monthlyEmissions = logs
-      .filter((l) => new Date(l.logDate) >= startOfMonth)
+      .filter((l) => { const d = parseLogDate(l); return d && d >= startOfMonth; })
       .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
 
-    const distinctDays = new Set(logs.map((l) => l.logDate)).size || 1;
-    const avgEmissions = logs.reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0) / distinctDays;
+    const totalAll    = logs.reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+    const distinctDays = new Set(
+      logs.map((l) => {
+        const d = parseLogDate(l);
+        return d ? d.toISOString().split('T')[0] : null;
+      }).filter(Boolean)
+    ).size || 1;
+    const avgEmissions = totalAll / distinctDays;
 
     return {
-      today:      { value: todayEmissions,   trend: todayEmissions > 5 ? 'up' : 'down', delta: 0, deltaLabel: 'today' },
-      weekly:     { value: weeklyEmissions,  trend: 'down',   delta: 0,   deltaLabel: 'last 7 days' },
-      monthly:    { value: monthlyEmissions, trend: 'down',   delta: 0,   deltaLabel: 'this month' },
-      avgPerDay:  { value: avgEmissions,     trend: 'down',   delta: 0,   deltaLabel: 'daily average' },
+      today:     { value: todayEmissions,   trend: todayEmissions > 5 ? 'up' : 'down', delta: 0, deltaLabel: 'today' },
+      weekly:    { value: weeklyEmissions,  trend: 'down', delta: 0, deltaLabel: 'last 7 days' },
+      monthly:   { value: monthlyEmissions, trend: 'down', delta: 0, deltaLabel: 'this month' },
+      avgPerDay: { value: avgEmissions,     trend: 'down', delta: 0, deltaLabel: 'daily average' },
     };
   }, [logs]);
 
@@ -143,7 +160,7 @@ export default function DashboardPage() {
     });
   }, [logs]);
 
-  const globalLoading = logsLoading || leaderboardLoading;
+  const globalLoading = logsLoading || leaderboardLoading || goalsLoading;
 
   return (
     <div className="space-y-6 fade-in">
@@ -243,7 +260,7 @@ export default function DashboardPage() {
  
         {/* ── Right sidebar block ─────────────────────────────── */}
         <div className="space-y-6">
-          <GoalProgress goals={MOCK_GOALS} isLoading={globalLoading} />
+          <GoalProgress goals={goals} isLoading={globalLoading} />
           <Recommendations recommendations={MOCK_RECOMMENDATIONS} isLoading={globalLoading} />
         </div>
       </div>

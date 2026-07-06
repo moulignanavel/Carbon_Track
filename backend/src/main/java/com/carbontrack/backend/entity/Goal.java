@@ -20,15 +20,37 @@ public class Goal {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "target_reduction_pct", nullable = false)
-    private Double targetReductionPct;
+    @Column(nullable = false, length = 200)
+    private String title;
 
-    @Column(name = "period_days", nullable = false)
-    private Integer periodDays;
+    @Column(length = 500)
+    private String description;
+
+    @Column(nullable = false, length = 50)
+    private String category; // all, transport, electricity, food, shopping, energy
+
+    @Column(nullable = false, length = 20)
+    private String period; // daily, weekly, monthly, quarterly, annual
+
+    @Column(name = "target_kg", nullable = false)
+    private Double targetKg;
+
+    @Column(name = "current_kg", nullable = false)
+    private Double currentKg;
 
     @Column(name = "start_date", nullable = false)
     private LocalDate startDate;
 
+    @Column(name = "end_date", nullable = false)
+    private LocalDate endDate;
+
     @Column(nullable = false, length = 20)
     private String status; // ACTIVE, ACHIEVED, MISSED
+
+    // Legacy columns — kept nullable for backward compatibility
+    @Column(name = "target_reduction_pct")
+    private Double targetReductionPct;
+
+    @Column(name = "period_days")
+    private Integer periodDays;
 }

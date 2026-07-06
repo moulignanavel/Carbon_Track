@@ -60,6 +60,9 @@ export function ActivityProvider({ children }) {
     }
     const newLog = await createActivityLog(logData);
     setLogs((prev) => [newLog, ...prev]);
+    // Notify GoalContext (and any other listeners) that an activity was added
+    // so they can re-fetch updated goal progress without a page refresh.
+    window.dispatchEvent(new Event('activity-logged'));
     return newLog;
   }, []);
 

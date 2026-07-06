@@ -17,7 +17,7 @@ import axiosInstance from './axiosInstance';
  * @returns {Promise<UserProfile>}
  */
 export async function getMyProfile() {
-  const response = await axiosInstance.get('/users/me');
+  const response = await axiosInstance.get('/users/profile');
   return response.data;
 }
 
@@ -27,7 +27,7 @@ export async function getMyProfile() {
  * @returns {Promise<UserProfile>}
  */
 export async function updateMyProfile(data) {
-  const response = await axiosInstance.put('/users/me', data);
+  const response = await axiosInstance.put('/users/profile', data);
   return response.data;
 }
 

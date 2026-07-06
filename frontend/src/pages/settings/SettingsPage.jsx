@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, Moon, Sun, Bell, Shield, Leaf } from 'lucide-react';
 import { useAuth }  from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useDensity } from '@/context/DensityContext';
 import { Card, Button, Input, Badge, Alert, Tabs } from '@/components/ui';
+import { getMyProfile, updateMyProfile } from '@/api';
+import toast from 'react-hot-toast';
 
 const SETTING_TABS = [
   { id: 'profile',       label: 'Profile',       icon: User   },
@@ -12,11 +15,59 @@ const SETTING_TABS = [
 ];
 
 function ProfileTab({ user }) {
+  const { updateUser } = useAuth();
   const [saved, setSaved] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [username, setUsername] = useState(user?.username ?? '');
+  const [email, setEmail] = useState('');
+  const [errorMsg, setErrorMsg] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+    getMyProfile()
+      .then((profile) => {
+        if (!active) return;
+        setUsername(profile.username || '');
+        setEmail(profile.email || '');
+      })
+      .catch((err) => {
+        console.error('Failed to load profile details:', err);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSave = async () => {
+    setLoading(true);
+    setSaved(false);
+    setErrorMsg(null);
+    try {
+      const updated = await updateMyProfile({ username, email });
+      updateUser({ username: updated.username });
+      setSaved(true);
+      toast.success('Profile updated successfully!');
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || err.message || 'Failed to update profile';
+      setErrorMsg(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-5">
       {saved && (
-        <Alert variant="success" dismissible>Profile updated successfully.</Alert>
+        <Alert variant="success" dismissible onClose={() => setSaved(false)}>
+          Profile updated successfully.
+        </Alert>
+      )}
+      {errorMsg && (
+        <Alert variant="danger" dismissible onClose={() => setErrorMsg(null)}>
+          {errorMsg}
+        </Alert>
       )}
       <div className="flex items-center gap-4">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-teal-500 text-white text-2xl font-bold">
@@ -28,16 +79,45 @@ function ProfileTab({ user }) {
         </div>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input label="Username" defaultValue={user?.username ?? ''} leftIcon={<User className="h-4 w-4" />} />
-        <Input label="Email" type="email" defaultValue="" placeholder="your@email.com" />
+        <Input 
+          label="Username" 
+          value={username} 
+          onChange={(e) => setUsername(e.target.value)} 
+          leftIcon={<User className="h-4 w-4" />} 
+          required
+        />
+        <Input 
+          label="Email" 
+          type="email" 
+          value={email} 
+          onChange={(e) => setEmail(e.target.value)} 
+          placeholder="your@email.com" 
+          required
+        />
       </div>
-      <Button variant="primary" size="sm" onClick={() => setSaved(true)}>Save Changes</Button>
+      <Button 
+        variant="primary" 
+        size="sm" 
+        onClick={handleSave} 
+        isLoading={loading} 
+        disabled={!username || !email}
+      >
+        Save Changes
+      </Button>
     </div>
   );
 }
 
 function AppearanceTab() {
   const { theme, toggleTheme } = useTheme();
+  const { density, setDensity } = useDensity();
+
+  const densityOptions = [
+    { id: 'compact',     label: 'Compact'     },
+    { id: 'default',     label: 'Default'     },
+    { id: 'comfortable', label: 'Comfortable' },
+  ];
+
   return (
     <div className="space-y-5">
       <div>
@@ -69,12 +149,17 @@ function AppearanceTab() {
         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Density</p>
         <p className="text-xs text-slate-500 mb-3">Control spacing of UI elements</p>
         <div className="flex gap-2">
-          {['Compact', 'Default', 'Comfortable'].map((d, i) => (
+          {densityOptions.map(({ id, label }) => (
             <button
-              key={d}
-              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${i === 1 ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300' : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400'}`}
+              key={id}
+              onClick={() => setDensity(id)}
+              className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
+                density === id
+                  ? 'border-green-600 bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                  : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
+              }`}
             >
-              {d}
+              {label}
             </button>
           ))}
         </div>

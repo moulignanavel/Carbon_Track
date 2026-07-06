@@ -71,6 +71,15 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  /* ── update user profile info ──────────────────────────────── */
+  const updateUser = useCallback((newUserInfo) => {
+    setUser((prev) => {
+      const updated = { ...prev, ...newUserInfo };
+      saveUser(updated);
+      return updated;
+    });
+  }, []);
+
   /* ── context value ─────────────────────────────────────────── */
   const value = useMemo(() => ({
     user,
@@ -81,7 +90,8 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
-  }), [user, token, isInitialising, login, register, logout]);
+    updateUser,
+  }), [user, token, isInitialising, login, register, logout, updateUser]);
 
   return (
     <AuthContext.Provider value={value}>

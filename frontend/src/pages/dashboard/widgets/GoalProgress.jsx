@@ -11,6 +11,9 @@ function GoalItem({ goal }) {
   const isWarn  = pct >= 80 && !isOver;
   const color   = isOver ? 'red' : isWarn ? 'yellow' : 'green';
   const variant = isOver ? 'red' : isWarn ? 'yellow' : 'green';
+  const daysLeft = goal.endDate
+    ? Math.ceil((new Date(goal.endDate) - new Date()) / 86_400_000)
+    : null;
 
   return (
     <div className="flex items-start gap-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
@@ -45,13 +48,14 @@ function GoalItem({ goal }) {
           <span>{formatEmission(goal.current)} used</span>
           <span className="flex items-center gap-1">
             <Calendar className="h-3 w-3" aria-hidden="true" />
-            {goal.daysLeft}d left · {goal.period}
+            {daysLeft != null ? `${daysLeft}d left` : '—'} · {goal.period}
           </span>
         </div>
       </div>
     </div>
   );
 }
+
 
 export default function GoalProgress({ goals, isLoading }) {
   if (isLoading) {
@@ -78,6 +82,19 @@ export default function GoalProgress({ goals, isLoading }) {
   const remaining   = primaryGoal
     ? Math.max(0, primaryGoal.target - primaryGoal.current)
     : 0;
+
+  if (!goals || goals.length === 0) {
+    return (
+      <Card>
+        <Card.Header title="Goal Progress" icon={Target} />
+        <div className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">
+          <Target className="h-8 w-8 mx-auto mb-2 opacity-30" />
+          <p>No goals yet.</p>
+          <p className="text-xs mt-1">Create a goal on the Goals page to start tracking.</p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card>

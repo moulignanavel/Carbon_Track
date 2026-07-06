@@ -5,4 +5,5 @@
 export * from './authApi';
 export * from './activityApi';
 export * from './userApi';
+export * from './goalsApi';
 export { default as axiosInstance } from './axiosInstance';
