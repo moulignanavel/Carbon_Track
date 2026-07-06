@@ -54,7 +54,7 @@ export default function Alert({
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
 
-  const c = CONFIG[variant];
+  const c = CONFIG[variant] || CONFIG.info;
   const Icon = c.icon;
 
   return (

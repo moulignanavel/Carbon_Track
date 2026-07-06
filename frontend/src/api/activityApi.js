@@ -33,7 +33,11 @@ export async function getActivityLogs() {
  * @returns {Promise<ActivityLog>}
  */
 export async function createActivityLog(logData) {
-  const response = await axiosInstance.post('/activity-logs', logData);
+  const payload = {
+    ...logData,
+    quantity: logData.amount,
+  };
+  const response = await axiosInstance.post('/activity-logs', payload);
   return response.data;
 }
 

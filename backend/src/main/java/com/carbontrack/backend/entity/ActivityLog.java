@@ -33,4 +33,7 @@ public class ActivityLog {
 
     @Column(name = "log_date", nullable = false)
     private LocalDate logDate;
+
+    @Column(name = "notes")
+    private String notes;
 }

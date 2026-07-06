@@ -342,7 +342,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory }) {
                 required
                 error={errors.amount?.message}
                 hint={typeObj ? `per ${typeObj.unit}` : undefined}
-                {...register('amount', { valueAsNumber: false })}
+                {...register('amount', { valueAsNumber: true })}
               />
               <div>
                 <label className="form-label">
@@ -497,7 +497,7 @@ export default function ActivitiesPage() {
 
   /* ── filtered logs ─────────────────────────────────────────── */
   const filtered = useMemo(() => {
-    let r = logs;
+    let r = [...logs];
     if (search) {
       const q = search.toLowerCase();
       r = r.filter((l) =>
@@ -510,7 +510,15 @@ export default function ActivitiesPage() {
     if (catFilter) r = r.filter((l) => l.category === catFilter);
     if (dateFrom)  r = r.filter((l) => l.logDate >= dateFrom);
     if (dateTo)    r = r.filter((l) => l.logDate <= dateTo);
-    return r;
+
+    return r.sort((a, b) => {
+      const dateA = a.logDate ?? '';
+      const dateB = b.logDate ?? '';
+      if (dateA !== dateB) {
+        return dateB.localeCompare(dateA); // Date descending
+      }
+      return (b.id ?? 0) - (a.id ?? 0); // ID descending (last added first)
+    });
   }, [logs, search, catFilter, dateFrom, dateTo]);
 
   /* ── bar chart data ────────────────────────────────────────── */

@@ -321,7 +321,14 @@ export default function ReportsPage() {
   const [period, setPeriod] = useState('monthly');
 
   /* derive data for the current period */
-  const stackedData = PERIOD_DATA[period] ?? [];
+  const stackedData = useMemo(() => {
+    const raw = PERIOD_DATA[period] ?? [];
+    return raw.map((row) => ({
+      ...row,
+      label: row.label || row.date || row.month || row.year || '',
+    }));
+  }, [period]);
+
   const trendData   = useMemo(() => {
     /* For the trend line we want the 'total' field per row */
     return stackedData.map((row) => ({

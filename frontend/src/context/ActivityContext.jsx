@@ -21,11 +21,11 @@ import toast from 'react-hot-toast';
 import { MOCK_LOGS } from '@/data/activitiesMock';
 
 /* ── toggle this flag when the backend is ready ─────────────── */
-const USE_MOCK = true;
+const USE_MOCK = false;
 
 /* ── real API imports (used when USE_MOCK = false) ──────────── */
-// import { getActivityLogs, createActivityLog } from '@/api';
-// import { extractErrorMessage } from '@/utils/errorHandler';
+import { getActivityLogs, createActivityLog } from '@/api';
+import { formatError } from '@/utils/errorHandler';
 
 const ActivityContext = createContext(null);
 
@@ -38,10 +38,10 @@ export function ActivityProvider({ children }) {
     if (USE_MOCK) return; // already seeded
     setIsLoading(true);
     try {
-      // const data = await getActivityLogs();
-      // setLogs(data);
+      const data = await getActivityLogs();
+      setLogs(data);
     } catch (err) {
-      // toast.error(extractErrorMessage(err, 'Failed to load activity logs'));
+      toast.error(formatError(err, 'Failed to load activity logs'));
     } finally {
       setIsLoading(false);
     }
@@ -58,9 +58,9 @@ export function ActivityProvider({ children }) {
       setLogs((prev) => [newLog, ...prev]);
       return newLog;
     }
-    // const newLog = await createActivityLog(logData);
-    // setLogs((prev) => [newLog, ...prev]);
-    // return newLog;
+    const newLog = await createActivityLog(logData);
+    setLogs((prev) => [newLog, ...prev]);
+    return newLog;
   }, []);
 
   /* ── delete ────────────────────────────────────────────────── */

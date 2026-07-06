@@ -26,6 +26,8 @@ public class ActivityLogRequest {
     @NotNull(message = "Log date is required")
     private LocalDate logDate;
 
+    private String notes;
+
     public ActivityLogRequest() {}
 
     public ActivityLogRequest(String category, String activityType, Double quantity, String unit, LocalDate logDate) {
@@ -50,4 +52,7 @@ public class ActivityLogRequest {
 
     public LocalDate getLogDate() { return logDate; }
     public void setLogDate(LocalDate logDate) { this.logDate = logDate; }
+
+    public String getNotes() { return notes; }
+    public void setNotes(String notes) { this.notes = notes; }
 }

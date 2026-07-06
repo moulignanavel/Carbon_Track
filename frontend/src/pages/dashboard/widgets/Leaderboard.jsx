@@ -45,12 +45,14 @@ function LeaderRow({ entry }) {
       </div>
 
       {/* Delta */}
-      <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${delta < 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
-        {delta < 0
-          ? <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" />
-          : <TrendingUp   className="h-3.5 w-3.5" aria-hidden="true" />}
-        <span className="tabular-nums">{Math.abs(delta).toFixed(1)}</span>
-      </div>
+      {delta !== 0 && delta !== undefined && (
+        <div className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${delta < 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
+          {delta < 0
+            ? <TrendingDown className="h-3.5 w-3.5" aria-hidden="true" />
+            : <TrendingUp   className="h-3.5 w-3.5" aria-hidden="true" />}
+          <span className="tabular-nums">{Math.abs(delta).toFixed(1)}</span>
+        </div>
+      )}
     </li>
   );
 }
@@ -85,7 +87,7 @@ export default function Leaderboard({ entries, isLoading }) {
         icon={Trophy}
         iconColor="text-amber-500"
         action={
-          <Link to="/reports">
+          <Link to="/community">
             <Button variant="ghost" size="xs" rightIcon={<ArrowRight className="h-3.5 w-3.5" />}>
               Full ranking
             </Button>

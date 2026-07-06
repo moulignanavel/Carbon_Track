@@ -1,0 +1,70 @@
+-- V5: Seed emission factors for all activity types and units configured in the frontend
+
+INSERT INTO emission_factors (activity_type, unit, kg_co2e_per_unit, source, effective_date) VALUES
+-- Transport
+('car_petrol', 'km', 0.1800, 'DEFRA', '2026-01-01'),
+('car_petrol', 'miles', 0.2897, 'DEFRA', '2026-01-01'),
+('car_diesel', 'km', 0.1650, 'DEFRA', '2026-01-01'),
+('car_diesel', 'miles', 0.2655, 'DEFRA', '2026-01-01'),
+('car_electric', 'km', 0.0530, 'DEFRA', '2026-01-01'),
+('car_electric', 'miles', 0.0853, 'DEFRA', '2026-01-01'),
+('car_hybrid', 'km', 0.1100, 'DEFRA', '2026-01-01'),
+('car_hybrid', 'miles', 0.1770, 'DEFRA', '2026-01-01'),
+('motorcycle', 'km', 0.1140, 'DEFRA', '2026-01-01'),
+('motorcycle', 'miles', 0.1835, 'DEFRA', '2026-01-01'),
+('bus', 'km', 0.0890, 'DEFRA', '2026-01-01'),
+('bus', 'miles', 0.1432, 'DEFRA', '2026-01-01'),
+('train', 'km', 0.0410, 'DEFRA', '2026-01-01'),
+('train', 'miles', 0.0660, 'DEFRA', '2026-01-01'),
+('subway', 'km', 0.0280, 'DEFRA', '2026-01-01'),
+('subway', 'miles', 0.0451, 'DEFRA', '2026-01-01'),
+('flight_short', 'km', 0.2550, 'DEFRA', '2026-01-01'),
+('flight_long', 'km', 0.1950, 'DEFRA', '2026-01-01'),
+('taxi', 'km', 0.1490, 'DEFRA', '2026-01-01'),
+('taxi', 'miles', 0.2398, 'DEFRA', '2026-01-01'),
+
+-- Electricity
+('electricity_grid', 'kWh', 0.2330, 'DEFRA', '2026-01-01'),
+('electricity_solar', 'kWh', 0.0410, 'DEFRA', '2026-01-01'),
+('electricity_wind', 'kWh', 0.0110, 'DEFRA', '2026-01-01'),
+
+-- Food
+('beef', 'kg', 27.0000, 'FAO', '2026-01-01'),
+('beef', 'servings', 4.0500, 'FAO', '2026-01-01'),
+('lamb', 'kg', 39.2000, 'FAO', '2026-01-01'),
+('lamb', 'servings', 5.8800, 'FAO', '2026-01-01'),
+('pork', 'kg', 7.6000, 'FAO', '2026-01-01'),
+('pork', 'servings', 1.1400, 'FAO', '2026-01-01'),
+('chicken', 'kg', 6.9000, 'FAO', '2026-01-01'),
+('chicken', 'servings', 1.0350, 'FAO', '2026-01-01'),
+('fish', 'kg', 6.1000, 'FAO', '2026-01-01'),
+('fish', 'servings', 0.9150, 'FAO', '2026-01-01'),
+('dairy', 'kg', 3.2000, 'FAO', '2026-01-01'),
+('dairy', 'litres', 3.2000, 'FAO', '2026-01-01'),
+('eggs', 'kg', 4.8000, 'FAO', '2026-01-01'),
+('eggs', 'items', 0.2880, 'FAO', '2026-01-01'),
+('vegetables', 'kg', 2.0000, 'FAO', '2026-01-01'),
+('fruit', 'kg', 1.1000, 'FAO', '2026-01-01'),
+('coffee', 'cups', 0.2800, 'FAO', '2026-01-01'),
+('coffee', 'kg', 16.0000, 'FAO', '2026-01-01'),
+
+-- Shopping
+('clothing_new', 'items', 10.0000, 'EPA', '2026-01-01'),
+('clothing_new', 'kg', 10.0000, 'EPA', '2026-01-01'),
+('clothing_second', 'items', 0.5000, 'EPA', '2026-01-01'),
+('smartphone', 'items', 70.0000, 'EPA', '2026-01-01'),
+('laptop', 'items', 300.0000, 'EPA', '2026-01-01'),
+('tv', 'items', 400.0000, 'EPA', '2026-01-01'),
+('furniture', 'items', 50.0000, 'EPA', '2026-01-01'),
+('books', 'items', 1.0000, 'EPA', '2026-01-01'),
+('books', 'kg', 2.0000, 'EPA', '2026-01-01'),
+
+-- Energy
+('natural_gas', 'kWh', 0.2030, 'IPCC', '2026-01-01'),
+('natural_gas', 'm³', 2.2000, 'IPCC', '2026-01-01'),
+('heating_oil', 'litres', 2.5200, 'IPCC', '2026-01-01'),
+('heating_oil', 'kWh', 0.2700, 'IPCC', '2026-01-01'),
+('lpg', 'litres', 1.5100, 'IPCC', '2026-01-01'),
+('lpg', 'kg', 1.9600, 'IPCC', '2026-01-01'),
+('wood_burning', 'kg', 0.0150, 'IPCC', '2026-01-01'),
+('coal', 'kg', 2.4200, 'IPCC', '2026-01-01');

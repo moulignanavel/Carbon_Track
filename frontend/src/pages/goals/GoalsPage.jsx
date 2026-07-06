@@ -41,7 +41,7 @@ import { COLORS }        from '@/constants/theme';
 import {
   Button, Card, Badge, Modal,
   Input, Select, EmptyState,
-  Alert,
+  Alert, CircularProgress, ProgressBar,
 } from '@/components/ui';
 import GoalTimelineChart from '@/components/charts/GoalTimelineChart';
 

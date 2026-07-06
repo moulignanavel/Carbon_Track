@@ -69,77 +69,83 @@ export const DAILY_DATA = [
    Yearly Data (for yearly filter)
    ───────────────────────────────────────────────────────────── */
 export const YEARLY_DATA = [
-  { year: '2021', emissions: 2845.3, budget: 2400, target: 2160 },
-  { year: '2022', emissions: 2512.7, budget: 2400, target: 2160 },
-  { year: '2023', emissions: 2101.4, budget: 2400, target: 2160 },
-  { year: '2024', emissions: 1889.2, budget: 2400, target: 2160 },
-  { year: '2025', emissions: 1758.3, budget: 2400, target: 2160 },
+  { year: '2021', transport: 1200, electricity: 800, food: 500, shopping: 345.3 },
+  { year: '2022', transport: 1100, electricity: 750, food: 480, shopping: 182.7 },
+  { year: '2023', transport: 900,  electricity: 650, food: 400, shopping: 151.4 },
+  { year: '2024', transport: 800,  electricity: 600, food: 350, shopping: 139.2 },
+  { year: '2025', transport: 750,  electricity: 550, food: 320, shopping: 138.3 },
 ];
-
-/* ─────────────────────────────────────────────────────────────
-   Summary Stats for Cards
-   ───────────────────────────────────────────────────────────── */
-export const ANALYTICS_SUMMARY = {
-  thisWeek: {
-    total: 210.2,
-    change: -12.5, // percentage from last week
-    byCategory: {
-      transport: 85.5,
-      electricity: 58.3,
-      food: 45.2,
-      shopping: 21.2,
-    },
-  },
-  thisMonth: {
-    total: 858.3,
-    change: -8.2,
-    budget: 200,
-    target: 180,
-  },
-  thisYear: {
-    total: 1758.3,
-    change: -18.5,
-    avgPerMonth: 146.5,
-  },
-  allTime: {
-    total: 8958.5,
-    avgPerMonth: 224.6,
-  },
-};
-
-/* ─────────────────────────────────────────────────────────────
-   Top Emitters by Category (table data)
-   ───────────────────────────────────────────────────────────── */
-export const TOP_EMITTERS = {
-  transport: [
-    { activity: 'Car Commute (25 km)',     emissions: 5.2,  frequency: 'daily',   color: '#3B82F6' },
-    { activity: 'Flight (NYC → LAX)',      emissions: 0.85, frequency: 'monthly', color: '#3B82F6' },
-    { activity: 'Gas Delivery (Whole Foods)', emissions: 2.1, frequency: 'weekly',  color: '#3B82F6' },
-  ],
-  electricity: [
-    { activity: 'Heating (Winter)',        emissions: 3.2,  frequency: 'daily',   color: '#10B981' },
-    { activity: 'Air Conditioning',        emissions: 2.8,  frequency: 'daily',   color: '#10B981' },
-    { activity: 'Appliances',              emissions: 2.1,  frequency: 'daily',   color: '#10B981' },
-  ],
-  food: [
-    { activity: 'Beef Steak (200g)',       emissions: 4.5,  frequency: 'weekly',  color: '#F59E0B' },
-    { activity: 'Cheese (150g)',           emissions: 2.1,  frequency: 'weekly',  color: '#F59E0B' },
-    { activity: 'Chocolate (100g)',        emissions: 1.8,  frequency: 'monthly', color: '#F59E0B' },
-  ],
-  shopping: [
-    { activity: 'New Clothes (5 items)',   emissions: 8.4,  frequency: 'monthly', color: '#EC4899' },
-    { activity: 'Electronics',             emissions: 12.5, frequency: 'yearly',  color: '#EC4899' },
-    { activity: 'Furniture',               emissions: 45.2, frequency: 'yearly',  color: '#EC4899' },
-  ],
-};
 
 /* ─────────────────────────────────────────────────────────────
    Named exports for Reports page
    ───────────────────────────────────────────────────────────── */
 export const MOCK_DAILY           = DAILY_DATA;
 export const MOCK_WEEKLY          = WEEKLY_TREND_DATA;
-export const MOCK_MONTHLY         = MONTHLY_COMPARISON_DATA;
+export const MOCK_MONTHLY         = CATEGORY_MONTHLY_DATA;
 export const MOCK_YEARLY          = YEARLY_DATA;
-export const MOCK_CATEGORY_BREAKDOWN = CATEGORY_MONTHLY_DATA;
-export const MOCK_SUMMARY         = ANALYTICS_SUMMARY;
-export const MOCK_TOP_ACTIVITIES  = TOP_EMITTERS;
+
+export const MOCK_SUMMARY = {
+  daily: {
+    total: { value: 4.82, prev: 5.45 },
+    topCat: { value: 'Transport', share: '62%' },
+    avgPerEntry: { value: 2.41, prev: 2.72 },
+    entries: { value: 2, prev: 2 },
+    target: { value: 5.0, period: 'Daily' },
+  },
+  weekly: {
+    total: { value: 28.40, prev: 31.50 },
+    topCat: { value: 'Electricity', share: '38%' },
+    avgPerEntry: { value: 3.55, prev: 3.93 },
+    entries: { value: 8, prev: 8 },
+    target: { value: 35.0, period: 'Weekly' },
+  },
+  monthly: {
+    total: { value: 112.70, prev: 120.90 },
+    topCat: { value: 'Transport', share: '40%' },
+    avgPerEntry: { value: 3.76, prev: 4.03 },
+    entries: { value: 30, prev: 30 },
+    target: { value: 150.0, period: 'Monthly' },
+  },
+  yearly: {
+    total: { value: 1450.00, prev: 1680.00 },
+    topCat: { value: 'Transport', share: '45%' },
+    avgPerEntry: { value: 4.02, prev: 4.67 },
+    entries: { value: 360, prev: 360 },
+    target: { value: 1800.0, period: 'Yearly' },
+  },
+};
+
+export const MOCK_CATEGORY_BREAKDOWN = {
+  daily: [
+    { name: 'Transport', category: 'transport', value: 3.00, prev: 3.50 },
+    { name: 'Electricity', category: 'electricity', value: 1.00, prev: 1.10 },
+    { name: 'Food', category: 'food', value: 0.82, prev: 0.85 },
+  ],
+  weekly: [
+    { name: 'Transport', category: 'transport', value: 10.80, prev: 12.50 },
+    { name: 'Electricity', category: 'electricity', value: 9.10, prev: 10.20 },
+    { name: 'Food', category: 'food', value: 5.30, prev: 5.80 },
+    { name: 'Shopping', category: 'shopping', value: 3.20, prev: 3.00 },
+  ],
+  monthly: [
+    { name: 'Transport', category: 'transport', value: 45.20, prev: 52.10 },
+    { name: 'Electricity', category: 'electricity', value: 38.70, prev: 35.80 },
+    { name: 'Food', category: 'food', value: 15.40, prev: 20.20 },
+    { name: 'Shopping', category: 'shopping', value: 13.40, prev: 12.80 },
+  ],
+  yearly: [
+    { name: 'Transport', category: 'transport', value: 580.00, prev: 680.00 },
+    { name: 'Electricity', category: 'electricity', value: 420.00, prev: 480.00 },
+    { name: 'Food', category: 'food', value: 250.00, prev: 320.00 },
+    { name: 'Shopping', category: 'shopping', value: 200.00, prev: 200.00 },
+  ],
+};
+
+export const MOCK_TOP_ACTIVITIES = [
+  { rank: 1, label: 'Flight NYC → London', emissions: 0.85, category: 'transport', icon: '✈️' },
+  { rank: 2, label: 'Gasoline Car Commute', emissions: 0.18, category: 'transport', icon: '🚗' },
+  { rank: 3, label: 'Grid Electricity Consumption', emissions: 0.12, category: 'electricity', icon: '⚡' },
+  { rank: 4, label: 'Beef Steak Dinner', emissions: 0.08, category: 'food', icon: '🥩' },
+  { rank: 5, label: 'New Clothes Purchase', emissions: 0.05, category: 'shopping', icon: '🛍️' },
+];
+

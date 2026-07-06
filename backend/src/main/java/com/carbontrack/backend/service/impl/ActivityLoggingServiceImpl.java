@@ -50,6 +50,7 @@ public class ActivityLoggingServiceImpl implements ActivityLoggingService {
         log.setUnit(request.getUnit());
         log.setCalculatedEmissions(emissions);
         log.setLogDate(request.getLogDate());
+        log.setNotes(request.getNotes());
 
         return activityLogRepository.save(log);
     }

@@ -13,10 +13,13 @@
  *         CategoryPieChart (all with custom tooltips).
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Card, Badge, Tabs } from '@/components/ui';
 import { ChartSkeleton }     from '@/components/skeletons';
 import { useAuth }           from '@/context/AuthContext';
+import { useActivity }       from '@/context/ActivityContext';
+import { TYPE_MAP }          from '@/constants/activities';
+import { getCommunityLeaderboard } from '@/api/leaderboardApi';
 
 /* ── Mock data ────────────────────────────────────────────────── */
 import {
@@ -25,9 +28,7 @@ import {
   MOCK_WEEKLY_TREND,
   MOCK_MONTHLY_COMPARISON,
   MOCK_CATEGORY_DATA,
-  MOCK_RECENT_ACTIVITIES,
   MOCK_RECOMMENDATIONS,
-  MOCK_LEADERBOARD,
 } from '@/data/dashboardMock';
 
 /* ── Chart components ─────────────────────────────────────────── */
@@ -56,14 +57,93 @@ const CHART_TABS = [
    ══════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
   const { user }     = useAuth();
-  const [loading, setLoading]   = useState(true);
+  const { logs, isLoading: logsLoading, fetchLogs } = useActivity();
+  
+  const [leaderboardEntries, setLeaderboardEntries] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [chartTab, setChartTab] = useState('weekly');
 
-  /* Simulate a short loading state so skeletons are visible */
+  // Load backend logs
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 900);
-    return () => clearTimeout(t);
-  }, []);
+    fetchLogs();
+  }, [fetchLogs]);
+
+  // Load backend leaderboard
+  useEffect(() => {
+    let active = true;
+    getCommunityLeaderboard()
+      .then((data) => {
+        if (!active) return;
+        const mapped = (data.all || []).slice(0, 5).map((u) => ({
+          rank: u.rank,
+          username: u.username,
+          monthly: u.totalEmissionsSaved,
+          badge: u.rank === 1 ? '🏆' : u.rank === 2 ? '🥈' : u.rank === 3 ? '🥉' : null,
+          delta: 0,
+          isCurrentUser: u.userId === user?.userId,
+        }));
+        setLeaderboardEntries(mapped);
+      })
+      .catch((err) => {
+        console.error('Failed to load dashboard leaderboard:', err);
+      })
+      .finally(() => {
+        if (active) setLeaderboardLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // Calculate real KPIs from actual activity logs
+  const realKpi = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+
+    const todayEmissions = logs
+      .filter((l) => l.logDate === todayStr)
+      .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+
+    const weeklyEmissions = logs
+      .filter((l) => new Date(l.logDate) >= oneWeekAgo)
+      .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+
+    const monthlyEmissions = logs
+      .filter((l) => new Date(l.logDate) >= startOfMonth)
+      .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+
+    const distinctDays = new Set(logs.map((l) => l.logDate)).size || 1;
+    const avgEmissions = logs.reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0) / distinctDays;
+
+    return {
+      today:      { value: todayEmissions,   trend: todayEmissions > 5 ? 'up' : 'down', delta: 0, deltaLabel: 'today' },
+      weekly:     { value: weeklyEmissions,  trend: 'down',   delta: 0,   deltaLabel: 'last 7 days' },
+      monthly:    { value: monthlyEmissions, trend: 'down',   delta: 0,   deltaLabel: 'this month' },
+      avgPerDay:  { value: avgEmissions,     trend: 'down',   delta: 0,   deltaLabel: 'daily average' },
+    };
+  }, [logs]);
+
+  // Map real logs to format expected by RecentActivities widget
+  const recentActivitiesList = useMemo(() => {
+    return logs.slice(0, 5).map((l) => {
+      const typeObj = TYPE_MAP[l.activityType];
+      return {
+        id: l.id,
+        category: l.category,
+        activityType: typeObj?.label ?? l.activityType,
+        emissions: l.calculatedEmissions ?? 0,
+        amount: l.amount,
+        unit: l.unit,
+        logDate: l.logDate,
+        icon: typeObj?.icon ?? '🌱',
+      };
+    });
+  }, [logs]);
+
+  const globalLoading = logsLoading || leaderboardLoading;
 
   return (
     <div className="space-y-6 fade-in">
@@ -71,12 +151,12 @@ export default function DashboardPage() {
       {/* ════════════════════════════════════════════════════════
           1 · WELCOME BANNER  (full width)
           ════════════════════════════════════════════════════════ */}
-      <WelcomeBanner user={user} kpi={MOCK_KPI} />
+      <WelcomeBanner user={user} kpi={realKpi} />
 
       {/* ════════════════════════════════════════════════════════
           2 · KPI ROW  — Today / Week / Month / Avg
           ════════════════════════════════════════════════════════ */}
-      <KpiRow kpi={MOCK_KPI} isLoading={loading} />
+      <KpiRow kpi={realKpi} isLoading={globalLoading} />
 
       {/* ════════════════════════════════════════════════════════
           3 · QUICK LOG  (full width)
@@ -113,7 +193,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            {loading ? (
+            {globalLoading ? (
               <ChartSkeleton height={272} />
             ) : (
               <>
@@ -147,27 +227,27 @@ export default function DashboardPage() {
               </>
             )}
           </Card>
-
+ 
           {/* ── Two-col sub-grid: Recent Activities + Leaderboard */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <RecentActivities
-              activities={MOCK_RECENT_ACTIVITIES}
-              isLoading={loading}
+              activities={recentActivitiesList}
+              isLoading={logsLoading}
             />
             <Leaderboard
-              entries={MOCK_LEADERBOARD}
-              isLoading={loading}
+              entries={leaderboardEntries}
+              isLoading={leaderboardLoading}
             />
           </div>
         </div>
-
+ 
         {/* ── Right sidebar block ─────────────────────────────── */}
         <div className="space-y-6">
-          <GoalProgress goals={MOCK_GOALS} isLoading={loading} />
-          <Recommendations recommendations={MOCK_RECOMMENDATIONS} isLoading={loading} />
+          <GoalProgress goals={MOCK_GOALS} isLoading={globalLoading} />
+          <Recommendations recommendations={MOCK_RECOMMENDATIONS} isLoading={globalLoading} />
         </div>
       </div>
-
+ 
       {/* ════════════════════════════════════════════════════════
           5 · MONTHLY COMPARISON  (full width, always visible)
           ════════════════════════════════════════════════════════ */}
@@ -188,7 +268,7 @@ export default function DashboardPage() {
             </div>
           }
         />
-        {loading
+        {globalLoading
           ? <ChartSkeleton height={200} />
           : <MonthlyComparisonChart data={MOCK_MONTHLY_COMPARISON} height={200} />}
       </Card>

@@ -17,3 +17,5 @@ export { default as Avatar }                       from './Avatar';
 export { default as Tooltip }                      from './Tooltip';
 export { default as Tabs }                         from './Tabs';
 export { default as Alert }                        from './Alert';
+export { default as CircularProgress }             from './CircularProgress';
+export { default as ProgressBar }                  from './ProgressBar';

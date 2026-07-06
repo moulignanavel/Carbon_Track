@@ -105,7 +105,7 @@ export default function CommunityLeaderboardPage() {
       {/* Error Alert */}
       {error && (
         <div className="max-w-7xl mx-auto mb-6">
-          <Alert variant="danger" title="Error" message={error} />
+          <Alert variant="error" title="Error">{error}</Alert>
         </div>
       )}
 

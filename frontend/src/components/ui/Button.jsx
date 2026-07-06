@@ -111,6 +111,7 @@ const Button = forwardRef(({
   variant = 'primary',
   size = 'md',
   loading = false,
+  isLoading = false,
   disabled = false,
   fullWidth = false,
   rounded = false,
@@ -121,6 +122,8 @@ const Button = forwardRef(({
   className = '',
   ...props
 }, ref) => {
+  const isBtnLoading = loading || isLoading;
+
   // Validate icon-only buttons have aria-label
   const isIconOnly = !children && (leftIcon || rightIcon);
   if (isIconOnly && !ariaLabel) {
@@ -136,7 +139,7 @@ const Button = forwardRef(({
   return (
     <button
       ref={ref}
-      disabled={disabled || loading}
+      disabled={disabled || isBtnLoading}
       className={`
         ${BASE}
         ${VARIANTS[variant] || VARIANTS.primary}
@@ -146,14 +149,14 @@ const Button = forwardRef(({
         ${className}
       `}
       aria-label={ariaLabel}
-      aria-busy={loading}
-      aria-disabled={disabled || loading}
+      aria-busy={isBtnLoading}
+      aria-disabled={disabled || isBtnLoading}
       {...props}
     >
-      {loading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
-      {!loading && leftIcon}
+      {isBtnLoading && <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />}
+      {!isBtnLoading && leftIcon}
       {children}
-      {!loading && rightIcon}
+      {!isBtnLoading && rightIcon}
     </button>
   );
 });

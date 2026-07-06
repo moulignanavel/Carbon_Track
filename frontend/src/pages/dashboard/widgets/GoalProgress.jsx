@@ -2,7 +2,7 @@
  * GoalProgress — Monthly budget tracker with circular + bar progress
  */
 import { Target, Calendar, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { Card, Badge } from '@/components/ui';
+import { Card, Badge, CircularProgress, ProgressBar } from '@/components/ui';
 import { formatEmission } from '@/utils/formatters';
 
 function GoalItem({ goal }) {
