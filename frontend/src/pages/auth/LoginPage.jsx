@@ -24,6 +24,7 @@ import { loginSchema }         from '@/utils/validators';
 import { extractErrorMessage } from '@/utils/errorHandler';
 import { getRememberedEmail, hasRememberedEmail } from '@/utils/storage';
 import { Button, Input, Alert } from '@/components/ui';
+import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
 
 export default function LoginPage() {
   const { login }    = useAuth();
@@ -176,6 +177,18 @@ export default function LoginPage() {
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </Button>
         </form>
+
+        {/* Divider */}
+        <div className="my-7 flex items-center gap-3" aria-hidden="true">
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+          <span className="text-xs text-slate-400 dark:text-slate-600 font-medium">OR</span>
+          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+        </div>
+
+        {/* Google Sign In */}
+        <div className="mb-7">
+          <GoogleLoginButton />
+        </div>
 
         {/* Divider */}
         <div className="my-7 flex items-center gap-3" aria-hidden="true">
