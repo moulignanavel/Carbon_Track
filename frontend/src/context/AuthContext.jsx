@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   /* ── helpers ───────────────────────────────────────────────── */
-  const _applyAuth = useCallback((authResponse, remember = false) => {
+  const applyAuth = useCallback((authResponse, remember = false) => {
     const { accessToken, userId, username, role } = authResponse;
     saveToken(accessToken, remember);
     const userInfo = { userId, username, role };
@@ -51,18 +51,18 @@ export function AuthProvider({ children }) {
   /* ── login ─────────────────────────────────────────────────── */
   const login = useCallback(async ({ email, password, rememberMe = false }) => {
     const data = await loginUser({ email, password });
-    _applyAuth(data, rememberMe);
+    applyAuth(data, rememberMe);
 
     // Persist or clear remembered email based on checkbox
     saveRememberedEmail(rememberMe ? email : null);
-  }, [_applyAuth]);
+  }, [applyAuth]);
 
   /* ── register ──────────────────────────────────────────────── */
   const register = useCallback(async ({ username, email, password, orgId }) => {
     const data = await registerUser({ username, email, password, orgId });
     // New accounts always get session storage (no remember-me on signup)
-    _applyAuth(data, false);
-  }, [_applyAuth]);
+    applyAuth(data, false);
+  }, [applyAuth]);
 
   /* ── logout ────────────────────────────────────────────────── */
   const logout = useCallback(() => {
@@ -91,7 +91,8 @@ export function AuthProvider({ children }) {
     register,
     logout,
     updateUser,
-  }), [user, token, isInitialising, login, register, logout, updateUser]);
+    applyAuth,
+  }), [user, token, isInitialising, login, register, logout, updateUser, applyAuth]);
 
   return (
     <AuthContext.Provider value={value}>

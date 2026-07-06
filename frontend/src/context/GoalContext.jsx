@@ -23,6 +23,7 @@ import {
 import toast from 'react-hot-toast';
 import { getGoals, createGoal, updateGoalApi, deleteGoalApi } from '@/api/goalsApi';
 import { formatError } from '@/utils/errorHandler';
+import { useAuth } from '@/context/AuthContext';
 
 const GoalContext = createContext(null);
 
@@ -44,17 +45,22 @@ export function GoalProvider({ children }) {
     }
   }, []);
 
+  const { isLoggedIn } = useAuth();
+
   // Auto-fetch on mount
   useEffect(() => {
-    fetchGoals();
-  }, [fetchGoals]);
+    if (isLoggedIn) {
+      fetchGoals();
+    }
+  }, [fetchGoals, isLoggedIn]);
 
   // Re-fetch goals whenever an activity is logged so progress updates immediately
   useEffect(() => {
+    if (!isLoggedIn) return;
     const handler = () => fetchGoals();
     window.addEventListener('activity-logged', handler);
     return () => window.removeEventListener('activity-logged', handler);
-  }, [fetchGoals]);
+  }, [fetchGoals, isLoggedIn]);
 
   /* ── add ────────────────────────────────────────────────────── */
   const addGoal = useCallback(async (data) => {

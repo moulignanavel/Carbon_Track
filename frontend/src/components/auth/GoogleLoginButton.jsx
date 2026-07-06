@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 /**
  * Google Login Button Component
@@ -7,23 +8,17 @@ import { useNavigate } from 'react-router-dom';
  */
 export default function GoogleLoginButton() {
   const navigate = useNavigate();
+  const { applyAuth } = useAuth();
 
   useEffect(() => {
-    // Load Google Sign-In Script
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    document.head.appendChild(script);
-
-    window.onload = () => {
+    const initializeGoogleButton = () => {
       if (window.google) {
-        google.accounts.id.initialize({
+        window.google.accounts.id.initialize({
           client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
           callback: handleCredentialResponse,
         });
 
-        google.accounts.id.renderButton(
+        window.google.accounts.id.renderButton(
           document.getElementById('google-login-button'),
           {
             theme: 'outline',
@@ -35,8 +30,25 @@ export default function GoogleLoginButton() {
       }
     };
 
+    // If script is already loaded/in head
+    if (window.google) {
+      initializeGoogleButton();
+      return;
+    }
+
+    // Otherwise, load Google Sign-In Script
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.async = true;
+    script.defer = true;
+    script.onload = initializeGoogleButton;
+    document.head.appendChild(script);
+
     return () => {
-      document.head.removeChild(script);
+      // Clean up script only if it was added
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
   }, []);
 
@@ -49,7 +61,7 @@ export default function GoogleLoginButton() {
 
       // Send JWT to backend
       const result = await fetch(
-        `${import.meta.env.VITE_API_BASE_URL}/api/auth/google/verify`,
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/auth/google/verify`,
         {
           method: 'POST',
           headers: {
@@ -67,13 +79,8 @@ export default function GoogleLoginButton() {
 
       const data = await result.json();
 
-      // Store token and user info
-      localStorage.setItem('carbontrack_token', data.accessToken);
-      localStorage.setItem('user', JSON.stringify({
-        userId: data.userId,
-        username: data.username,
-        role: data.role,
-      }));
+      // Store token and user info via AuthContext to sync context state
+      applyAuth(data, false);
 
       // Redirect to dashboard
       navigate('/dashboard');
