@@ -22,14 +22,8 @@ import { useGoals }          from '@/context/GoalContext';
 import { TYPE_MAP }          from '@/constants/activities';
 import { getCommunityLeaderboard } from '@/api/leaderboardApi';
 
-/* ── Mock data (charts only — goals now come from GoalContext) ────────────────── */
-import {
-  MOCK_KPI,
-  MOCK_WEEKLY_TREND,
-  MOCK_MONTHLY_COMPARISON,
-  MOCK_CATEGORY_DATA,
-  MOCK_RECOMMENDATIONS,
-} from '@/data/dashboardMock';
+/* ── Mock data (KPI row and recommendations) ────────────────────────────────── */
+import { MOCK_RECOMMENDATIONS } from '@/data/dashboardMock';
 
 /* ── Chart components ─────────────────────────────────────────── */
 import WeeklyTrendChart      from '@/components/charts/WeeklyTrendChart';
@@ -160,6 +154,146 @@ export default function DashboardPage() {
     });
   }, [logs]);
 
+  // Calculate real Weekly Trend (last 7 days stacked by category)
+  const weeklyTrendData = useMemo(() => {
+    const parseDate = (log) => {
+      const d = log.logDate ?? log.date;
+      if (!d) return null;
+      if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2]);
+      return new Date(d);
+    };
+
+    const days7 = [];
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const recentLogs = logs.filter((l) => {
+      const d = parseDate(l);
+      return d && d >= sevenDaysAgo;
+    });
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayLabel = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+      const dayDateStr = d.toISOString().split('T')[0];
+
+      const dayLogs = recentLogs.filter((l) => {
+        const ld = parseDate(l);
+        return ld && ld.toISOString().split('T')[0] === dayDateStr;
+      });
+
+      const dayObj = {
+        day: dayLabel,
+        transport: 0,
+        energy: 0,
+        food: 0,
+        shopping: 0,
+        other: 0,
+        emissions: 0,
+      };
+
+      for (const l of dayLogs) {
+        const cat = (l.category ?? 'other').toLowerCase();
+        const value = l.calculatedEmissions ?? 0;
+        if (cat in dayObj) {
+          dayObj[cat] += value;
+        } else {
+          dayObj.other += value;
+        }
+        dayObj.emissions += value;
+      }
+      days7.push(dayObj);
+    }
+    return days7;
+  }, [logs]);
+
+  // Calculate real Monthly Comparison (last 6 months vs target)
+  const monthlyCompData = useMemo(() => {
+    const parseDate = (log) => {
+      const d = log.logDate ?? log.date;
+      if (!d) return null;
+      if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2]);
+      return new Date(d);
+    };
+
+    const monthlyComp = [];
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
+      const mEnd   = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+
+      const mLogs = logs.filter((l) => {
+        const ld = parseDate(l);
+        return ld && ld >= mStart && ld <= mEnd;
+      });
+
+      const sum = mLogs.reduce((s, l) => s + (l.calculatedEmissions ?? 0), 0);
+      const targetVal = 150; // default target baseline
+
+      monthlyComp.push({
+        month: d.toLocaleString('default', { month: 'short' }),
+        emissions: parseFloat(sum.toFixed(2)),
+        target: targetVal,
+      });
+    }
+    return monthlyComp;
+  }, [logs]);
+
+  // Calculate Category Pie Data (current month)
+  const categoryData = useMemo(() => {
+    const parseDate = (log) => {
+      const d = log.logDate ?? log.date;
+      if (!d) return null;
+      if (Array.isArray(d)) return new Date(d[0], d[1] - 1, d[2]);
+      return new Date(d);
+    };
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    const mLogs = logs.filter((l) => {
+      const ld = parseDate(l);
+      return ld && ld >= startOfMonth;
+    });
+
+    const catMap = {
+      transport: 0,
+      energy: 0,
+      food: 0,
+      shopping: 0,
+      other: 0,
+    };
+
+    for (const l of mLogs) {
+      const cat = (l.category ?? 'other').toLowerCase();
+      const val = l.calculatedEmissions ?? 0;
+      if (cat in catMap) {
+        catMap[cat] += val;
+      } else {
+        catMap.other += val;
+      }
+    }
+
+    const labels = {
+      transport: 'Transport',
+      energy: 'Energy',
+      food: 'Food',
+      shopping: 'Shopping',
+      other: 'Other',
+    };
+
+    return Object.entries(catMap)
+      .map(([cat, value]) => ({
+        name: labels[cat],
+        value: parseFloat(value.toFixed(2)),
+        category: cat,
+      }))
+      .filter((item) => item.value > 0);
+  }, [logs]);
+
   const globalLoading = logsLoading || leaderboardLoading || goalsLoading;
 
   return (
@@ -220,7 +354,14 @@ export default function DashboardPage() {
                       <Badge variant="green" dot size="sm">Last 7 days</Badge>
                       <span className="text-xs text-slate-400">stacked by category</span>
                     </div>
-                    <WeeklyTrendChart data={MOCK_WEEKLY_TREND} height={272} dailyGoal={5} />
+                    {weeklyTrendData.every(d => d.emissions === 0) ? (
+                      <div className="flex h-[272px] flex-col items-center justify-center text-center p-6 bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl">
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No activity data in the last 7 days</p>
+                        <p className="text-xs text-slate-400 mt-1">Log activities to see your trend</p>
+                      </div>
+                    ) : (
+                      <WeeklyTrendChart data={weeklyTrendData} height={272} dailyGoal={5} />
+                    )}
                   </div>
                 )}
                 {chartTab === 'monthly' && (
@@ -229,7 +370,7 @@ export default function DashboardPage() {
                       <Badge variant="teal" dot size="sm">6-month view</Badge>
                       <span className="text-xs text-slate-400">actual vs target</span>
                     </div>
-                    <MonthlyComparisonChart data={MOCK_MONTHLY_COMPARISON} height={272} />
+                    <MonthlyComparisonChart data={monthlyCompData} height={272} />
                   </div>
                 )}
                 {chartTab === 'category' && (
@@ -238,7 +379,14 @@ export default function DashboardPage() {
                       <Badge variant="purple" dot size="sm">This month</Badge>
                       <span className="text-xs text-slate-400">by emission source</span>
                     </div>
-                    <CategoryPieChart data={MOCK_CATEGORY_DATA} height={272} innerRadius={64} />
+                    {categoryData.length === 0 ? (
+                      <div className="flex h-[272px] flex-col items-center justify-center text-center p-6 bg-slate-50/50 dark:bg-slate-900/50 rounded-2xl">
+                        <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">No category source data</p>
+                        <p className="text-xs text-slate-400 mt-1">Log activities to see your CO₂ breakdown</p>
+                      </div>
+                    ) : (
+                      <CategoryPieChart data={categoryData} height={272} innerRadius={64} />
+                    )}
                   </div>
                 )}
               </>
@@ -287,7 +435,7 @@ export default function DashboardPage() {
         />
         {globalLoading
           ? <ChartSkeleton height={200} />
-          : <MonthlyComparisonChart data={MOCK_MONTHLY_COMPARISON} height={200} />}
+          : <MonthlyComparisonChart data={monthlyCompData} height={200} />}
       </Card>
     </div>
   );

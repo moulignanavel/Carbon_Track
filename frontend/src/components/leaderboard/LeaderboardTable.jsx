@@ -21,7 +21,7 @@ export default function LeaderboardTable({ users = [], currentUserId, isSearchin
     { key: 'username', header: 'User', sortable: true, align: 'left' },
     { 
       key: 'totalEmissionsSaved', 
-      header: 'CO₂ Saved', 
+      header: 'CO₂ Emitted', 
       sortable: true, 
       align: 'center',
       hidden: 'md',
@@ -62,7 +62,7 @@ export default function LeaderboardTable({ users = [], currentUserId, isSearchin
       {/* Mobile CO₂ Legend */}
       <div className="md:hidden bg-slate-50 dark:bg-slate-800/50 border border-t-0 border-slate-200 dark:border-slate-700 rounded-b-xl px-4 py-3">
         <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-2">
-          <Leaf className="w-4 h-4" /> CO₂ Saved (kg) shown in table
+          <Leaf className="w-4 h-4" /> CO₂ Emitted (kg) shown in table
         </p>
       </div>
     </>

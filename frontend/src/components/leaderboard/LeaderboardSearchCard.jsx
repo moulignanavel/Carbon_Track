@@ -44,13 +44,13 @@ export default function LeaderboardSearchCard({ user, highlight = false }) {
           </div>
         </div>
 
-        {/* CO₂ Saved */}
+        {/* CO₂ Emitted */}
         <div className="flex items-center gap-3">
           <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-green-100 dark:bg-green-900/30">
             <Leaf className="w-6 h-6 text-green-600 dark:text-green-400" />
           </div>
           <div>
-            <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-semibold">CO₂ Saved</p>
+            <p className="text-xs text-slate-600 dark:text-slate-400 uppercase font-semibold">CO₂ Emitted</p>
             <p className="text-2xl font-bold text-green-600">
               {user.totalCO2Saved.toLocaleString('en-US', { 
                 maximumFractionDigits: 1 

@@ -58,6 +58,6 @@ public class ActivityLoggingServiceImpl implements ActivityLoggingService {
     @Override
     public List<ActivityLog> getLogsForCurrentUser() {
         User currentUser = securityService.getCurrentUser();
-        return activityLogRepository.findByUserId(currentUser.getId());
+        return activityLogRepository.findByUserIdOrderByIdDesc(currentUser.getId());
     }
 }

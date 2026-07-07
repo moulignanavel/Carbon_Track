@@ -4,9 +4,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Zap } from 'lucide-react';
-import { Card, Button, Modal, Input, Select } from '@/components/ui';
+import toast from 'react-hot-toast';
+
+import { Card, Button, Modal, Input } from '@/components/ui';
 import { MOCK_QUICK_LOG_ITEMS } from '@/data/dashboardMock';
-import { ACTIVITY_CATEGORIES } from '@/constants/activities';
+import { useActivity } from '@/context/ActivityContext';
 
 function QuickButton({ item, onClick }) {
   return (
@@ -32,11 +34,12 @@ function QuickButton({ item, onClick }) {
 
 export default function QuickLog() {
   const navigate = useNavigate();
+  const { addLog } = useActivity();
+  
   const [modalOpen, setModalOpen]   = useState(false);
   const [selectedItem, setSelected] = useState(null);
   const [amount, setAmount]         = useState('');
-  const [selectedCat, setSelectedCat] = useState('');
-  const [selectedType, setSelectedType] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleQuickClick = (item) => {
     if (item.id === 'custom') {
@@ -48,20 +51,29 @@ export default function QuickLog() {
     setModalOpen(true);
   };
 
-  const handleSave = () => {
-    // In production: call addLog() from ActivityContext
-    setModalOpen(false);
-    setSelected(null);
-    setAmount('');
-    navigate('/activities');
+  const handleSave = async () => {
+    if (!selectedItem || !amount) return;
+    setIsSubmitting(true);
+    try {
+      await addLog({
+        category: selectedItem.category,
+        activityType: selectedItem.activityType,
+        quantity: parseFloat(amount),
+        unit: selectedItem.unit,
+        logDate: new Date().toISOString().split('T')[0],
+        notes: `Quick logged via dashboard shortcut`,
+      });
+      toast.success('Activity logged! 🌱');
+      setModalOpen(false);
+      setSelected(null);
+      setAmount('');
+    } catch (err) {
+      toast.error('Failed to log activity');
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
-  const categoryOptions = ACTIVITY_CATEGORIES.map((c) => ({ value: c.value, label: c.label }));
-  const typeOptions = selectedCat
-    ? ACTIVITY_CATEGORIES.find((c) => c.value === selectedCat)?.types?.map((t) => ({ value: t.value, label: t.label })) ?? []
-    : selectedItem
-      ? [{ value: selectedItem.activityType, label: selectedItem.label }]
-      : [];
 
   return (
     <>
@@ -99,12 +111,13 @@ export default function QuickLog() {
         size="sm"
         footer={
           <>
-            <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)}>Cancel</Button>
+            <Button variant="ghost" size="sm" onClick={() => setModalOpen(false)} disabled={isSubmitting}>Cancel</Button>
             <Button
               variant="primary"
               size="sm"
               onClick={handleSave}
-              disabled={!amount}
+              disabled={!amount || isSubmitting}
+              isLoading={isSubmitting}
             >
               Save
             </Button>

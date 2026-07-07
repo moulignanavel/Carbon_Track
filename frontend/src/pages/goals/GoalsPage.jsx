@@ -235,15 +235,58 @@ function GoalCard({ goal, onEdit, onDelete, history }) {
   );
 }
 
+/* ── date range calculation by period ────────────────────────── */
+function getPeriodDates(period) {
+  const now = new Date();
+  let start = new Date();
+  let end = new Date();
+
+  if (period === 'weekly') {
+    const day = now.getDay();
+    const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
+    start.setDate(diffToMonday);
+    end.setDate(diffToMonday + 6);
+  } else if (period === 'monthly') {
+    start = new Date(now.getFullYear(), now.getMonth(), 1);
+    end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  } else if (period === 'quarterly') {
+    const quarter = Math.floor(now.getMonth() / 3);
+    start = new Date(now.getFullYear(), quarter * 3, 1);
+    end = new Date(now.getFullYear(), (quarter + 1) * 3, 0);
+  } else if (period === 'annual') {
+    start = new Date(now.getFullYear(), 0, 1);
+    end = new Date(now.getFullYear(), 11, 31);
+  } else {
+    // daily / custom
+    start = now;
+    end = now;
+  }
+
+  const toDateString = (d) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const date = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${date}`;
+  };
+
+  return {
+    start: toDateString(start),
+    end: toDateString(end),
+  };
+}
+
 /* ══════════════════════════════════════════════════════════════
    Goal Form Modal — create / edit with RHF + Zod
    ══════════════════════════════════════════════════════════════ */
 function GoalFormModal({ isOpen, onClose, onSave, editingGoal }) {
+  const defaultDates = getPeriodDates('monthly');
+
   const {
     register,
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(goalSchema),
@@ -253,10 +296,21 @@ function GoalFormModal({ isOpen, onClose, onSave, editingGoal }) {
       category:    'all',
       period:      'monthly',
       target:      '',
-      startDate:   today,
-      endDate:     today,
+      startDate:   defaultDates.start,
+      endDate:     defaultDates.end,
     },
   });
+
+  const selectedPeriod = watch('period');
+
+  // Sync dates when period selection changes (only if creating a new goal)
+  useEffect(() => {
+    if (!editingGoal && selectedPeriod) {
+      const dates = getPeriodDates(selectedPeriod);
+      setValue('startDate', dates.start);
+      setValue('endDate', dates.end);
+    }
+  }, [selectedPeriod, setValue, editingGoal]);
 
   useEffect(() => {
     if (isOpen) {
@@ -285,6 +339,7 @@ function GoalFormModal({ isOpen, onClose, onSave, editingGoal }) {
           endDate:     formatDateToInput(editingGoal.endDate),
         });
       } else {
+        const defaultDates = getPeriodDates('monthly');
         reset({
           title:       '',
           description: '',

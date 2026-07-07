@@ -13,24 +13,24 @@
  */
 
 import { useEffect } from 'react';
-import { useForm }   from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Mail, Lock, LogIn, ArrowRight } from 'lucide-react';
 
-import { useAuth }             from '@/context/AuthContext';
-import { loginSchema }         from '@/utils/validators';
+import { useAuth } from '@/context/AuthContext';
+import { loginSchema } from '@/utils/validators';
 import { extractErrorMessage } from '@/utils/errorHandler';
 import { getRememberedEmail, hasRememberedEmail } from '@/utils/storage';
 import { Button, Input, Alert } from '@/components/ui';
 import GoogleLoginButton from '@/components/auth/GoogleLoginButton';
 
 export default function LoginPage() {
-  const { login }    = useAuth();
-  const navigate     = useNavigate();
-  const location     = useLocation();
-  const [params]     = useSearchParams();
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [params] = useSearchParams();
 
   const from = location.state?.from?.pathname ?? '/dashboard';
   const sessionExpired = params.get('reason') === 'session_expired';
@@ -44,8 +44,8 @@ export default function LoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email:      getRememberedEmail(),
-      password:   '',
+      email: getRememberedEmail(),
+      password: '',
       rememberMe: hasRememberedEmail(),
     },
   });
@@ -59,8 +59,8 @@ export default function LoginPage() {
   const onSubmit = async (data) => {
     try {
       await login({
-        email:      data.email,
-        password:   data.password,
+        email: data.email,
+        password: data.password,
         rememberMe: data.rememberMe,
       });
       toast.success('Welcome back! 👋', { id: 'login-success' });
@@ -73,15 +73,15 @@ export default function LoginPage() {
   return (
     <div className="slide-up">
       {/* ── Card ─────────────────────────────────────────────── */}
-      <div className="card p-8 sm:p-10 shadow-lg">
+      <div className="bg-emerald-900/40 backdrop-blur-md border border-emerald-700/40 rounded-3xl p-8 sm:p-10 shadow-lg shadow-emerald-950/50 text-white">
 
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900/40 dark:to-teal-900/40 mb-4">
-            <LogIn className="h-6 w-6 text-green-600 dark:text-green-400" aria-hidden="true" />
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-800/80 border border-emerald-600/50 shadow-inner mb-4">
+            <LogIn className="h-6 w-6 text-emerald-300" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Welcome back</h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-bold text-white">Welcome back</h1>
+          <p className="mt-1.5 text-sm text-emerald-100/80">
             Sign in to your CarbonTrack account
           </p>
         </div>
@@ -126,14 +126,14 @@ export default function LoginPage() {
             <div className="flex items-center justify-between mb-1.5">
               <label
                 htmlFor="login-password"
-                className="form-label !mb-0"
+                className="form-label !mb-0 text-emerald-50"
               >
                 Password
-                <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>
+                <span className="ml-0.5 text-red-400" aria-hidden="true">*</span>
               </label>
               <Link
                 to="/forgot-password"
-                className="text-xs font-medium text-green-600 dark:text-green-400 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500 rounded"
+                className="text-xs font-medium text-emerald-300 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
                 tabIndex={0}
               >
                 Forgot password?
@@ -156,10 +156,10 @@ export default function LoginPage() {
             <input
               type="checkbox"
               id="rememberMe"
-              className="h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-green-600 focus:ring-green-500 dark:bg-slate-900 cursor-pointer"
+              className="h-4 w-4 rounded border-emerald-600/50 bg-emerald-950/50 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
               {...register('rememberMe')}
             />
-            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">
+            <span className="text-sm text-emerald-100/70 group-hover:text-white transition-colors">
               Remember me for 30 days
             </span>
           </label>
@@ -172,7 +172,7 @@ export default function LoginPage() {
             fullWidth
             isLoading={isSubmitting}
             rightIcon={!isSubmitting ? <ArrowRight className="h-4 w-4" /> : undefined}
-            className="mt-2"
+            className="mt-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-400/30 font-bold"
           >
             {isSubmitting ? 'Signing in…' : 'Sign in'}
           </Button>
@@ -180,29 +180,29 @@ export default function LoginPage() {
 
         {/* Divider */}
         <div className="my-7 flex items-center gap-3" aria-hidden="true">
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-          <span className="text-xs text-slate-400 dark:text-slate-600 font-medium">OR</span>
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+          <div className="flex-1 h-px bg-emerald-800/50" />
+          <span className="text-xs text-emerald-500/80 font-medium">OR</span>
+          <div className="flex-1 h-px bg-emerald-800/50" />
         </div>
 
         {/* Google Sign In */}
-        <div className="mb-7">
+        <div className="mb-7 flex justify-center">
           <GoogleLoginButton />
         </div>
 
         {/* Divider */}
         <div className="my-7 flex items-center gap-3" aria-hidden="true">
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-          <span className="text-xs text-slate-400 dark:text-slate-600 font-medium">OR</span>
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+          <div className="flex-1 h-px bg-emerald-800/50" />
+          <span className="text-xs text-emerald-500/80 font-medium">OR</span>
+          <div className="flex-1 h-px bg-emerald-800/50" />
         </div>
 
         {/* Register link */}
-        <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-center text-sm text-emerald-100/80">
           Don&apos;t have an account?{' '}
           <Link
             to="/register"
-            className="font-semibold text-green-600 dark:text-green-400 hover:underline"
+            className="font-semibold text-emerald-300 hover:underline"
           >
             Create one for free
           </Link>

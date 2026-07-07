@@ -38,6 +38,7 @@ const CommunityLeaderboardPage = lazy(() => import('@/pages/community/CommunityL
 const OrganisationDashboardPage = lazy(() => import('@/pages/admin/OrganisationDashboardPage'));
 const SettingsPage       = lazy(() => import('@/pages/settings/SettingsPage'));
 const AdminPage          = lazy(() => import('@/pages/admin/AdminPage'));
+const LandingPage        = lazy(() => import('@/pages/landing/LandingPage'));
 
 function PageFallback() {
   return <Spinner fullPage label="Loading page…" />;
@@ -48,7 +49,7 @@ export default function AppRouter() {
     <Suspense fallback={<PageFallback />}>
       <Routes>
         {/* Root */}
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<LandingPage />} />
 
         {/* ── Public-only auth routes ───────────────────────── */}
         <Route

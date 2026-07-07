@@ -176,20 +176,40 @@ function useAnalytics(logs, period) {
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
     const recent7 = logs.filter((l) => parseDate(l) >= sevenDaysAgo);
-    const days7 = {};
+    
+    const days7 = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const key = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
-      if (!days7[key]) days7[key] = { label: key };
+      const dayLabel = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+      const dayDateStr = d.toISOString().split('T')[0];
+
+      const dayLogs = recent7.filter((l) => {
+        const ld = parseDate(l);
+        return ld && ld.toISOString().split('T')[0] === dayDateStr;
+      });
+
+      const dayObj = {
+        day: dayLabel,
+        transport: 0,
+        energy: 0,
+        food: 0,
+        shopping: 0,
+        other: 0,
+      };
+
+      for (const l of dayLogs) {
+        const cat = (l.category ?? 'other').toLowerCase();
+        const value = l.calculatedEmissions ?? l.co2eKg ?? 0;
+        if (cat in dayObj) {
+          dayObj[cat] += value;
+        } else {
+          dayObj.other += value;
+        }
+      }
+      days7.push(dayObj);
     }
-    for (const l of recent7) {
-      const key = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][parseDate(l).getDay()];
-      const cat = (l.category ?? 'other').toLowerCase();
-      if (!days7[key]) days7[key] = { label: key };
-      days7[key][cat] = (days7[key][cat] ?? 0) + (l.calculatedEmissions ?? l.co2eKg ?? 0);
-    }
-    const weeklyTrendData = Object.values(days7);
+    const weeklyTrendData = days7;
 
     /* Monthly comparison — last 6 months */
     const monthlyComp = [];

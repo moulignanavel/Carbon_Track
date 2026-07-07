@@ -139,9 +139,8 @@ public class LeaderboardController {
                     .mapToDouble(ActivityLog::getCalculatedEmissions)
                     .sum();
 
-            // Total CO2 saved calculation: 150 kg baseline minus actual emissions. Capped at 150.
-            // If they have no activities, they haven't saved anything (0.0).
-            double totalCO2Saved = activityCount > 0 ? Math.max(0.0, 150.0 - totalEmissions) : 0.0;
+            // Total CO2 emitted: sum of actual logged emissions
+            double totalCO2Emitted = totalEmissions;
 
             List<UserBadge> userBadges = userBadgesByUser.getOrDefault(user.getId(), Collections.emptyList());
             List<String> badges = userBadges.stream()
@@ -156,20 +155,26 @@ public class LeaderboardController {
                     user.getId(),
                     user.getUsername(),
                     0, // rank will be computed after sorting
-                    totalCO2Saved,
-                    totalCO2Saved, // totalEmissionsSaved
+                    totalCO2Emitted,
+                    totalCO2Emitted, // totalEmissionsSaved
                     activityCount,
                     badges,
                     badge
             ));
         }
 
-        // Sort by totalCO2Saved desc, then activityCount desc, then username asc
+        // Sort: active users (activityCount > 0) come first, sorted by emissions ascending (lowest emissions first).
+        // Inactive users come last, sorted alphabetically by username.
         responseList.sort((a, b) -> {
-            int cmp = Double.compare(b.getTotalCO2Saved(), a.getTotalCO2Saved());
-            if (cmp != 0) return cmp;
-            int countCmp = Integer.compare(b.getActivityCount(), a.getActivityCount());
-            if (countCmp != 0) return countCmp;
+            boolean aActive = a.getActivityCount() > 0;
+            boolean bActive = b.getActivityCount() > 0;
+            if (aActive && !bActive) return -1;
+            if (!aActive && bActive) return 1;
+            if (aActive && bActive) {
+                int cmp = Double.compare(a.getTotalCO2Saved(), b.getTotalCO2Saved());
+                if (cmp != 0) return cmp;
+                return a.getUsername().compareToIgnoreCase(b.getUsername());
+            }
             return a.getUsername().compareToIgnoreCase(b.getUsername());
         });
 

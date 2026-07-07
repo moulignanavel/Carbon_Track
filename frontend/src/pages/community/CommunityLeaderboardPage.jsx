@@ -98,7 +98,7 @@ export default function CommunityLeaderboardPage() {
           </h1>
         </div>
         <p className="text-slate-600 dark:text-slate-400">
-          Join the movement to reduce carbon emissions. See who's saving the most CO₂.
+          Join the movement to reduce carbon emissions. See who has the lowest carbon footprint.
         </p>
       </div>
 

@@ -48,11 +48,11 @@ export default function LeaderboardTopThree({ users = [] }) {
                 </p>
               </div>
 
-              {/* CO₂ Saved */}
+              {/* CO₂ Emitted */}
               <div className="flex items-center gap-2 mb-3">
                 <Leaf className="w-5 h-5 text-green-600" />
                 <div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400">CO₂ Saved</p>
+                  <p className="text-xs text-slate-600 dark:text-slate-400">CO₂ Emitted</p>
                   <p className="text-2xl font-bold text-green-600">
                     {user.totalCO2Saved.toLocaleString('en-US', { 
                       maximumFractionDigits: 1 

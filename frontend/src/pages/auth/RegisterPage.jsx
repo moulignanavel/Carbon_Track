@@ -11,21 +11,21 @@
  *  • Accessible labels, ARIA
  */
 
-import { useForm }  from 'react-hook-form';import { zodResolver } from '@hookform/resolvers/zod';
+import { useForm } from 'react-hook-form'; import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { Mail, Lock, User, UserPlus, Check, X } from 'lucide-react';
 
-import { useAuth }             from '@/context/AuthContext';
-import { registerSchema }      from '@/utils/validators';
+import { useAuth } from '@/context/AuthContext';
+import { registerSchema } from '@/utils/validators';
 import { extractErrorMessage } from '@/utils/errorHandler';
 import { Button, Input, Alert } from '@/components/ui';
 
 /* ── Password strength helpers ───────────────────────────────── */
 const REQUIREMENTS = [
-  { id: 'length',  label: 'At least 8 characters',       test: (p) => p.length >= 8          },
-  { id: 'upper',   label: 'One uppercase letter',         test: (p) => /[A-Z]/.test(p)        },
-  { id: 'number',  label: 'One number',                   test: (p) => /[0-9]/.test(p)        },
+  { id: 'length', label: 'At least 8 characters', test: (p) => p.length >= 8 },
+  { id: 'upper', label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
+  { id: 'number', label: 'One number', test: (p) => /[0-9]/.test(p) },
   { id: 'special', label: 'One special character (!@#…)', test: (p) => /[^A-Za-z0-9]/.test(p) },
 ];
 
@@ -36,7 +36,7 @@ function getStrength(password) {
 
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
 const STRENGTH_COLORS = {
-  bar:  ['', 'bg-red-400', 'bg-amber-400', 'bg-teal-400', 'bg-green-500'],
+  bar: ['', 'bg-red-400', 'bg-amber-400', 'bg-teal-400', 'bg-green-500'],
   text: ['', 'text-red-500', 'text-amber-500', 'text-teal-500', 'text-green-600'],
 };
 
@@ -51,14 +51,13 @@ function PasswordStrength({ password }) {
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-              i <= strength ? STRENGTH_COLORS.bar[strength] : 'bg-slate-200 dark:bg-slate-700'
-            }`}
+            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= strength ? STRENGTH_COLORS.bar[strength] : 'bg-slate-200 dark:bg-slate-700'
+              }`}
           />
         ))}
       </div>
       <p className={`text-xs font-semibold ${STRENGTH_COLORS.text[strength]}`}
-         aria-live="polite">
+        aria-live="polite">
         Password strength: {STRENGTH_LABELS[strength]}
       </p>
 
@@ -70,7 +69,7 @@ function PasswordStrength({ password }) {
             <li key={req.id} className={`flex items-center gap-1.5 text-[11px] ${met ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-600'}`}>
               {met
                 ? <Check className="h-3 w-3 shrink-0" aria-hidden="true" />
-                : <X     className="h-3 w-3 shrink-0" aria-hidden="true" />}
+                : <X className="h-3 w-3 shrink-0" aria-hidden="true" />}
               {req.label}
             </li>
           );
@@ -94,11 +93,11 @@ export default function RegisterPage() {
   } = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username:       '',
-      email:          '',
-      password:       '',
-      confirmPassword:'',
-      acceptTerms:    false,
+      username: '',
+      email: '',
+      password: '',
+      confirmPassword: '',
+      acceptTerms: false,
     },
   });
 
@@ -108,7 +107,7 @@ export default function RegisterPage() {
     try {
       await registerUserAccount({
         username: data.username,
-        email:    data.email,
+        email: data.email,
         password: data.password,
       });
       toast.success('Account created! Welcome aboard 🌱', { id: 'register-success' });
@@ -120,15 +119,15 @@ export default function RegisterPage() {
 
   return (
     <div className="slide-up">
-      <div className="card p-8 sm:p-10 shadow-lg">
+      <div className="bg-emerald-900/40 backdrop-blur-md border border-emerald-700/40 rounded-3xl p-8 sm:p-10 shadow-lg shadow-emerald-950/50 text-white">
 
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-green-100 to-teal-100 dark:from-green-900/40 dark:to-teal-900/40 mb-4">
-            <UserPlus className="h-6 w-6 text-green-600 dark:text-green-400" aria-hidden="true" />
+          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-800/80 border border-emerald-600/50 shadow-inner mb-4">
+            <UserPlus className="h-6 w-6 text-emerald-300" aria-hidden="true" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Create your account</h1>
-          <p className="mt-1.5 text-sm text-slate-500 dark:text-slate-400">
+          <h1 className="text-2xl font-bold text-white">Create your account</h1>
+          <p className="mt-1.5 text-sm text-emerald-100/80">
             Join thousands tracking their carbon footprint
           </p>
         </div>
@@ -209,14 +208,14 @@ export default function RegisterPage() {
               <input
                 type="checkbox"
                 id="acceptTerms"
-                className="mt-0.5 h-4 w-4 rounded border-slate-300 dark:border-slate-600 text-green-600 focus:ring-green-500 dark:bg-slate-900 cursor-pointer shrink-0"
+                className="mt-0.5 h-4 w-4 rounded border-emerald-600/50 bg-emerald-950/50 text-emerald-500 focus:ring-emerald-500 cursor-pointer shrink-0"
                 {...register('acceptTerms')}
               />
-              <span className="text-sm text-slate-600 dark:text-slate-400 leading-snug">
+              <span className="text-sm text-emerald-100/80 leading-snug">
                 I agree to the{' '}
                 <Link
                   to="#"
-                  className="font-semibold text-green-600 dark:text-green-400 hover:underline"
+                  className="font-semibold text-emerald-300 hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Terms of Service
@@ -224,7 +223,7 @@ export default function RegisterPage() {
                 {' '}and{' '}
                 <Link
                   to="#"
-                  className="font-semibold text-green-600 dark:text-green-400 hover:underline"
+                  className="font-semibold text-emerald-300 hover:underline"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Privacy Policy
@@ -245,7 +244,7 @@ export default function RegisterPage() {
             size="lg"
             fullWidth
             isLoading={isSubmitting}
-            className="mt-2"
+            className="mt-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-400/30 font-bold"
           >
             {isSubmitting ? 'Creating account…' : 'Create free account'}
           </Button>
@@ -253,17 +252,17 @@ export default function RegisterPage() {
 
         {/* Divider */}
         <div className="my-7 flex items-center gap-3" aria-hidden="true">
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
-          <span className="text-xs text-slate-400 dark:text-slate-600 font-medium">OR</span>
-          <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800" />
+          <div className="flex-1 h-px bg-emerald-800/50" />
+          <span className="text-xs text-emerald-500/80 font-medium">OR</span>
+          <div className="flex-1 h-px bg-emerald-800/50" />
         </div>
 
         {/* Login link */}
-        <p className="text-center text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-center text-sm text-emerald-100/80">
           Already have an account?{' '}
           <Link
             to="/login"
-            className="font-semibold text-green-600 dark:text-green-400 hover:underline"
+            className="font-semibold text-emerald-300 hover:underline"
           >
             Sign in
           </Link>

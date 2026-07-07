@@ -1,6 +1,6 @@
 package com.carbontrack.backend.controller;
 
-import com.carbontrack.backend.dto.ActivityLogRequest;
+import com.carbontrack.backend.dto.*;
 import com.carbontrack.backend.service.ActivityLoggingService;
 import com.carbontrack.backend.security.JwtAuthFilter;
 import com.carbontrack.backend.security.UserDetailsServiceImpl;
@@ -40,10 +40,13 @@ class ActivityLoggingControllerTest {
 
     @Test
     @WithMockUser
-    void whenValidInput_thenReturns200() throws Exception {
-        ActivityLogRequest request = new ActivityLogRequest("transport", "car", 15.5, "km", LocalDate.now());
+    void whenValidTransportInput_thenReturns200() throws Exception {
+        TransportLogRequest request = new TransportLogRequest();
+        request.setTransportMode("car");
+        request.setDistance(15.5);
+        request.setLogDate(LocalDate.now());
 
-        mockMvc.perform(post("/api/activity-logs")
+        mockMvc.perform(post("/api/activity-logs/transport")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -52,10 +55,13 @@ class ActivityLoggingControllerTest {
 
     @Test
     @WithMockUser
-    void whenInvalidCategory_thenReturns400() throws Exception {
-        ActivityLogRequest request = new ActivityLogRequest("invalid-category", "car", 15.5, "km", LocalDate.now());
+    void whenInvalidTransportMode_thenReturns400() throws Exception {
+        TransportLogRequest request = new TransportLogRequest();
+        request.setTransportMode("invalid-mode");
+        request.setDistance(15.5);
+        request.setLogDate(LocalDate.now());
 
-        mockMvc.perform(post("/api/activity-logs")
+        mockMvc.perform(post("/api/activity-logs/transport")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -64,10 +70,13 @@ class ActivityLoggingControllerTest {
 
     @Test
     @WithMockUser
-    void whenNegativeQuantity_thenReturns400() throws Exception {
-        ActivityLogRequest request = new ActivityLogRequest("transport", "car", -1.0, "km", LocalDate.now());
+    void whenNegativeDistance_thenReturns400() throws Exception {
+        TransportLogRequest request = new TransportLogRequest();
+        request.setTransportMode("car");
+        request.setDistance(-1.0);
+        request.setLogDate(LocalDate.now());
 
-        mockMvc.perform(post("/api/activity-logs")
+        mockMvc.perform(post("/api/activity-logs/transport")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
@@ -76,13 +85,47 @@ class ActivityLoggingControllerTest {
 
     @Test
     @WithMockUser
-    void whenBlankActivityType_thenReturns400() throws Exception {
-        ActivityLogRequest request = new ActivityLogRequest("transport", "", 10.0, "km", LocalDate.now());
+    void whenValidElectricityInput_thenReturns200() throws Exception {
+        ElectricityLogRequest request = new ElectricityLogRequest();
+        request.setEnergySource("grid");
+        request.setKwhConsumed(50.0);
+        request.setLogDate(LocalDate.now());
 
-        mockMvc.perform(post("/api/activity-logs")
+        mockMvc.perform(post("/api/activity-logs/electricity")
                 .with(csrf())
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void whenValidFoodInput_thenReturns200() throws Exception {
+        FoodLogRequest request = new FoodLogRequest();
+        request.setMealType("meat");
+        request.setServings(2.0);
+        request.setLogDate(LocalDate.now());
+
+        mockMvc.perform(post("/api/activity-logs/food")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser
+    void whenValidShoppingInput_thenReturns200() throws Exception {
+        ShoppingLogRequest request = new ShoppingLogRequest();
+        request.setProductCategory("clothing");
+        request.setSpendAmount(150.0);
+        request.setCurrency("USD");
+        request.setLogDate(LocalDate.now());
+
+        mockMvc.perform(post("/api/activity-logs/shopping")
+                .with(csrf())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk());
     }
 }

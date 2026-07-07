@@ -14,7 +14,7 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
-  
+
   // Build optimization
   build: {
     // Rollup options for code splitting
@@ -31,7 +31,7 @@ export default defineConfig({
             if (id.includes('react-router-dom')) return 'vendor-router';
             return 'vendor';
           }
-          
+
           // Feature chunks — improves initial load by lazy loading
           if (id.includes('/components/charts/')) return 'chunks-charts';
           if (id.includes('/components/ui/')) return 'chunks-ui';
@@ -42,15 +42,19 @@ export default defineConfig({
         },
       },
     },
-    
+
     // Performance monitoring
     reportCompressedSize: true,
     chunkSizeWarningLimit: 500, // 500KB warning threshold
   },
-  
+
   // Dev server
   server: {
     port: 5173,
+    // headers: {
+    //   'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
+    //   'Referrer-Policy': 'no-referrer-when-downgrade',
+    // },
     proxy: {
       '/api': {
         target: 'http://localhost:8080',
@@ -58,7 +62,7 @@ export default defineConfig({
       },
     },
   },
-  
+
   // CSS optimization
   css: {
     preprocessorOptions: {

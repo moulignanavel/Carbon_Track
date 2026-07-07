@@ -12,7 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { useForm }  from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -20,13 +20,13 @@ import { Mail, ArrowLeft, Send, CheckCircle2, RefreshCw } from 'lucide-react';
 
 import { requestPasswordReset } from '@/api/authApi';
 import { forgotPasswordSchema } from '@/utils/validators';
-import { extractErrorMessage }  from '@/utils/errorHandler';
+import { extractErrorMessage } from '@/utils/errorHandler';
 import { Button, Input, Alert } from '@/components/ui';
 
 const REDIRECT_DELAY = 30; // seconds before auto-redirect to login
 
 export default function ForgotPasswordPage() {
-  const navigate  = useNavigate();
+  const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
   const [sentEmail, setSentEmail] = useState('');
   const [countdown, setCountdown] = useState(REDIRECT_DELAY);

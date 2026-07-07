@@ -12,7 +12,7 @@ import java.util.List;
 @Repository
 public interface ActivityLogRepository extends JpaRepository<ActivityLog, Long> {
 
-    List<ActivityLog> findByUserId(Long userId);
+    List<ActivityLog> findByUserIdOrderByIdDesc(Long userId);
 
     /**
      * Sum emissions for a user within a date range across ALL categories.

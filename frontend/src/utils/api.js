@@ -123,15 +123,30 @@ export const api = {
   },
 
   createLog: async (category, activityType, quantity, unit, logDate) => {
-    return await request('/api/activity-logs', {
+    const endpoint = `/api/activity-logs/${category.toLowerCase()}`;
+    let body = {};
+    const qty = parseFloat(quantity);
+
+    switch (category.toLowerCase()) {
+      case 'transport':
+        body = { transportMode: activityType, distance: qty, logDate };
+        break;
+      case 'electricity':
+        body = { energySource: activityType, kwhConsumed: qty, logDate };
+        break;
+      case 'food':
+        body = { mealType: activityType, servings: qty, logDate };
+        break;
+      case 'shopping':
+        body = { productCategory: activityType, spendAmount: qty, currency: unit || 'USD', logDate };
+        break;
+      default:
+        throw new Error("Invalid category");
+    }
+
+    return await request(endpoint, {
       method: 'POST',
-      body: JSON.stringify({
-        category,
-        activityType,
-        quantity: parseFloat(quantity),
-        unit,
-        logDate,
-      }),
+      body: JSON.stringify(body),
     });
   },
 };
