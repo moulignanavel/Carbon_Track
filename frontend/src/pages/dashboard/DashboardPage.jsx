@@ -22,8 +22,7 @@ import { useGoals }          from '@/context/GoalContext';
 import { TYPE_MAP }          from '@/constants/activities';
 import { getCommunityLeaderboard } from '@/api/leaderboardApi';
 
-/* ── Mock data (KPI row and recommendations) ────────────────────────────────── */
-import { MOCK_RECOMMENDATIONS } from '@/data/dashboardMock';
+
 
 /* ── Chart components ─────────────────────────────────────────── */
 import WeeklyTrendChart      from '@/components/charts/WeeklyTrendChart';
@@ -35,7 +34,6 @@ import WelcomeBanner    from './widgets/WelcomeBanner';
 import KpiRow           from './widgets/KpiRow';
 import GoalProgress     from './widgets/GoalProgress';
 import RecentActivities from './widgets/RecentActivities';
-import QuickLog         from './widgets/QuickLog';
 import Recommendations  from './widgets/Recommendations';
 import Leaderboard      from './widgets/Leaderboard';
 
@@ -310,12 +308,7 @@ export default function DashboardPage() {
       <KpiRow kpi={realKpi} isLoading={globalLoading} />
 
       {/* ════════════════════════════════════════════════════════
-          3 · QUICK LOG  (full width)
-          ════════════════════════════════════════════════════════ */}
-      <QuickLog />
-
-      {/* ════════════════════════════════════════════════════════
-          4 · MAIN CONTENT GRID
+          3 · MAIN CONTENT GRID
               Desktop  → 3 cols [chart×2 | goal progress]
               Tablet   → 2 cols [chart×1 | goal progress] stacked
               Mobile   → 1 col  fully stacked
@@ -409,7 +402,7 @@ export default function DashboardPage() {
         {/* ── Right sidebar block ─────────────────────────────── */}
         <div className="space-y-6">
           <GoalProgress goals={goals} isLoading={globalLoading} />
-          <Recommendations recommendations={MOCK_RECOMMENDATIONS} isLoading={globalLoading} />
+          <Recommendations recommendations={[]} isLoading={globalLoading} />
         </div>
       </div>
  

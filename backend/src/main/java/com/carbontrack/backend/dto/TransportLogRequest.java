@@ -9,7 +9,6 @@ import java.time.LocalDate;
 public class TransportLogRequest {
 
     @NotBlank(message = "Transport mode is required")
-    @Pattern(regexp = "^(?i)(car|flight|public_transit)$", message = "Transport mode must be car, flight, or public_transit")
     private String transportMode;
 
     @NotNull(message = "Distance is required")

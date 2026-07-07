@@ -23,36 +23,7 @@ export default function RecommendationsPage() {
       // TODO: Replace with actual API call
       // const data = await recommendationsService.getRecommendations();
       
-      // Mock data for now
-      setRecommendations([
-        {
-          id: 1,
-          title: 'Switch to Public Transport',
-          description: 'Your car trips account for 40% of your emissions. Consider using public transport 3 days a week.',
-          impact: 'Save ~2.5 kg CO₂/week',
-          difficulty: 'Easy',
-          category: 'Transportation',
-          icon: '🚌'
-        },
-        {
-          id: 2,
-          title: 'Reduce Meat Consumption',
-          description: 'Meat-heavy meals contribute significantly to your carbon footprint. Try 1-2 plant-based days per week.',
-          impact: 'Save ~0.8 kg CO₂/week',
-          difficulty: 'Medium',
-          category: 'Food',
-          icon: '🥗'
-        },
-        {
-          id: 3,
-          title: 'Energy Efficiency at Home',
-          description: 'Installing LED bulbs and improving insulation can reduce your home energy consumption.',
-          impact: 'Save ~1.2 kg CO₂/week',
-          difficulty: 'Hard',
-          category: 'Energy',
-          icon: '💡'
-        },
-      ]);
+      setRecommendations([]);
     } catch (error) {
       console.error('Failed to load recommendations:', error);
     } finally {

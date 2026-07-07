@@ -33,11 +33,32 @@ export async function getActivityLogs() {
  * @returns {Promise<ActivityLog>}
  */
 export async function createActivityLog(logData) {
-  const payload = {
-    ...logData,
-    quantity: logData.amount,
-  };
-  const response = await axiosInstance.post('/activity-logs', payload);
+  const category = logData.category.toLowerCase();
+  const endpoint = `/activity-logs/${category}`;
+  let payload = {};
+  const qty = parseFloat(logData.amount || logData.quantity);
+
+  switch (category) {
+    case 'transport':
+      payload = { transportMode: logData.activityType, distance: qty, logDate: logData.logDate, notes: logData.notes };
+      break;
+    case 'energy':
+    case 'electricity':
+      payload = { energySource: logData.activityType, kwhConsumed: qty, logDate: logData.logDate, notes: logData.notes };
+      // Override endpoint to use electricity since energy is just a UI alias
+      endpoint = '/activity-logs/electricity';
+      break;
+    case 'food':
+      payload = { mealType: logData.activityType, servings: qty, logDate: logData.logDate, notes: logData.notes };
+      break;
+    case 'shopping':
+      payload = { productCategory: logData.activityType, spendAmount: qty, currency: logData.unit || 'USD', logDate: logData.logDate, notes: logData.notes };
+      break;
+    default:
+      throw new Error("Invalid category: " + category);
+  }
+
+  const response = await axiosInstance.post(endpoint, payload);
   return response.data;
 }
 

@@ -1,11 +1,7 @@
 import { ShieldCheck, Users, Activity, Database } from 'lucide-react';
 import { Card, Badge, StatCard, Alert } from '@/components/ui';
 
-const MOCK_USERS = [
-  { id: 1, username: 'alice',  email: 'alice@co.com',  role: 'USER',  logs: 24, joined: '2025-01-10' },
-  { id: 2, username: 'bob',    email: 'bob@co.com',    role: 'USER',  logs: 8,  joined: '2025-03-02' },
-  { id: 3, username: 'carol',  email: 'carol@co.com',  role: 'ADMIN', logs: 41, joined: '2024-12-01' },
-];
+const MOCK_USERS = [];
 
 export default function AdminPage() {
   return (
