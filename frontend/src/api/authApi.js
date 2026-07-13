@@ -103,8 +103,8 @@ export async function requestPasswordReset(payload) {
  */
 export async function resetPassword(payload) {
   const { data } = await axiosInstance.post('/auth/reset-password', {
-    token:    payload.token,
-    password: payload.password,
+    token:       payload.token,
+    newPassword: payload.password,
   });
   return data;
 }

@@ -1,4 +1,7 @@
 import axiosInstance from './axiosInstance';
+import axios from 'axios';
+import { env } from '@/config/env';
+import { getToken } from '@/utils/storage';
 
 /**
  * User API service
@@ -28,6 +31,25 @@ export async function getMyProfile() {
  */
 export async function updateMyProfile(data) {
   const response = await axiosInstance.put('/users/profile', data);
+  return response.data;
+}
+
+/**
+ * Upload user avatar
+ * @param {File} file
+ * @returns {Promise<UserProfile>}
+ */
+export async function uploadAvatar(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  const token = getToken();
+  const response = await axios.post(`${env.api.baseURL}/api/users/me/avatar`, formData, {
+    headers: {
+      'Authorization': `Bearer ${token}`
+      // Not setting Content-Type lets the browser/axios automatically set multipart/form-data with the correct boundary
+    }
+  });
   return response.data;
 }
 

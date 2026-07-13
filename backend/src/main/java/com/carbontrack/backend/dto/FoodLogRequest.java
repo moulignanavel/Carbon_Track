@@ -10,9 +10,12 @@ public class FoodLogRequest {
     @NotBlank(message = "Meal type is required")
     private String mealType;
 
-    @NotNull(message = "Servings count is required")
-    @PositiveOrZero(message = "Servings must be non-negative")
-    private Double servings;
+    @NotNull(message = "Amount is required")
+    @PositiveOrZero(message = "Amount must be non-negative")
+    private Double amount;
+
+    @NotBlank(message = "Unit is required")
+    private String unit;
 
     @NotNull(message = "Log date is required")
     private LocalDate logDate;
@@ -24,8 +27,11 @@ public class FoodLogRequest {
     public String getMealType() { return mealType; }
     public void setMealType(String mealType) { this.mealType = mealType; }
 
-    public Double getServings() { return servings; }
-    public void setServings(Double servings) { this.servings = servings; }
+    public Double getAmount() { return amount; }
+    public void setAmount(Double amount) { this.amount = amount; }
+
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
 
     public LocalDate getLogDate() { return logDate; }
     public void setLogDate(LocalDate logDate) { this.logDate = logDate; }

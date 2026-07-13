@@ -13,4 +13,6 @@ public class UserProfileResponse {
     private String email;
     private String role;
     private SustainabilityPreferences sustainabilityPreferences;
+    private String avatarUrl;
+    private java.util.List<String> badges;
 }

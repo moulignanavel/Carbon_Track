@@ -96,8 +96,12 @@ export default function TopBar({ onMenuClick, title }) {
           className="flex items-center gap-2 rounded-xl px-2 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           aria-label="Account menu"
         >
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-teal-500 text-white text-xs font-bold uppercase">
-            {user?.username?.charAt(0) ?? 'U'}
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-teal-500 text-white text-xs font-bold uppercase overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={`http://localhost:8080${user.avatarUrl}`} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              user?.username?.charAt(0) ?? 'U'
+            )}
           </div>
           <span className="hidden md:block text-sm font-medium text-slate-700 dark:text-slate-300 max-w-[96px] truncate">
             {user?.username}

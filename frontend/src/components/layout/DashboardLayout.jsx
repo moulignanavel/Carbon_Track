@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Sidebar    from './Sidebar';
@@ -13,12 +13,16 @@ const PAGE_TITLES = {
   '/reports':    'Reports',
   '/settings':   'Settings',
   '/admin':      'Admin',
+  '/badges':     'Trophy Room',
 };
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
   const { pathname } = useLocation();
   const title = PAGE_TITLES[pathname] ?? '';
+
+
 
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950">

@@ -27,8 +27,7 @@ export default function WelcomeBanner({ user, kpi }) {
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-6 md:p-7"
-      style={{ background: 'linear-gradient(135deg, #14532d 0%, #166534 40%, #0f766e 100%)' }}
+      className="relative overflow-hidden rounded-2xl p-6 md:p-7 bg-gradient-to-br from-green-900 via-green-800 to-green-700"
     >
       {/* Background decorations */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">

@@ -26,8 +26,9 @@ export default function LeaderboardTopThree({ users = [] }) {
         return (
           <div
             key={user.userId}
+            onClick={() => window.dispatchEvent(new CustomEvent('open-badge-sidebar', { detail: user }))}
             className={`
-              relative overflow-hidden rounded-2xl border-2 p-6 transition-all
+              relative overflow-hidden rounded-2xl border-2 p-6 transition-all cursor-pointer
               ${medal.bg} ${medal.border}
               hover:shadow-lg hover:scale-105 transform duration-200
               dark:shadow-lg shadow-md

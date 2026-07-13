@@ -81,7 +81,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Permit all auth endpoints and OAuth2 endpoints
                         .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/error", "/error/**", 
-                                       "/login/**", "/oauth2/**", "/h2-console/**").permitAll()
+                                       "/login/**", "/oauth2/**", "/h2-console/**", "/uploads/**").permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())
                 .oauth2Login(oauth2 -> oauth2

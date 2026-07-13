@@ -29,9 +29,11 @@ import NotFound        from '@/components/errors/NotFound';
 const LoginPage          = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage       = lazy(() => import('@/pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
+const ResetPasswordPage  = lazy(() => import('@/pages/auth/ResetPasswordPage'));
 const DashboardPage      = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const ActivitiesPage     = lazy(() => import('@/pages/activities/ActivitiesPage'));
 const GoalsPage          = lazy(() => import('@/pages/goals/GoalsPage'));
+const BadgesPage         = lazy(() => import('@/pages/badges/BadgesPage'));
 const ReportsPage        = lazy(() => import('@/pages/reports/ReportsPage'));
 const RecommendationsPage = lazy(() => import('@/pages/recommendations/RecommendationsPage'));
 const CommunityLeaderboardPage = lazy(() => import('@/pages/community/CommunityLeaderboardPage'));
@@ -59,9 +61,10 @@ export default function AppRouter() {
             </PublicRoute>
           }
         >
-          <Route path="/login"            element={<LoginPage />} />
+          <Route path="/login"            element={<Navigate to="/" replace />} />
           <Route path="/register"         element={<RegisterPage />} />
           <Route path="/forgot-password"  element={<ForgotPasswordPage />} />
+          <Route path="/reset-password"   element={<ResetPasswordPage />} />
         </Route>
 
         {/* ── Protected app routes ──────────────────────────── */}
@@ -75,6 +78,7 @@ export default function AppRouter() {
           <Route path="/dashboard"       element={<DashboardPage />} />
           <Route path="/activities"      element={<ActivitiesPage />} />
           <Route path="/goals"           element={<GoalsPage />} />
+          <Route path="/badges"          element={<BadgesPage />} />
           <Route path="/reports"         element={<ReportsPage />} />
           <Route path="/recommendations" element={<RecommendationsPage />} />
           <Route path="/community"       element={<CommunityLeaderboardPage />} />

@@ -33,4 +33,16 @@ public class AuthController {
     public ResponseEntity<AuthResponse> googleLogin(@Valid @RequestBody com.carbontrack.backend.dto.GoogleLoginRequest request) {
         return ResponseEntity.ok(authService.googleLogin(request));
     }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<Void> forgotPassword(@Valid @RequestBody com.carbontrack.backend.dto.ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Void> resetPassword(@Valid @RequestBody com.carbontrack.backend.dto.ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok().build();
+    }
 }

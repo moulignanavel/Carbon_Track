@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { User, Moon, Sun, Bell, Shield, Leaf } from 'lucide-react';
 import { useAuth }  from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useDensity } from '@/context/DensityContext';
 import { Card, Button, Input, Badge, Alert, Tabs } from '@/components/ui';
-import { getMyProfile, updateMyProfile } from '@/api';
+import { getMyProfile, updateMyProfile, uploadAvatar } from '@/api';
 import toast from 'react-hot-toast';
 
 const SETTING_TABS = [
@@ -21,6 +21,8 @@ function ProfileTab({ user }) {
   const [username, setUsername] = useState(user?.username ?? '');
   const [email, setEmail] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
+  const fileInputRef = useRef(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -38,7 +40,8 @@ function ProfileTab({ user }) {
     };
   }, []);
 
-  const handleSave = async () => {
+  const handleSave = async (e) => {
+    e.preventDefault();
     setLoading(true);
     setSaved(false);
     setErrorMsg(null);
@@ -57,8 +60,26 @@ function ProfileTab({ user }) {
     }
   };
 
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    setUploadingAvatar(true);
+    try {
+      const updated = await uploadAvatar(file);
+      updateUser({ avatarUrl: updated.avatarUrl });
+      toast.success('Profile picture updated!');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to upload image');
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
   return (
-    <div className="space-y-5">
+    <form className="space-y-8 flex flex-col items-center py-6" onSubmit={handleSave}>
       {saved && (
         <Alert variant="success" dismissible onClose={() => setSaved(false)}>
           Profile updated successfully.
@@ -69,16 +90,39 @@ function ProfileTab({ user }) {
           {errorMsg}
         </Alert>
       )}
-      <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-teal-500 text-white text-2xl font-bold">
-          {user?.username?.charAt(0)?.toUpperCase() ?? 'U'}
+      <div className="flex flex-col items-center gap-3">
+        <div 
+          className="relative group cursor-pointer rounded-full"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {user?.avatarUrl ? (
+            <img 
+              src={`http://localhost:8080${user.avatarUrl}`} 
+              alt="Profile" 
+              className={`h-24 w-24 rounded-full object-cover shadow-md ring-4 ring-green-50 dark:ring-green-900/30 ${uploadingAvatar ? 'opacity-50' : ''}`}
+            />
+          ) : (
+            <div className={`flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-teal-500 text-white text-4xl font-bold shadow-md ring-4 ring-green-50 dark:ring-green-900/30 ${uploadingAvatar ? 'opacity-50' : ''}`}>
+              {user?.username?.charAt(0)?.toUpperCase() ?? 'U'}
+            </div>
+          )}
+          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity overflow-hidden">
+            <span className="text-white text-xs font-medium">Change</span>
+          </div>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            className="hidden" 
+            accept="image/*"
+            onChange={handleAvatarChange}
+          />
         </div>
-        <div>
-          <p className="font-semibold text-slate-900 dark:text-slate-100">{user?.username}</p>
-          <Badge variant="green" size="sm" dot>{user?.role ?? 'USER'}</Badge>
+        <div className="text-center">
+          <p className="font-semibold text-slate-900 dark:text-slate-100 text-lg">{user?.username}</p>
+          <Badge variant="green" size="sm" dot className="mt-1">{user?.role ?? 'USER'}</Badge>
         </div>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="flex flex-col gap-4 w-full max-w-md">
         <Input 
           label="Username" 
           value={username} 
@@ -96,15 +140,16 @@ function ProfileTab({ user }) {
         />
       </div>
       <Button 
+        type="submit"
         variant="primary" 
-        size="sm" 
-        onClick={handleSave} 
+        size="md"
+        className="w-full max-w-md mt-2"
         isLoading={loading} 
         disabled={!username || !email}
       >
         Save Changes
       </Button>
-    </div>
+    </form>
   );
 }
 
@@ -236,7 +281,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 fade-in max-w-2xl">
+    <div className="space-y-6 fade-in max-w-2xl mx-auto w-full">
       <div className="flex items-center gap-3">
         <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-green-100 dark:bg-green-900/30">
           <Leaf className="h-5 w-5 text-green-600 dark:text-green-400" />

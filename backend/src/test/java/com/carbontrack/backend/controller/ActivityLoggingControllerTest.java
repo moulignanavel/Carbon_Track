@@ -103,7 +103,8 @@ class ActivityLoggingControllerTest {
     void whenValidFoodInput_thenReturns200() throws Exception {
         FoodLogRequest request = new FoodLogRequest();
         request.setMealType("meat");
-        request.setServings(2.0);
+        request.setAmount(2.0);
+        request.setUnit("servings");
         request.setLogDate(LocalDate.now());
 
         mockMvc.perform(post("/api/activity-logs/food")

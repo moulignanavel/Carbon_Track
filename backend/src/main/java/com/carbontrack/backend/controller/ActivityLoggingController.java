@@ -55,8 +55,8 @@ public class ActivityLoggingController {
         ActivityLogRequest internalRequest = new ActivityLogRequest(
                 "food",
                 request.getMealType().toLowerCase(),
-                request.getServings(),
-                "serving",
+                request.getAmount(),
+                request.getUnit().toLowerCase(),
                 request.getLogDate()
         );
         internalRequest.setNotes(request.getNotes());

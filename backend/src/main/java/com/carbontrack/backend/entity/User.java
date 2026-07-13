@@ -29,6 +29,9 @@ public class User {
     @Column(name = "sustainability_preferences", columnDefinition = "JSON")
     private String sustainabilityPreferences;
 
+    @Column(name = "avatar_url")
+    private String avatarUrl;
+
     // Explicit Getters and Setters to resolve compiler failures
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -50,4 +53,7 @@ public class User {
 
     public String getSustainabilityPreferences() { return sustainabilityPreferences; }
     public void setSustainabilityPreferences(String sustainabilityPreferences) { this.sustainabilityPreferences = sustainabilityPreferences; }
+
+    public String getAvatarUrl() { return avatarUrl; }
+    public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

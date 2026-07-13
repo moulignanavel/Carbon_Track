@@ -38,6 +38,21 @@ export function AuthProvider({ children }) {
     setIsInitialising(false);
   }, []);
 
+  // Fetch full profile (badges, avatar) when token is present
+  useEffect(() => {
+    if (token) {
+      import('@/api/userApi').then(({ getMyProfile }) => {
+        getMyProfile().then(data => {
+          setUser((prev) => {
+            const updated = { ...prev, avatarUrl: data.avatarUrl, badges: data.badges, role: data.role };
+            saveUser(updated);
+            return updated;
+          });
+        }).catch(err => console.error("Failed to fetch full profile", err));
+      });
+    }
+  }, [token]);
+
   /* ── helpers ───────────────────────────────────────────────── */
   const applyAuth = useCallback((authResponse, remember = false) => {
     const { accessToken, userId, username, role } = authResponse;

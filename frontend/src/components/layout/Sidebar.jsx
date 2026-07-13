@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { to: '/activities',      label: 'Activities',      icon: Zap             },
   { to: '/goals',           label: 'Goals',           icon: Target          },
   { to: '/reports',         label: 'Reports',         icon: BarChart2       },
+  { to: '/badges',          label: 'My Badges',       icon: Trophy          },
   { to: '/community',       label: 'Community',       icon: Trophy          },
   { to: '/recommendations', label: 'Recommendations', icon: Lightbulb       },
   { to: '/settings',        label: 'Settings',        icon: Settings        },
@@ -61,8 +62,12 @@ export default function Sidebar({ isOpen, onClose }) {
 
         {/* User pill */}
         <div className="mx-3 mt-4 mb-2 flex items-center gap-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 px-3 py-2.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-600 text-white text-xs font-bold uppercase">
-            {user?.username?.charAt(0) ?? 'U'}
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-600 text-white text-xs font-bold uppercase overflow-hidden">
+            {user?.avatarUrl ? (
+              <img src={`http://localhost:8080${user.avatarUrl}`} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              user?.username?.charAt(0) ?? 'U'
+            )}
           </div>
           <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">

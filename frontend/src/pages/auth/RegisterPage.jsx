@@ -118,23 +118,24 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="slide-up">
-      <div className="bg-emerald-900/40 backdrop-blur-md border border-emerald-700/40 rounded-3xl p-8 sm:p-10 shadow-lg shadow-emerald-950/50 text-white">
+    <div className="slide-up relative">
+      <div className="bg-[#0F2E22]/40 backdrop-blur-3xl border border-[#1E4432] rounded-3xl p-8 sm:p-12 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-[#F3EFE4] relative overflow-hidden group">
+        
+        {/* Ambient Top Glow */}
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#7FBF8C]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
 
         {/* Header */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-800/80 border border-emerald-600/50 shadow-inner mb-4">
-            <UserPlus className="h-6 w-6 text-emerald-300" aria-hidden="true" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">Create your account</h1>
-          <p className="mt-1.5 text-sm text-emerald-100/80">
+        <div className="mb-10 text-center">
+
+          <h1 className="text-3xl font-black text-[#F3EFE4] tracking-tight">Create your account</h1>
+          <p className="mt-2 text-sm text-[#9FAFA5] font-medium">
             Join thousands tracking their carbon footprint
           </p>
         </div>
 
         {/* Server error */}
         {errors.root && (
-          <Alert variant="error" className="mb-6" dismissible>
+          <Alert variant="error" className="mb-6 border-red-500/30 bg-red-500/10 text-red-200" dismissible>
             {errors.root.message}
           </Alert>
         )}
@@ -143,38 +144,44 @@ export default function RegisterPage() {
           onSubmit={handleSubmit(onSubmit)}
           noValidate
           aria-label="Create account form"
-          className="space-y-5"
+          className="space-y-6"
         >
           {/* Username */}
-          <Input
-            label="Username"
-            id="reg-username"
-            type="text"
-            placeholder="johndoe"
-            autoComplete="username"
-            autoFocus
-            required
-            leftIcon={<User className="h-4 w-4" />}
-            hint="3–50 chars. Letters, numbers, dots, dashes, underscores."
-            error={errors.username?.message}
-            {...register('username')}
-          />
+          <div className="space-y-1.5">
+            <Input
+              label="Username"
+              id="reg-username"
+              type="text"
+              placeholder="johndoe"
+              autoComplete="username"
+              autoFocus
+              required
+              leftIcon={<User className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              hint="3–50 chars. Letters, numbers, dots, dashes, underscores."
+              error={errors.username?.message}
+              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              {...register('username')}
+            />
+          </div>
 
           {/* Email */}
-          <Input
-            label="Email address"
-            id="reg-email"
-            type="email"
-            placeholder="you@example.com"
-            autoComplete="email"
-            required
-            leftIcon={<Mail className="h-4 w-4" />}
-            error={errors.email?.message}
-            {...register('email')}
-          />
+          <div className="space-y-1.5">
+            <Input
+              label="Email address"
+              id="reg-email"
+              type="email"
+              placeholder="you@example.com"
+              autoComplete="email"
+              required
+              leftIcon={<Mail className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              error={errors.email?.message}
+              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              {...register('email')}
+            />
+          </div>
 
           {/* Password + strength */}
-          <div>
+          <div className="space-y-1.5">
             <Input
               label="Password"
               id="reg-password"
@@ -182,25 +189,29 @@ export default function RegisterPage() {
               placeholder="Min. 8 characters"
               autoComplete="new-password"
               required
-              leftIcon={<Lock className="h-4 w-4" />}
+              leftIcon={<Lock className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
               error={errors.password?.message}
+              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
               {...register('password')}
             />
             <PasswordStrength password={password} />
           </div>
 
           {/* Confirm password */}
-          <Input
-            label="Confirm password"
-            id="reg-confirm"
-            type="password"
-            placeholder="Re-enter your password"
-            autoComplete="new-password"
-            required
-            leftIcon={<Lock className="h-4 w-4" />}
-            error={errors.confirmPassword?.message}
-            {...register('confirmPassword')}
-          />
+          <div className="space-y-1.5">
+            <Input
+              label="Confirm password"
+              id="reg-confirm"
+              type="password"
+              placeholder="Re-enter your password"
+              autoComplete="new-password"
+              required
+              leftIcon={<Lock className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              error={errors.confirmPassword?.message}
+              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              {...register('confirmPassword')}
+            />
+          </div>
 
           {/* Terms checkbox */}
           <div>
@@ -208,14 +219,14 @@ export default function RegisterPage() {
               <input
                 type="checkbox"
                 id="acceptTerms"
-                className="mt-0.5 h-4 w-4 rounded border-emerald-600/50 bg-emerald-950/50 text-emerald-500 focus:ring-emerald-500 cursor-pointer shrink-0"
+                className="mt-0.5 h-4 w-4 rounded border-[#1E4432] bg-[#06140F]/50 text-[#7FBF8C] focus:ring-[#7FBF8C] cursor-pointer shrink-0"
                 {...register('acceptTerms')}
               />
-              <span className="text-sm text-emerald-100/80 leading-snug">
+              <span className="text-sm text-[#9FAFA5] leading-snug">
                 I agree to the{' '}
                 <Link
                   to="#"
-                  className="font-semibold text-emerald-300 hover:underline"
+                  className="font-semibold text-[#7FBF8C] hover:text-[#94D1A0] hover:underline transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Terms of Service
@@ -223,7 +234,7 @@ export default function RegisterPage() {
                 {' '}and{' '}
                 <Link
                   to="#"
-                  className="font-semibold text-emerald-300 hover:underline"
+                  className="font-semibold text-[#7FBF8C] hover:text-[#94D1A0] hover:underline transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
                   Privacy Policy
@@ -244,7 +255,7 @@ export default function RegisterPage() {
             size="lg"
             fullWidth
             isLoading={isSubmitting}
-            className="mt-2 bg-emerald-500 hover:bg-emerald-400 text-emerald-950 shadow-lg shadow-emerald-500/20 hover:shadow-emerald-400/30 font-bold"
+            className="mt-2 bg-[#7FBF8C] hover:bg-[#94D1A0] text-[#06140F] shadow-[0_0_20px_rgba(127,191,140,0.3)] hover:shadow-[0_0_25px_rgba(127,191,140,0.5)] font-bold transition-all duration-300"
           >
             {isSubmitting ? 'Creating account…' : 'Create free account'}
           </Button>
@@ -252,17 +263,17 @@ export default function RegisterPage() {
 
         {/* Divider */}
         <div className="my-7 flex items-center gap-3" aria-hidden="true">
-          <div className="flex-1 h-px bg-emerald-800/50" />
-          <span className="text-xs text-emerald-500/80 font-medium">OR</span>
-          <div className="flex-1 h-px bg-emerald-800/50" />
+          <div className="flex-1 h-px bg-[#1E4432]" />
+          <span className="text-xs text-[#5B7A67] font-medium uppercase tracking-wider">OR</span>
+          <div className="flex-1 h-px bg-[#1E4432]" />
         </div>
 
         {/* Login link */}
-        <p className="text-center text-sm text-emerald-100/80">
+        <p className="text-center text-sm text-[#9FAFA5]">
           Already have an account?{' '}
           <Link
-            to="/login"
-            className="font-semibold text-emerald-300 hover:underline"
+            to="/"
+            className="font-semibold text-[#7FBF8C] hover:text-[#94D1A0] hover:underline transition-colors"
           >
             Sign in
           </Link>

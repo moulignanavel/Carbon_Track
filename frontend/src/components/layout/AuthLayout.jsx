@@ -6,58 +6,58 @@
  * Centered card with glowing ambient background, no splits!
  */
 
+import { useRef, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Leaf } from 'lucide-react';
+import heroVideo from '@/assets/hero.mp4';
+import heroImage from '@/assets/hero_illustration.png';
 
 export default function AuthLayout() {
+  const videoRef = useRef(null);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = 1.5;
+    }
+  }, []);
+
   return (
-    <div className="dark min-h-screen w-screen flex flex-col justify-between relative overflow-hidden bg-emerald-950 font-sans transition-colors duration-500 text-slate-300">
+    <div className="dark min-h-screen w-screen flex flex-col justify-between relative overflow-hidden bg-[#06140F] font-sans transition-colors duration-500 text-slate-300">
       
-      {/* Dynamic Keyframe Animations & Background Mesh */}
       <style>{`
-        @keyframes float-slow {
-          0%, 100% { transform: translateY(0px) scale(1); }
-          50% { transform: translateY(-30px) scale(1.1); }
-        }
-        @keyframes float-reverse {
-          0%, 100% { transform: translateY(0px) scale(1); }
-          50% { transform: translateY(30px) scale(0.9); }
-        }
-        @keyframes rotate-bg {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-        .animate-float-1 {
-          animation: float-slow 12s ease-in-out infinite;
-        }
-        .animate-float-2 {
-          animation: float-reverse 15s ease-in-out infinite;
-        }
-        .animate-float-3 {
-          animation: float-slow 18s ease-in-out infinite 2s;
-        }
-        .full-mesh-bg {
-          background: radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.15) 0%, transparent 45%),
-                      radial-gradient(circle at 90% 80%, rgba(52, 211, 153, 0.1) 0%, transparent 45%),
-                      radial-gradient(circle at 50% 50%, rgba(4, 120, 87, 0.2) 0%, transparent 60%);
+        .grain {
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
         }
       `}</style>
 
-      {/* Background Glowing Blurs (Full Page) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none full-mesh-bg" aria-hidden="true">
-        {/* Large green/teal glowing blobs that float around */}
-        <div className="absolute top-[10%] left-[15%] h-[400px] w-[400px] rounded-full bg-emerald-500/20 blur-[120px] animate-float-1" />
-        <div className="absolute bottom-[10%] right-[15%] h-[450px] w-[450px] rounded-full bg-green-400/10 blur-[120px] animate-float-2" />
-        <div className="absolute top-[60%] left-[70%] h-[350px] w-[350px] rounded-full bg-teal-500/15 blur-[100px] animate-float-3" />
+      {/* FULL PAGE BACKGROUND */}
+      <div className="absolute inset-0 pointer-events-none z-0 flex items-center justify-center" aria-hidden="true">
+        <div className="absolute inset-0 bg-[#06140F]/90 z-0" />
         
-        {/* Dot pattern overlay */}
-        <svg className="absolute inset-0 w-full h-full opacity-[0.04]" xmlns="http://www.w3.org/2000/svg">
-          <pattern id="dots-full" x="0" y="0" width="32" height="32" patternUnits="userSpaceOnUse">
-            <circle cx="2" cy="2" r="1.2" fill="currentColor" className="text-emerald-100" />
-          </pattern>
-          <rect width="100%" height="100%" fill="url(#dots-full)" />
-        </svg>
+        <div 
+          className="w-full h-full absolute z-10 opacity-20 mix-blend-lighten"
+          style={{ 
+            WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)', 
+            maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)' 
+          }}
+        >
+          <video
+            ref={videoRef}
+            src={heroVideo}
+            poster={heroImage}
+            preload="auto"
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover"
+          />
+        </div>
+
+        <div className="absolute inset-0 grain z-20 opacity-30" />
+        <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] rounded-full bg-[#7FBF8C]/[0.05] blur-[120px] z-20" />
+        <div className="absolute bottom-[10%] left-[5%] w-[400px] h-[400px] rounded-full bg-[#E8C468]/[0.04] blur-[100px] z-20" />
       </div>
 
       {/* ── Top Header Brand ───────────────────────────────── */}
@@ -75,7 +75,7 @@ export default function AuthLayout() {
 
       {/* ── Center Content ─────────────────────────────────── */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-[460px]">
+        <div className="w-full max-w-[540px]">
           <Outlet />
         </div>
       </main>

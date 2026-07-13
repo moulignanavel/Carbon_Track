@@ -10,6 +10,8 @@ import Alert from '@/components/ui/Alert';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 
+import BadgeSidebar from '@/components/badges/BadgeSidebar';
+
 /**
  * CommunityLeaderboardPage
  * ─────────────────────────────────────────────────────────────
@@ -30,6 +32,18 @@ export default function CommunityLeaderboardPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarUser, setSidebarUser] = useState(null);
+
+  useEffect(() => {
+    const handleOpenSidebar = (e) => {
+      setSidebarUser(e.detail);
+      setSidebarOpen(true);
+    };
+    window.addEventListener('open-badge-sidebar', handleOpenSidebar);
+    return () => window.removeEventListener('open-badge-sidebar', handleOpenSidebar);
+  }, []);
 
   // Load initial leaderboard
   useEffect(() => {
@@ -178,6 +192,13 @@ export default function CommunityLeaderboardPage() {
           <p className="text-slate-500 dark:text-slate-400">No users found. Try a different search.</p>
         </div>
       )}
+
+      {/* Badge Sidebar */}
+      <BadgeSidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        user={sidebarUser} 
+      />
     </div>
   );
 }

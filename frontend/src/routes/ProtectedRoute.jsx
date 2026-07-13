@@ -31,7 +31,7 @@ export default function ProtectedRoute({ children, requiredRole }) {
   if (!isLoggedIn) {
     return (
       <Navigate
-        to="/login"
+        to="/"
         state={{ from: location }}
         replace
       />

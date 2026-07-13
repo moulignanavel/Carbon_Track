@@ -10,7 +10,14 @@ import com.carbontrack.backend.service.SecurityService;
 import com.carbontrack.backend.service.UserService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.carbontrack.backend.entity.Badge;
+import com.carbontrack.backend.entity.UserBadge;
+import com.carbontrack.backend.repository.BadgeRepository;
+import com.carbontrack.backend.repository.UserBadgeRepository;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -18,11 +25,19 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final SecurityService securityService;
     private final ObjectMapper objectMapper;
+    private final UserBadgeRepository userBadgeRepository;
+    private final BadgeRepository badgeRepository;
 
-    public UserServiceImpl(UserRepository userRepository, SecurityService securityService, ObjectMapper objectMapper) {
+    public UserServiceImpl(UserRepository userRepository, 
+                           SecurityService securityService, 
+                           ObjectMapper objectMapper,
+                           UserBadgeRepository userBadgeRepository,
+                           BadgeRepository badgeRepository) {
         this.userRepository = userRepository;
         this.securityService = securityService;
         this.objectMapper = objectMapper;
+        this.userBadgeRepository = userBadgeRepository;
+        this.badgeRepository = badgeRepository;
     }
 
     @Override
@@ -69,12 +84,22 @@ public class UserServiceImpl implements UserService {
                 prefs = new SustainabilityPreferences();
             }
         }
+        
+        List<String> userBadges = userBadgeRepository.findByUserId(user.getId())
+                .stream()
+                .map(ub -> badgeRepository.findById(ub.getBadgeId()).orElse(null))
+                .filter(b -> b != null)
+                .map(Badge::getName)
+                .collect(Collectors.toList());
+
         return new UserProfileResponse(
                 user.getId(),
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
-                prefs
+                prefs,
+                user.getAvatarUrl(),
+                userBadges
         );
     }
 }

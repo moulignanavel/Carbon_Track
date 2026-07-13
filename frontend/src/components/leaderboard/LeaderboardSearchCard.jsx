@@ -11,9 +11,10 @@ import Badge from '@/components/ui/Badge';
 export default function LeaderboardSearchCard({ user, highlight = false }) {
   return (
     <div
+      onClick={() => window.dispatchEvent(new CustomEvent('open-badge-sidebar', { detail: user }))}
       className={`
         relative overflow-hidden rounded-xl border-2 p-4 lg:p-6
-        transition-all shadow-card dark:shadow-lg
+        transition-all shadow-card dark:shadow-lg cursor-pointer
         ${highlight
           ? 'border-green-400 dark:border-green-600 bg-green-50 dark:bg-green-950/30'
           : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'

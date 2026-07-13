@@ -87,7 +87,7 @@ export function createAxiosInstance() {
       if (response?.status === HTTP_STATUS.UNAUTHORIZED) {
         if (env.auth.autoLogoutOn401) {
           clearAuth();
-          window.location.replace('/login?reason=session_expired');
+          window.location.replace('/?reason=session_expired');
         }
       }
 

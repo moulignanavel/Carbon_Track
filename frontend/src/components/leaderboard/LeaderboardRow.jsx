@@ -39,8 +39,9 @@ export default function LeaderboardRow({
 
   return (
     <tr
+      onClick={() => window.dispatchEvent(new CustomEvent('open-badge-sidebar', { detail: user }))}
       className={`
-        border-b border-slate-200 dark:border-slate-700 transition-colors
+        border-b border-slate-200 dark:border-slate-700 transition-colors cursor-pointer
         ${isCurrentUser 
           ? 'bg-green-50 dark:bg-green-950/20 ring-2 ring-green-400 dark:ring-green-600 ring-inset' 
           : isAlternate 

@@ -7,30 +7,44 @@
    CarbonTrack — Design Token System
    ═══════════════════════════════════════════════════════════════ */
 @theme {
-  /* ── Brand Greens ──────────────────────────────────────────── */
-  --color-green-50:  #f0fdf4;
-  --color-green-100: #dcfce7;
-  --color-green-200: #bbf7d0;
-  --color-green-300: #86efac;
-  --color-green-400: #4ade80;
-  --color-green-500: #22c55e;
-  --color-green-600: #16a34a;
-  --color-green-700: #15803d;
-  --color-green-800: #166534;
-  --color-green-900: #14532d;
-  --color-green-950: #052e16;
+  /* ── Brand Greens (Moss Green Palette) ───────────────────────── */
+  --color-green-50:  #f4f9f5;
+  --color-green-100: #e3f0e8;
+  --color-green-200: #c5dfcd;
+  --color-green-300: #98c9a7;
+  --color-green-400: #7FBF8C;
+  --color-green-500: #5a9d68;
+  --color-green-600: #437b50;
+  --color-green-700: #366241;
+  --color-green-800: #2d4f36;
+  --color-green-900: #1E4432;
+  --color-green-950: #0F2E22;
 
-  /* ── Teal Accents ─────────────────────────────────────────── */
-  --color-teal-50:  #f0fdfa;
-  --color-teal-100: #ccfbf1;
-  --color-teal-200: #99f6e4;
-  --color-teal-300: #5eead4;
-  --color-teal-400: #2dd4bf;
-  --color-teal-500: #14b8a6;
-  --color-teal-600: #0d9488;
-  --color-teal-700: #0f766e;
-  --color-teal-800: #115e59;
-  --color-teal-900: #134e4a;
+  /* ── Emerald (Map to Moss Green) ─────────────────────────── */
+  --color-emerald-50:  #f4f9f5;
+  --color-emerald-100: #e3f0e8;
+  --color-emerald-200: #c5dfcd;
+  --color-emerald-300: #98c9a7;
+  --color-emerald-400: #7FBF8C;
+  --color-emerald-500: #5a9d68;
+  --color-emerald-600: #437b50;
+  --color-emerald-700: #366241;
+  --color-emerald-800: #2d4f36;
+  --color-emerald-900: #1E4432;
+  --color-emerald-950: #0F2E22;
+
+  /* ── Teal Accents (Map to Moss Green) ────────────────────── */
+  --color-teal-50:  #f4f9f5;
+  --color-teal-100: #e3f0e8;
+  --color-teal-200: #c5dfcd;
+  --color-teal-300: #98c9a7;
+  --color-teal-400: #7FBF8C;
+  --color-teal-500: #5a9d68;
+  --color-teal-600: #437b50;
+  --color-teal-700: #366241;
+  --color-teal-800: #2d4f36;
+  --color-teal-900: #1E4432;
+  --color-teal-950: #0F2E22;
 
   /* ── Amber / Warning ──────────────────────────────────────── */
   --color-amber-400: #fbbf24;
@@ -151,7 +165,7 @@
 
   /* Green gradient hero card */
   .card-gradient {
-    background: linear-gradient(135deg, #16a34a 0%, #0d9488 100%);
+    background: linear-gradient(135deg, var(--color-green-500) 0%, var(--color-green-700) 100%);
     @apply rounded-2xl shadow-[var(--shadow-glow)] text-white;
   }
 
@@ -271,7 +285,7 @@
 @layer utilities {
   /* Gradient text */
   .text-gradient {
-    background: linear-gradient(135deg, #16a34a, #0d9488);
+    background: linear-gradient(135deg, var(--color-green-500), var(--color-green-700));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -338,6 +352,16 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+  }
+
+  /* 3D Spin for Badges */
+  @keyframes spin-y {
+    from { transform: perspective(1000px) rotateY(0deg); }
+    to   { transform: perspective(1000px) rotateY(360deg); }
+  }
+  .animate-spin-y {
+    animation: spin-y 4s linear infinite;
+    transform-style: preserve-3d;
   }
 }
 

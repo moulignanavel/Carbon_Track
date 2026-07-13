@@ -100,8 +100,15 @@ export default function DashboardPage() {
 
     const now           = new Date();
     const todayStr      = now.toISOString().split('T')[0];
+    const yesterdayDate = new Date(now);
+    yesterdayDate.setDate(now.getDate() - 1);
+    const yesterdayStr  = yesterdayDate.toISOString().split('T')[0];
+
     const oneWeekAgo    = new Date(now); oneWeekAgo.setDate(now.getDate() - 7);
+    const twoWeeksAgo   = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
+
     const startOfMonth  = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
     const todayEmissions = logs
       .filter((l) => {
@@ -110,12 +117,27 @@ export default function DashboardPage() {
       })
       .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
 
+    const yesterdayEmissions = logs
+      .filter((l) => {
+        const d = parseLogDate(l);
+        return d && d.toISOString().split('T')[0] === yesterdayStr;
+      })
+      .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+
     const weeklyEmissions = logs
       .filter((l) => { const d = parseLogDate(l); return d && d >= oneWeekAgo; })
       .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
 
+    const prevWeeklyEmissions = logs
+      .filter((l) => { const d = parseLogDate(l); return d && d >= twoWeeksAgo && d < oneWeekAgo; })
+      .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+
     const monthlyEmissions = logs
       .filter((l) => { const d = parseLogDate(l); return d && d >= startOfMonth; })
+      .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+
+    const prevMonthlyEmissions = logs
+      .filter((l) => { const d = parseLogDate(l); return d && d >= startOfPrevMonth && d < startOfMonth; })
       .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
 
     const totalAll    = logs.reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
@@ -128,10 +150,10 @@ export default function DashboardPage() {
     const avgEmissions = totalAll / distinctDays;
 
     return {
-      today:     { value: todayEmissions,   trend: todayEmissions > 5 ? 'up' : 'down', delta: 0, deltaLabel: 'today' },
-      weekly:    { value: weeklyEmissions,  trend: 'down', delta: 0, deltaLabel: 'last 7 days' },
-      monthly:   { value: monthlyEmissions, trend: 'down', delta: 0, deltaLabel: 'this month' },
-      avgPerDay: { value: avgEmissions,     trend: 'down', delta: 0, deltaLabel: 'daily average' },
+      today:     { value: todayEmissions,   trend: todayEmissions >= yesterdayEmissions ? 'up' : 'down', delta: todayEmissions - yesterdayEmissions, deltaLabel: 'vs yesterday' },
+      weekly:    { value: weeklyEmissions,  trend: weeklyEmissions >= prevWeeklyEmissions ? 'up' : 'down', delta: weeklyEmissions - prevWeeklyEmissions, deltaLabel: 'vs last week' },
+      monthly:   { value: monthlyEmissions, trend: monthlyEmissions >= prevMonthlyEmissions ? 'up' : 'down', delta: monthlyEmissions - prevMonthlyEmissions, deltaLabel: 'vs last month' },
+      avgPerDay: { value: avgEmissions,     trend: avgEmissions > 20 ? 'up' : 'down', delta: avgEmissions - 20, deltaLabel: 'vs target' },
     };
   }, [logs]);
 

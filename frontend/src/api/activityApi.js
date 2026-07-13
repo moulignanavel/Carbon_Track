@@ -34,7 +34,7 @@ export async function getActivityLogs() {
  */
 export async function createActivityLog(logData) {
   const category = logData.category.toLowerCase();
-  const endpoint = `/activity-logs/${category}`;
+  let endpoint = `/activity-logs/${category}`;
   let payload = {};
   const qty = parseFloat(logData.amount || logData.quantity);
 
@@ -49,7 +49,7 @@ export async function createActivityLog(logData) {
       endpoint = '/activity-logs/electricity';
       break;
     case 'food':
-      payload = { mealType: logData.activityType, servings: qty, logDate: logData.logDate, notes: logData.notes };
+      payload = { mealType: logData.activityType, amount: qty, unit: logData.unit || 'servings', logDate: logData.logDate, notes: logData.notes };
       break;
     case 'shopping':
       payload = { productCategory: logData.activityType, spendAmount: qty, currency: logData.unit || 'USD', logDate: logData.logDate, notes: logData.notes };

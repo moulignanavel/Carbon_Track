@@ -68,7 +68,7 @@ const Input = forwardRef(function Input(
           className={[
             'form-input',
             leftIcon           ? 'pl-10'  : '',
-            isPassword || rightElement ? 'pr-10' : '',
+            isPassword || rightElement ? 'pr-12' : '',
             error ? '!border-red-400 !focus:ring-red-400' : '',
             className,
           ].join(' ')}

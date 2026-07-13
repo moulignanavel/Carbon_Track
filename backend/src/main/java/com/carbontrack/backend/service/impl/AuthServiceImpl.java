@@ -31,17 +31,23 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final com.carbontrack.backend.repository.PasswordResetTokenRepository passwordResetTokenRepository;
+    private final com.carbontrack.backend.service.EmailService emailService;
 
     public AuthServiceImpl(UserRepository userRepository,
                            OrganisationRepository organisationRepository,
                            PasswordEncoder passwordEncoder,
                            JwtUtil jwtUtil,
-                           AuthenticationManager authenticationManager) {
+                           AuthenticationManager authenticationManager,
+                           com.carbontrack.backend.repository.PasswordResetTokenRepository passwordResetTokenRepository,
+                           com.carbontrack.backend.service.EmailService emailService) {
         this.userRepository = userRepository;
         this.organisationRepository = organisationRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
+        this.passwordResetTokenRepository = passwordResetTokenRepository;
+        this.emailService = emailService;
     }
 
     @Override
@@ -129,5 +135,45 @@ public class AuthServiceImpl implements AuthService {
         } catch (Exception e) {
             throw new BadCredentialsException("Google authentication failed: " + e.getMessage());
         }
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void forgotPassword(com.carbontrack.backend.dto.ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        if (user == null) {
+            // Silently return to prevent email enumeration
+            return;
+        }
+
+        // Generate token and save
+        String token = UUID.randomUUID().toString();
+        com.carbontrack.backend.entity.PasswordResetToken resetToken = new com.carbontrack.backend.entity.PasswordResetToken(
+            token, user, java.time.LocalDateTime.now().plusMinutes(30)
+        );
+        passwordResetTokenRepository.save(resetToken);
+
+        // Send email
+        String resetLink = "http://localhost:5173/reset-password?token=" + token;
+        emailService.sendPasswordResetEmail(user.getEmail(), resetLink);
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void resetPassword(com.carbontrack.backend.dto.ResetPasswordRequest request) {
+        com.carbontrack.backend.entity.PasswordResetToken resetToken = passwordResetTokenRepository.findByToken(request.getToken())
+            .orElseThrow(() -> new IllegalArgumentException("Invalid or expired token"));
+
+        if (resetToken.getExpiryDate().isBefore(java.time.LocalDateTime.now())) {
+            passwordResetTokenRepository.delete(resetToken);
+            throw new IllegalArgumentException("Token has expired");
+        }
+
+        User user = resetToken.getUser();
+        user.setPasswordHash(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+
+        // Delete the token and any other tokens for this user
+        passwordResetTokenRepository.deleteByUserId(user.getId());
     }
 }
