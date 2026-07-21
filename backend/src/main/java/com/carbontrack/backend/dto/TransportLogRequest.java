@@ -15,6 +15,8 @@ public class TransportLogRequest {
     @PositiveOrZero(message = "Distance must be non-negative")
     private Double distance;
 
+    private String unit; // optional — defaults to "km" in the controller
+
     @NotNull(message = "Log date is required")
     private LocalDate logDate;
 
@@ -27,6 +29,9 @@ public class TransportLogRequest {
 
     public Double getDistance() { return distance; }
     public void setDistance(Double distance) { this.distance = distance; }
+
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
 
     public LocalDate getLogDate() { return logDate; }
     public void setLogDate(LocalDate logDate) { this.logDate = logDate; }

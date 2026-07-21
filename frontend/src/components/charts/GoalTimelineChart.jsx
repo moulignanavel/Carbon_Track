@@ -87,7 +87,7 @@ export default function GoalTimelineChart({
           tick={{ fontSize: 10, fill: '#94a3b8' }}
           axisLine={false}
           tickLine={false}
-          width={28}
+          width={45}
           domain={[0, Math.max(target * 1.1, 10)]}
         />
 

@@ -59,7 +59,7 @@ export default function MonthlyComparisonChart({ data = [], height = 240 }) {
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => `${v}`}
-          width={30}
+          width={45}
         />
         <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(34,197,94,0.04)' }} />
         <Legend
@@ -73,13 +73,13 @@ export default function MonthlyComparisonChart({ data = [], height = 240 }) {
           {data.map((entry, i) => (
             <Cell
               key={i}
-              fill={entry.emissions > entry.target ? '#ef4444' : COLORS.green[500]}
+              fill={entry.emissions > entry.target ? '#ef4444' : '#00bc7d'}
             />
           ))}
         </Bar>
 
         {/* Target */}
-        <Bar dataKey="target" name="Target" fill={COLORS.slate[200]} radius={[5, 5, 0, 0]} maxBarSize={28} />
+        <Bar dataKey="target" name="Target" fill="#cbd5e1" radius={[5, 5, 0, 0]} maxBarSize={28} />
       </BarChart>
     </ResponsiveContainer>
   );

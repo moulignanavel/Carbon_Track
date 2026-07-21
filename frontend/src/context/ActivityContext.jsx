@@ -3,10 +3,6 @@
  * ─────────────────────────────────────────────────────────────
  * Global activity log state.
  *
- * Mock mode (default): seeded with MOCK_LOGS, addLog() appends
- * locally. Flip USE_MOCK to false and uncomment the real API
- * calls when the backend is running.
- *
  * Exposed:
  *   logs            — ActivityLog[]
  *   isLoading       — boolean
@@ -16,21 +12,19 @@
  *   totalEmissions  — number  (sum of calculatedEmissions)
  */
 
-import { createContext, useContext, useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useContext } from 'react';
 import toast from 'react-hot-toast';
-/* ── real API imports ──────────── */
 import { getActivityLogs, createActivityLog } from '@/api';
 import { formatError } from '@/utils/errorHandler';
+import ActivityContext from './activityContextValue';
 
-const ActivityContext = createContext(null);
-
+/* ─── Provider ──────────────────────────────────────────────────── */
 export function ActivityProvider({ children }) {
   const [logs,      setLogs]      = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   /* ── fetch ─────────────────────────────────────────────────── */
   const fetchLogs = useCallback(async () => {
-
     setIsLoading(true);
     try {
       const data = await getActivityLogs();
@@ -44,13 +38,28 @@ export function ActivityProvider({ children }) {
 
   /* ── add ───────────────────────────────────────────────────── */
   const addLog = useCallback(async (logData) => {
-
-    const newLog = await createActivityLog(logData);
-    setLogs((prev) => [newLog, ...prev]);
-    // Notify GoalContext (and any other listeners) that an activity was added
-    // so they can re-fetch updated goal progress without a page refresh.
-    window.dispatchEvent(new Event('activity-logged'));
-    return newLog;
+    try {
+      const newLog = await createActivityLog(logData);
+      // Optimistically prepend so the user sees it instantly...
+      setLogs((prev) => [newLog, ...prev]);
+      // ...then sync with server to guarantee the list is accurate.
+      // (Catches edge-cases where the backend returns a shape mismatch)
+      setTimeout(async () => {
+        try {
+          const data = await getActivityLogs();
+          setLogs(data);
+        } catch (_) { /* ignore background refresh errors */ }
+      }, 300);
+      // Notify GoalContext (and any other listeners) immediately for optimistic UI
+      window.dispatchEvent(new Event('activity-logged'));
+      // Fire a second delayed event so goals + alerts re-fetch AFTER the backend
+      // has finished its async goal-evaluation and alert-creation (takes ~500ms)
+      setTimeout(() => window.dispatchEvent(new Event('activity-logged')), 1500);
+      return newLog;
+    } catch (err) {
+      toast.error(formatError(err, 'Failed to save activity'));
+      throw err; // re-throw so the form knows it failed
+    }
   }, []);
 
   /* ── delete ────────────────────────────────────────────────── */
@@ -81,6 +90,7 @@ export function ActivityProvider({ children }) {
   );
 }
 
+/* ─── Hook ──────────────────────────────────────────────────────── */
 export function useActivity() {
   const ctx = useContext(ActivityContext);
   if (!ctx) throw new Error('useActivity must be used within an ActivityProvider');

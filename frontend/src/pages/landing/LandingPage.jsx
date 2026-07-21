@@ -7,46 +7,40 @@
  * Warm amber sits alongside moss green so the palette isn't one note.
  */
 
-import { useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, ArrowRight, TrendingDown } from 'lucide-react';
+import { Leaf, ArrowRight, TrendingDown, Zap, Target, Trophy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import Button from '@/components/ui/Button';
-import heroVideo from '@/assets/hero.mp4';
-import heroImage from '@/assets/hero.png';
 import LoginPage from '@/pages/auth/LoginPage';
+import DataNodeGrid from '@/components/landing/DataNodeGrid';
 
 const READINGS = [
   {
     tag: 'Daily',
     value: '3 taps',
-    title: 'Log an activity in seconds',
-    body: 'Pick transport, power, or a meal. CarbonTrack converts it to kg CO2e using real emission factors, not guesswork.',
+    icon: Zap,
+    title: 'Log in seconds',
+    body: 'Log transport, power, or meals with a few taps. Get real-time carbon conversion using verified factors.',
   },
   {
     tag: 'Target',
     value: 'Live',
-    title: 'Watch your budget move as you log',
-    body: 'Set a weekly, monthly, or yearly target. Every entry updates your remaining budget immediately, no waiting for a report.',
+    icon: Target,
+    title: 'Active Budgets',
+    body: 'Set monthly limits and watch your remaining balance update live as you log.',
   },
   {
     tag: 'Global',
     value: '#1-#50',
-    title: 'Climb the community leaderboard',
-    body: 'Consistency earns badges. Miss a week and your streak resets, so the board reflects who is actually cutting emissions.',
+    icon: Trophy,
+    title: 'Leaderboards',
+    body: 'Compete with friends and earn badges. Stay consistent to keep your green streak alive.',
   },
 ];
 
 export default function LandingPage() {
   const navigate = useNavigate();
   const { isLoggedIn } = useAuth();
-  const videoRef = useRef(null);
-
-  useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 1.5;
-    }
-  }, []);
 
   const handleStartClick = () => {
     if (isLoggedIn) {
@@ -57,7 +51,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col lg:flex-row relative font-sans bg-[#06140F] overflow-hidden">
+    <div className="min-h-screen w-full flex flex-col lg:flex-row relative font-sans bg-[#030712] overflow-hidden">
 
       <style>{`
         @keyframes ring-draw {
@@ -78,31 +72,11 @@ export default function LandingPage() {
 
       {/* FULL PAGE BACKGROUND */}
       <div className="absolute inset-0 pointer-events-none z-0 flex items-center justify-center" aria-hidden="true">
-        <div className="absolute inset-0 bg-[#06140F]/90 z-0" />
-        
-        <div 
-          className="w-full h-full absolute z-10 opacity-20 mix-blend-lighten"
-          style={{ 
-            WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)', 
-            maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)' 
-          }}
-        >
-          <video
-            ref={videoRef}
-            src={heroVideo}
-            poster={heroImage}
-            preload="auto"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <div className="absolute inset-0 grain z-20 opacity-30" />
-        <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] rounded-full bg-[#7FBF8C]/[0.05] blur-[120px] z-20" />
-        <div className="absolute bottom-[10%] left-[5%] w-[400px] h-[400px] rounded-full bg-[#E8C468]/[0.04] blur-[100px] z-20" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#030712] via-[#090d16] to-[#030712] z-0" />
+        <DataNodeGrid />
+        <div className="absolute inset-0 grain z-20 opacity-20" />
+        <div className="absolute top-[10%] right-[15%] w-[600px] h-[600px] rounded-full bg-emerald-500/[0.03] blur-[150px] z-20" />
+        <div className="absolute bottom-[15%] left-[5%] w-[500px] h-[500px] rounded-full bg-teal-500/[0.02] blur-[120px] z-20" />
       </div>
 
       {/* ── Left Pane Content ──────────────────────── */}
@@ -146,13 +120,12 @@ export default function LandingPage() {
               </div>
 
               <h1 className="text-4xl sm:text-5xl md:text-6xl font-black text-[#F3EFE4] leading-[1.15] tracking-tight">
-                Every ring on your <br />
-                <span className="text-[#7FBF8C]">gauge</span> is a month you <br />
-                showed up.
+                Track your carbon <br />
+                footprint in <span className="text-[#4ADE80]">seconds</span>.
               </h1>
 
-              <p className="text-base sm:text-lg text-[#C9D8CE] font-normal leading-relaxed max-w-lg">
-                Log travel, energy, and food in seconds. CarbonTrack turns each entry into a real CO2e number and stacks it into a history you can actually see, like the one on the right.
+              <p className="text-base sm:text-lg text-[#E2E8F0] font-normal leading-relaxed max-w-lg">
+                Log daily emissions, set monthly budgets, and see your impact in real time.
               </p>
 
               <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
@@ -167,14 +140,6 @@ export default function LandingPage() {
                     Go to Dashboard
                   </Button>
                 )}
-                <Button
-                  variant="glass"
-                  size="lg"
-                  onClick={() => document.getElementById('readings-section')?.scrollIntoView({ behavior: 'smooth' })}
-                  className="px-8 bg-white/5 hover:bg-white/10 text-[#F3EFE4] border border-[#1E4432]"
-                >
-                  See how it works
-                </Button>
               </div>
             </div>
           </div>
@@ -182,13 +147,18 @@ export default function LandingPage() {
           {/* Readings, separated into distinct cards */}
           <div id="readings-section" className="max-w-4xl mx-auto w-full grid grid-cols-1 md:grid-cols-3 gap-6 mt-16">
             {READINGS.map((r) => (
-              <div key={r.tag} className="h-full bg-[#081A13]/80 backdrop-blur p-6 flex flex-col gap-2 rounded-2xl border border-[#1E4432]/50 shadow-lg shadow-black/20">
+              <div key={r.tag} className="h-full bg-[#081A13]/80 backdrop-blur p-6 flex flex-col gap-3 rounded-2xl border border-white/10 shadow-lg shadow-black/20">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#7FBF8C]">{r.tag}</span>
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-[#0F2E22] rounded-lg border border-[#1E4432]">
+                      <r.icon className="h-4 w-4 text-[#7FBF8C]" />
+                    </div>
+                    <span className="text-[10px] font-mono uppercase tracking-[0.15em] text-[#7FBF8C]">{r.tag}</span>
+                  </div>
                   <span className="text-xs font-mono font-semibold text-[#E8C468]">{r.value}</span>
                 </div>
                 <h3 className="text-base font-bold text-[#F3EFE4] mt-1">{r.title}</h3>
-                <p className="text-sm text-[#9FAFA5] leading-relaxed font-normal">{r.body}</p>
+                <p className="text-sm text-[#E2E8F0] leading-relaxed font-normal">{r.body}</p>
               </div>
             ))}
           </div>
@@ -211,7 +181,7 @@ export default function LandingPage() {
           {!isLoggedIn ? (
             <LoginPage />
           ) : (
-            <div className="flex flex-col items-center justify-center bg-[#0F2E22]/40 backdrop-blur-xl border border-[#1E4432] rounded-3xl p-12 aspect-square text-center shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
+            <div className="flex flex-col items-center justify-center bg-[#0F2E22]/40 backdrop-blur-xl border border-white/10 rounded-3xl p-12 aspect-square text-center shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)]">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-[#7FBF8C]/20 blur-2xl rounded-full" />
                 <Leaf className="h-20 w-20 text-[#7FBF8C] relative z-10" />

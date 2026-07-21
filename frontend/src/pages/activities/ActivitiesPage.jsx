@@ -15,10 +15,12 @@
  *  5. Activity table with sort, badge, delete
  */
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
+import { motion } from 'framer-motion';
+import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import {
   Plus, Search, Filter, Trash2, Leaf,
   ChevronDown, X, SlidersHorizontal,
@@ -227,7 +229,7 @@ function Co2Preview({ activityType, amount, category }) {
 /* ═══════════════════════════════════════════════════════════════
    Log Activity Form
    ═══════════════════════════════════════════════════════════════ */
-function LogActivityForm({ onSaved, onCancel, defaultCategory }) {
+function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0 }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultCategory ?? CAT_TABS[0].key);
 
@@ -418,8 +420,60 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory }) {
             </div>
           </div>
 
-          {/* ── Right: CO₂ preview ───────────────────────── */}
-          <div className="hidden lg:block">
+          {/* ── Right: streak plant + CO₂ preview ──────────── */}
+          <div className="hidden lg:flex flex-col gap-5">
+
+            {/* ── Streak plant card ──────────────────────────── */}
+            <div className="rounded-2xl bg-gradient-to-b from-green-50 to-teal-50/60 dark:from-green-900/20 dark:to-teal-900/10 border border-green-200/60 dark:border-green-800/40 p-4 flex flex-col items-center gap-3">
+              {/* phase label */}
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-green-600 dark:text-green-400">
+                {streak === 0 && 'Start logging to grow!'}
+                {streak === 1 && '🌱 Day 1 — Sprout'}
+                {streak === 2 && '🌿 Day 2 — First Leaf'}
+                {streak === 3 && '🪴 Day 3 — Small Branch'}
+                {streak === 4 && '🌳 Day 4 — Growing Strong'}
+                {streak === 5 && '🌲 Day 5 — Tall Sapling'}
+                {streak === 6 && '🎋 Day 6 — Almost Grown'}
+                {streak >= 7 && '🌳 Fully Grown!'}
+              </p>
+
+              {/* lottie plant */}
+              <div className="relative w-24 h-24 flex items-center justify-center">
+                <DotLottieReact
+                  key="form-plant-lottie"
+                  src="/animations/growing-plant.lottie"
+                  loop={false}
+                  autoplay
+                  segment={[0, streak === 0 ? 1 : Math.min(135, Math.round((Math.min(7, streak) / 7) * 135))]}
+                  className="w-full h-full"
+                />
+              </div>
+
+              {/* streak progress dots */}
+              <div className="flex items-center gap-1.5">
+                {Array.from({ length: 7 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className={[
+                      'h-2 rounded-full transition-all duration-300',
+                      i < streak
+                        ? 'w-4 bg-green-500 dark:bg-green-400'
+                        : 'w-2 bg-slate-200 dark:bg-slate-700',
+                    ].join(' ')}
+                  />
+                ))}
+              </div>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center leading-snug">
+                {streak === 0
+                  ? 'Log today to plant your seed'
+                  : streak >= 7
+                  ? `${streak}-day streak 🎉 Keep it up!`
+                  : `${streak} of 7 days — log every day to grow!`}
+              </p>
+            </div>
+
+            {/* ── CO₂ preview ────────────────────────────────── */}
             <p className="form-label mb-2">Impact Preview</p>
             <Co2Preview
               activityType={activityType}
@@ -483,10 +537,60 @@ export default function ActivitiesPage() {
   const [catFilter,  setCatFilter]  = useState('');
   const [dateFrom,   setDateFrom]   = useState('');
   const [dateTo,     setDateTo]     = useState('');
-  const [filtersOpen,setFiltersOpen]= useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [defaultCat, setDefaultCat] = useState(null);
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  /* ── calculate user streak ─────────────────────────────────── */
+  const streak = useMemo(() => {
+    if (!logs || logs.length === 0) return 0;
+    const dates = Array.from(
+      new Set(
+        logs
+          .map((l) => {
+            const d = l.logDate ?? l.date;
+            if (!d) return null;
+            if (Array.isArray(d)) {
+              const y = d[0];
+              const m = String(d[1]).padStart(2, '0');
+              const day = String(d[2]).padStart(2, '0');
+              return `${y}-${m}-${day}`;
+            }
+            return d.split('T')[0];
+          })
+          .filter(Boolean)
+      )
+    ).sort((a, b) => b.localeCompare(a));
+
+    if (dates.length === 0) return 0;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    let currentTargetDate = null;
+    if (dates.includes(todayStr)) {
+      currentTargetDate = new Date();
+    } else if (dates.includes(yesterdayStr)) {
+      currentTargetDate = yesterday;
+    } else {
+      return 0;
+    }
+
+    let count = 0;
+    while (true) {
+      const targetStr = currentTargetDate.toISOString().split('T')[0];
+      if (dates.includes(targetStr)) {
+        count++;
+        currentTargetDate.setDate(currentTargetDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return count;
+  }, [logs]);
 
   /* ── open form pre-set to a category ──────────────────────── */
   const openWithCategory = (cat) => {
@@ -577,11 +681,36 @@ export default function ActivitiesPage() {
 
       {/* ── Page header ──────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Activity Log</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            {logs.length} activities · {formatEmission(totalEmissions)} total
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Activity Log</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              {logs.length} activities · {formatEmission(totalEmissions)} total
+            </p>
+          </div>
+          {streak > 0 && (
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="flex items-center gap-3 px-3.5 py-1.5 rounded-2xl bg-gradient-to-r from-green-500/10 to-teal-500/10 border border-green-500/20 dark:border-green-500/30 shadow-sm"
+            >
+              <div className="w-9 h-9 flex items-center justify-center overflow-hidden rounded-xl bg-white dark:bg-slate-900 border border-green-500/10 shadow-sm relative">
+                <DotLottieReact
+                  key="streak-badge-plant"
+                  src="/animations/growing-plant.lottie"
+                  loop={false}
+                  autoplay
+                  segment={[0, streak === 0 ? 1 : Math.min(135, Math.round((Math.min(7, streak) / 7) * 135))]}
+                  className="w-14 h-14 scale-125 object-cover"
+                />
+              </div>
+              <div>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-green-600 dark:text-green-400 leading-none">Active Streak</p>
+                <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1 leading-none">{streak} Day{streak > 1 ? 's' : ''}</p>
+              </div>
+            </motion.div>
+          )}
         </div>
         <Button
           variant="primary"
@@ -646,6 +775,7 @@ export default function ActivitiesPage() {
             onSaved={handleSave}
             onCancel={() => setFormOpen(false)}
             defaultCategory={defaultCat}
+            streak={streak}
           />
         </Card>
       )}

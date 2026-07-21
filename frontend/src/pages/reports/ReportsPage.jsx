@@ -159,6 +159,35 @@ function useAnalytics(logs, period) {
     };
 
     const grouped = {};
+    
+    // Pre-initialize keys based on period to create a full chronological timeline
+    if (period === 'daily') {
+      for (let h = 0; h <= 23; h++) {
+        const tempDate = new Date();
+        tempDate.setHours(h, 0, 0, 0);
+        const key = tempDate.toLocaleTimeString([], { hour: '2-digit' });
+        grouped[key] = { label: key };
+      }
+    } else if (period === 'weekly') {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      days.forEach(day => {
+        grouped[day] = { label: day };
+      });
+    } else if (period === 'monthly') {
+      const lastDay = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+      for (let d = 1; d <= lastDay; d++) {
+        const key = `${d}`;
+        grouped[key] = { label: key };
+      }
+    } else if (period === 'yearly') {
+      for (let m = 0; m < 12; m++) {
+        const tempDate = new Date();
+        tempDate.setMonth(m);
+        const key = tempDate.toLocaleString('default', { month: 'short' });
+        grouped[key] = { label: key };
+      }
+    }
+
     for (const l of current) {
       const key = groupKey(l);
       const cat = (l.category ?? 'other').toLowerCase();

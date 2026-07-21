@@ -1,7 +1,24 @@
 import { useState } from 'react';
-import { Menu, Sun, Moon, Bell, LogOut, ChevronDown } from 'lucide-react';
-import { useAuth }  from '@/context/AuthContext';
+import { Menu, Sun, Moon, Bell, LogOut, ChevronDown, X } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { useAlerts } from '@/context/AlertContext';
+
+function timeAgo(dateString) {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDays = Math.floor(diffHr / 24);
+
+  if (diffSec < 60) return 'just now';
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  return `${diffDays}d ago`;
+}
 
 export default function TopBar({ onMenuClick, title }) {
   const { user, logout } = useAuth();
@@ -9,7 +26,7 @@ export default function TopBar({ onMenuClick, title }) {
   const [notifOpen, setNotifOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md px-4 md:px-6">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[#cdd8c9] dark:border-white/5 bg-[#eaf0e6]/90 dark:bg-[#030712]/75 backdrop-blur-md px-4 md:px-6">
 
       {/* Hamburger — mobile */}
       <button
@@ -20,12 +37,6 @@ export default function TopBar({ onMenuClick, title }) {
         <Menu className="h-5 w-5" aria-hidden="true" />
       </button>
 
-      {/* Page title */}
-      {title && (
-        <h1 className="hidden md:block text-sm font-semibold text-slate-900 dark:text-slate-100">
-          {title}
-        </h1>
-      )}
 
       <div className="ml-auto flex items-center gap-1">
 
@@ -36,56 +47,88 @@ export default function TopBar({ onMenuClick, title }) {
           aria-label={isDark ? 'Light mode' : 'Dark mode'}
         >
           {isDark
-            ? <Sun  className="h-4 w-4" aria-hidden="true" />
+            ? <Sun className="h-4 w-4" aria-hidden="true" />
             : <Moon className="h-4 w-4" aria-hidden="true" />}
         </button>
 
         {/* Notifications */}
-        <div className="relative">
-          <button
-            onClick={() => setNotifOpen((o) => !o)}
-            className="relative rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-            aria-label="Notifications"
-          >
-            <Bell className="h-4 w-4" aria-hidden="true" />
-            {/* unread dot */}
-            <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true" />
-          </button>
+        {(() => {
+          const { alerts, unreadCount, fetchAlerts, markAsRead, markAllAsRead, deleteAlert } = useAlerts();
+          return (
+            <div className="relative">
+              <button
+                onClick={() => { setNotifOpen((o) => !o); fetchAlerts(); }}
+                className="relative rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell className="h-4 w-4" aria-hidden="true" />
+                {/* unread dot */}
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true" />
+                )}
+              </button>
 
-          {notifOpen && (
-            <div
-              className="absolute right-0 top-full mt-2 w-72 card-glass rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 scale-in overflow-hidden z-50"
-              onMouseLeave={() => setNotifOpen(false)}
-            >
-              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</p>
-                <span className="text-xs font-medium text-green-600 dark:text-green-400 cursor-pointer hover:underline">
-                  Mark all read
-                </span>
-              </div>
-              <ul>
-                {[
-                  { id: 1, msg: 'You logged 2.4 kg CO₂e today', time: '2m ago',  unread: true },
-                  { id: 2, msg: 'Monthly goal is 80% reached',   time: '1h ago',  unread: true },
-                  { id: 3, msg: 'New badge earned: Green Starter', time: '2d ago', unread: false },
-                ].map((n) => (
-                  <li
-                    key={n.id}
-                    className={`flex items-start gap-3 px-4 py-3 text-sm transition-colors hover:bg-green-50/50 dark:hover:bg-slate-800/50 ${n.unread ? 'bg-green-50/30 dark:bg-green-900/10' : ''}`}
-                  >
-                    <span className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${n.unread ? 'bg-green-500' : 'bg-transparent'}`} />
-                    <div className="flex-1 min-w-0">
-                      <p className={`leading-snug ${n.unread ? 'text-slate-800 dark:text-slate-200 font-medium' : 'text-slate-600 dark:text-slate-400'}`}>
-                        {n.msg}
-                      </p>
-                      <p className="text-xs text-slate-400 mt-0.5">{n.time}</p>
+              {notifOpen && (
+                <div
+                  className="absolute right-0 top-full mt-2 w-80 card-glass rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 scale-in overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
+                  onMouseLeave={() => setNotifOpen(false)}
+                >
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</p>
+                      {unreadCount > 0 && (
+                        <span className="px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold">
+                          {unreadCount} new
+                        </span>
+                      )}
                     </div>
-                  </li>
-                ))}
-              </ul>
+                    {unreadCount > 0 && (
+                      <span
+                        onClick={markAllAsRead}
+                        className="text-xs font-semibold text-green-600 dark:text-green-400 cursor-pointer hover:underline"
+                      >
+                        Mark all read
+                      </span>
+                    )}
+                  </div>
+                  <ul className="max-h-[300px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
+                    {alerts.length === 0 ? (
+                      <li className="px-4 py-8 text-center text-xs text-slate-400 dark:text-slate-500">
+                        No notifications yet
+                      </li>
+                    ) : (
+                      alerts.map((n) => (
+                        <li
+                          key={n.id}
+                          onClick={() => !n.isRead && markAsRead(n.id)}
+                          className={`group flex items-start gap-2.5 px-4 py-3 text-sm transition-colors hover:bg-green-50/50 dark:hover:bg-slate-800/50 cursor-pointer ${!n.isRead ? 'bg-green-50/20 dark:bg-green-950/10' : ''}`}
+                        >
+                          <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${!n.isRead ? 'bg-green-500' : 'bg-transparent'}`} />
+                          <div className="flex-1 min-w-0">
+                            <p className={`leading-snug text-xs ${!n.isRead ? 'text-slate-800 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
+                              {n.message}
+                            </p>
+                            <p className="text-[10px] text-slate-400 mt-1">{timeAgo(n.createdAt)}</p>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteAlert(n.id);
+                            }}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-all"
+                            aria-label="Delete notification"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* Divider */}
         <div className="mx-1 h-6 w-px bg-slate-200 dark:bg-slate-700" aria-hidden="true" />

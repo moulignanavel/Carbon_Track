@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface AlertRepository extends JpaRepository<Alert, Long> {
     List<Alert> findByUserId(Long userId);
+    List<Alert> findByUserIdOrderByIdDesc(Long userId);
+    List<Alert> findByUserIdAndAlertTypeAndCreatedAtAfter(Long userId, String alertType, java.time.LocalDateTime since);
 }

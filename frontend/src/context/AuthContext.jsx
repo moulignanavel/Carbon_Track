@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
   }, []);
 
   // Fetch full profile (badges, avatar) when token is present
-  useEffect(() => {
+  const fetchProfile = useCallback(() => {
     if (token) {
       import('@/api/userApi').then(({ getMyProfile }) => {
         getMyProfile().then(data => {
@@ -52,6 +52,24 @@ export function AuthProvider({ children }) {
       });
     }
   }, [token]);
+
+  useEffect(() => {
+    fetchProfile();
+
+    const handleActivityLogged = () => {
+      fetchProfile();
+    };
+    const handleLeaderboardViewed = () => {
+      setTimeout(fetchProfile, 800);
+    };
+
+    window.addEventListener('activity-logged', handleActivityLogged);
+    window.addEventListener('leaderboard-viewed', handleLeaderboardViewed);
+    return () => {
+      window.removeEventListener('activity-logged', handleActivityLogged);
+      window.removeEventListener('leaderboard-viewed', handleLeaderboardViewed);
+    };
+  }, [token, fetchProfile]);
 
   /* ── helpers ───────────────────────────────────────────────── */
   const applyAuth = useCallback((authResponse, remember = false) => {

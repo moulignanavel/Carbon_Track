@@ -16,7 +16,7 @@ const ITEMS = [
 export default function BottomNav() {
   return (
     <nav
-      className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-center justify-around bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 safe-area-inset-bottom px-1"
+      className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-center justify-around bg-[#eaf0e6]/95 dark:bg-slate-900/90 backdrop-blur-md border-t border-[#cdd8c9] dark:border-slate-800 safe-area-inset-bottom px-1"
       aria-label="Mobile navigation"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >

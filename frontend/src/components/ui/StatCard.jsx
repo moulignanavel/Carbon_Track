@@ -12,7 +12,7 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
  */
 
 const TREND_CONFIG = {
-  up:      { icon: TrendingUp,   color: 'text-red-500 dark:text-red-400',   bg: 'bg-red-50 dark:bg-red-900/20' },
+  up:      { icon: TrendingUp,   color: 'text-[#b91c1c] dark:text-red-400',   bg: 'bg-red-50 dark:bg-red-900/20' },
   down:    { icon: TrendingDown, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-900/20' },
   neutral: { icon: Minus,        color: 'text-slate-400',                    bg: 'bg-slate-50 dark:bg-slate-800' },
 };

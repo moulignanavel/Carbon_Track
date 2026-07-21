@@ -26,11 +26,14 @@ public class ActivityLoggingController {
 
     @PostMapping("/transport")
     public ResponseEntity<ActivityLog> createTransportLog(@Valid @RequestBody TransportLogRequest request) {
+        String unit = (request.getUnit() != null && !request.getUnit().isBlank())
+                ? request.getUnit().toLowerCase()
+                : "km";
         ActivityLogRequest internalRequest = new ActivityLogRequest(
                 "transport",
                 request.getTransportMode().toLowerCase(),
                 request.getDistance(),
-                "km", // Defaulting to km, could be enhanced to support miles
+                unit,
                 request.getLogDate()
         );
         internalRequest.setNotes(request.getNotes());
@@ -43,7 +46,7 @@ public class ActivityLoggingController {
                 "electricity",
                 request.getEnergySource().toLowerCase(),
                 request.getKwhConsumed(),
-                "kWh",
+                request.getUnit() != null ? request.getUnit() : "kWh",
                 request.getLogDate()
         );
         internalRequest.setNotes(request.getNotes());
@@ -69,7 +72,7 @@ public class ActivityLoggingController {
                 "shopping",
                 request.getProductCategory().toLowerCase(),
                 request.getSpendAmount(),
-                request.getCurrency().toUpperCase(), // e.g. USD, EUR
+                request.getCurrency().toLowerCase(), // e.g. items, kg
                 request.getLogDate()
         );
         internalRequest.setNotes(request.getNotes());

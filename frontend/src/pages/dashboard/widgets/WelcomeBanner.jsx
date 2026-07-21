@@ -2,23 +2,25 @@
  * WelcomeBanner — gradient hero strip with daily summary
  */
 import { Link } from 'react-router-dom';
-import { Plus, Leaf, Sun, TrendingDown } from 'lucide-react';
+import { Plus, Leaf, Sun, TrendingDown, Award } from 'lucide-react';
 import { Button, Badge } from '@/components/ui';
 import { formatEmission } from '@/utils/formatters';
 
 function Pill({ label, value, icon: Icon }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl bg-white/15 backdrop-blur-sm border border-white/20 px-3 py-2">
-      <Icon className="h-3.5 w-3.5 text-white/70 shrink-0" aria-hidden="true" />
+    <div className="flex items-center gap-2 rounded-xl px-3 py-2"
+      style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.30)', backdropFilter: 'blur(8px)' }}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: 'rgba(255,255,255,0.85)' }} aria-hidden="true" />
       <div>
-        <p className="text-[10px] text-white/60 leading-none">{label}</p>
+        <p className="text-[10px] font-medium leading-none" style={{ color: 'rgba(255,255,255,0.70)' }}>{label}</p>
         <p className="text-xs font-bold text-white mt-0.5 leading-none tabular-nums">{value}</p>
       </div>
     </div>
   );
 }
 
-export default function WelcomeBanner({ user, kpi }) {
+export default function WelcomeBanner({ user, kpi, percentile }) {
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? 'Good morning' :
@@ -65,6 +67,17 @@ export default function WelcomeBanner({ user, kpi }) {
           <div className="mt-4 flex flex-wrap gap-2">
             <Pill label="Today"     value={formatEmission(kpi?.today?.value ?? 0)}   icon={Sun}         />
             <Pill label="This week" value={formatEmission(kpi?.weekly?.value ?? 0)}  icon={TrendingDown} />
+            {percentile !== null && percentile !== undefined && (
+              <Pill 
+                label="Green Standing" 
+                value={
+                  percentile >= 99 
+                    ? "Top 1% Greenest" 
+                    : `Top ${(100 - percentile).toFixed(0)}%`
+                } 
+                icon={Award} 
+              />
+            )}
           </div>
         </div>
 

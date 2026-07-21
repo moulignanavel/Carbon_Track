@@ -85,7 +85,9 @@ export function createAxiosInstance() {
 
       // Handle 401 Unauthorized
       if (response?.status === HTTP_STATUS.UNAUTHORIZED) {
-        if (env.auth.autoLogoutOn401) {
+        // Do not redirect on 401 from login endpoints
+        const isAuthEndpoint = config.url?.includes('/auth/login') || config.url?.includes('/auth/register');
+        if (env.auth.autoLogoutOn401 && !isAuthEndpoint) {
           clearAuth();
           window.location.replace('/?reason=session_expired');
         }
@@ -120,8 +122,12 @@ export function createRetryableAxiosInstance(baseInstance) {
         config.__retryCount = 0;
       }
 
+      // Only retry idempotent HTTP methods (GET, HEAD, OPTIONS) to prevent duplicate POST/PUT operations
+      const isIdempotent = ['get', 'head', 'options'].includes(config.method?.toLowerCase());
+
       // Check if should retry
       const shouldRetry =
+        isIdempotent &&
         config.__retryCount < env.retries.maxRetries &&
         error.response &&
         [408, 429, 500, 502, 503, 504].includes(error.response.status);

@@ -8,4 +8,5 @@ import java.util.Optional;
 @Repository
 public interface EmissionFactorRepository extends JpaRepository<EmissionFactor, Long> {
     Optional<EmissionFactor> findFirstByActivityTypeAndUnitOrderByEffectiveDateDesc(String activityType, String unit);
+    Optional<EmissionFactor> findFirstByActivityTypeOrderByEffectiveDateDesc(String activityType);
 }

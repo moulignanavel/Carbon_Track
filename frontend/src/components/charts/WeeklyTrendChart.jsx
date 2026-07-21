@@ -79,7 +79,7 @@ export default function WeeklyTrendChart({ data = [], height = 260, dailyGoal = 
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => `${v}`}
-          width={28}
+          width={45}
         />
 
         <Tooltip content={<CustomTooltip />} />
@@ -96,7 +96,7 @@ export default function WeeklyTrendChart({ data = [], height = 260, dailyGoal = 
             dataKey={s.key}
             name={s.name}
             stroke={s.color}
-            strokeWidth={1.5}
+            strokeWidth={2.5}
             fill={`url(#wt-grad-${s.key})`}
             stackId="stack"
             dot={false}

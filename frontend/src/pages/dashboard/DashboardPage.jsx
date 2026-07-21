@@ -13,7 +13,7 @@
  *         CategoryPieChart (all with custom tooltips).
  */
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, Badge, Tabs } from '@/components/ui';
 import { ChartSkeleton }     from '@/components/skeletons';
 import { useAuth }           from '@/context/AuthContext';
@@ -21,13 +21,14 @@ import { useActivity }       from '@/context/ActivityContext';
 import { useGoals }          from '@/context/GoalContext';
 import { TYPE_MAP }          from '@/constants/activities';
 import { getCommunityLeaderboard } from '@/api/leaderboardApi';
-
-
+import { getPlatformAverages, getUserPercentile } from '@/api/benchmarkingApi';
+import recommendationsService from '@/services/api/recommendationsService';
 
 /* ── Chart components ─────────────────────────────────────────── */
 import WeeklyTrendChart      from '@/components/charts/WeeklyTrendChart';
 import MonthlyComparisonChart from '@/components/charts/MonthlyComparisonChart';
 import CategoryPieChart      from '@/components/charts/CategoryPieChart';
+import PlatformBenchmarkChart from '@/components/charts/PlatformBenchmarkChart';
 
 /* ── Widget components ────────────────────────────────────────── */
 import WelcomeBanner    from './widgets/WelcomeBanner';
@@ -42,6 +43,7 @@ const CHART_TABS = [
   { id: 'weekly',   label: 'Weekly Trend'  },
   { id: 'monthly',  label: 'Monthly'       },
   { id: 'category', label: 'By Category'   },
+  { id: 'benchmarks', label: 'vs Platform' },
 ];
 
 /* ══════════════════════════════════════════════════════════════
@@ -54,16 +56,28 @@ export default function DashboardPage() {
   
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
+  const [recommendations, setRecommendations] = useState([]);
+  const [recsLoading, setRecsLoading] = useState(true);
   const [chartTab, setChartTab] = useState('weekly');
+  const [platformAverages, setPlatformAverages] = useState([]);
+  const [percentile, setPercentile] = useState(null);
 
-  // Load backend logs
+  // Load backend logs on mount or when an activity is logged
   useEffect(() => {
     fetchLogs();
+
+    const handleActivityLogged = () => {
+      fetchLogs();
+    };
+
+    window.addEventListener('activity-logged', handleActivityLogged);
+    return () => {
+      window.removeEventListener('activity-logged', handleActivityLogged);
+    };
   }, [fetchLogs]);
 
-  // Load backend leaderboard
-  useEffect(() => {
-    let active = true;
+  // Callback to fetch dashboard statistics
+  const fetchDashboardStats = useCallback((active) => {
     getCommunityLeaderboard()
       .then((data) => {
         if (!active) return;
@@ -83,10 +97,73 @@ export default function DashboardPage() {
       .finally(() => {
         if (active) setLeaderboardLoading(false);
       });
+
+    recommendationsService.getRecommendations()
+      .then((data) => {
+        if (!active) return;
+        const formatted = data.map((item, index) => {
+          let icon = "💡";
+          let title = "Tip";
+          if (item.activityType.includes('flight')) {
+            icon = "✈️"; title = "Flight Tip";
+          } else if (item.activityType.includes('car') || item.activityType.includes('transport')) {
+            icon = "🚗"; title = "Transport Tip";
+          } else if (item.activityType.includes('beef') || item.activityType.includes('meat') || item.activityType.includes('food') || item.activityType.includes('lamb') || item.activityType.includes('mutton') || item.activityType.includes('chicken') || item.activityType.includes('poultry')) {
+            icon = "🍔"; title = "Diet Tip";
+          } else if (item.activityType.includes('energy') || item.activityType.includes('electricity')) {
+            icon = "⚡"; title = "Energy Tip";
+          } else if (item.activityType.includes('furniture')) {
+            icon = "🛋️"; title = "Home Tip";
+          } else if (item.activityType.includes('clothing') || item.activityType.includes('clothes') || item.activityType.includes('shopping')) {
+            icon = "🛍️"; title = "Shopping Tip";
+          }
+
+          return {
+            id: index,
+            icon,
+            title,
+            detail: item.tip,
+            impact: item.emissions ? `${item.emissions.toFixed(2)} kg CO₂e` : 'Low Impact',
+            tag: 'AI Tip',
+            tagColor: 'amber'
+          };
+        });
+        setRecommendations(formatted);
+      })
+      .catch((err) => console.error('Failed to load recommendations:', err))
+      .finally(() => { if (active) setRecsLoading(false); });
+
+    getPlatformAverages()
+      .then((data) => {
+        if (!active) return;
+        setPlatformAverages(data);
+      })
+      .catch((err) => console.error('Failed to load platform averages:', err));
+
+    getUserPercentile()
+      .then((data) => {
+        if (!active) return;
+        setPercentile(data.percentile);
+      })
+      .catch((err) => console.error('Failed to load user percentile:', err));
+  }, [user]);
+
+  // Load backend stats on mount or when activity is logged
+  useEffect(() => {
+    let active = true;
+    fetchDashboardStats(active);
+
+    const handleActivityLogged = () => {
+      fetchDashboardStats(active);
+    };
+
+    window.addEventListener('activity-logged', handleActivityLogged);
+
     return () => {
       active = false;
+      window.removeEventListener('activity-logged', handleActivityLogged);
     };
-  }, [user]);
+  }, [fetchDashboardStats]);
 
   // Calculate real KPIs from actual activity logs
   const realKpi = useMemo(() => {
@@ -314,7 +391,60 @@ export default function DashboardPage() {
       .filter((item) => item.value > 0);
   }, [logs]);
 
-  const globalLoading = logsLoading || leaderboardLoading || goalsLoading;
+  // Calculate Benchmark Comparison Data (this month vs platform averages)
+  const benchmarkData = useMemo(() => {
+    const categories = ['transport', 'electricity', 'food', 'shopping', 'energy'];
+    const labels = {
+      transport: 'Transport',
+      electricity: 'Electricity',
+      food: 'Food',
+      shopping: 'Shopping',
+      energy: 'Energy',
+    };
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const mLogs = logs.filter((l) => {
+      const ld = l.logDate ?? l.date;
+      if (!ld) return false;
+      const d = Array.isArray(ld) ? new Date(ld[0], ld[1] - 1, ld[2]) : new Date(ld);
+      return d >= startOfMonth;
+    });
+
+    const userCatMap = {};
+    categories.forEach(cat => userCatMap[cat] = 0);
+    userCatMap['other'] = 0;
+
+    for (const l of mLogs) {
+      const cat = (l.category ?? 'other').toLowerCase();
+      if (cat in userCatMap) {
+        userCatMap[cat] += (l.calculatedEmissions ?? 0);
+      } else {
+        userCatMap['other'] += (l.calculatedEmissions ?? 0);
+      }
+    }
+
+    const platformCatMap = {};
+    categories.forEach(cat => platformCatMap[cat] = 0);
+    platformCatMap['other'] = 0;
+
+    for (const p of platformAverages) {
+      const cat = (p.category ?? 'other').toLowerCase();
+      if (cat in platformCatMap) {
+        platformCatMap[cat] = p.totalEmissions ?? 0;
+      } else {
+        platformCatMap['other'] += p.totalEmissions ?? 0;
+      }
+    }
+
+    return categories.map((cat) => ({
+      category: labels[cat],
+      userVal: parseFloat((userCatMap[cat] || 0).toFixed(2)),
+      avgVal: parseFloat((platformCatMap[cat] || 0).toFixed(2)),
+    }));
+  }, [logs, platformAverages]);
+
+  const globalLoading = logsLoading || leaderboardLoading || goalsLoading || recsLoading;
 
   return (
     <div className="space-y-6 fade-in">
@@ -322,7 +452,7 @@ export default function DashboardPage() {
       {/* ════════════════════════════════════════════════════════
           1 · WELCOME BANNER  (full width)
           ════════════════════════════════════════════════════════ */}
-      <WelcomeBanner user={user} kpi={realKpi} />
+      <WelcomeBanner user={user} kpi={realKpi} percentile={percentile} />
 
       {/* ════════════════════════════════════════════════════════
           2 · KPI ROW  — Today / Week / Month / Avg
@@ -404,6 +534,15 @@ export default function DashboardPage() {
                     )}
                   </div>
                 )}
+                {chartTab === 'benchmarks' && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Badge variant="green" dot size="sm">Platform Benchmark</Badge>
+                      <span className="text-xs text-slate-400">your monthly emissions vs platform average</span>
+                    </div>
+                    <PlatformBenchmarkChart data={benchmarkData} height={272} />
+                  </div>
+                )}
               </>
             )}
           </Card>
@@ -424,7 +563,7 @@ export default function DashboardPage() {
         {/* ── Right sidebar block ─────────────────────────────── */}
         <div className="space-y-6">
           <GoalProgress goals={goals} isLoading={globalLoading} />
-          <Recommendations recommendations={[]} isLoading={globalLoading} />
+          <Recommendations recommendations={recommendations} isLoading={recsLoading} />
         </div>
       </div>
  

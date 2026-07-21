@@ -14,7 +14,7 @@
  */
 
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { COLORS } from '@/constants/theme';
@@ -39,10 +39,24 @@ function ChartTooltip({ active, payload, label }) {
   );
 }
 
-/* Custom dot — only render if value > 0 */
-function ActiveDot(props) {
-  const { cx, cy, fill } = props;
-  return <circle cx={cx} cy={cy} r={4} fill={fill} stroke="#fff" strokeWidth={2} />;
+function CustomDot(props) {
+  const { cx, cy, stroke, payload, dataKey } = props;
+  if (!payload) return null;
+  const val = payload[dataKey] ?? 0;
+  
+  // Only render a visible dot if the value is strictly greater than 0
+  if (val <= 0) return null;
+  
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={4}
+      stroke={stroke}
+      strokeWidth={2}
+      fill="#fff"
+    />
+  );
 }
 
 export default function TrendLineChart({
@@ -55,7 +69,16 @@ export default function TrendLineChart({
 }) {
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <LineChart data={data} margin={{ top: 16, right: 24, bottom: 0, left: -8 }}>
+      <AreaChart data={data} margin={{ top: 16, right: 24, bottom: 0, left: -8 }}>
+        <defs>
+          {series.map((s) => (
+            <linearGradient key={s.key} id={`gradient-${s.key}`} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="5%" stopColor={s.color} stopOpacity={0.3}/>
+              <stop offset="95%" stopColor={s.color} stopOpacity={0.0}/>
+            </linearGradient>
+          ))}
+        </defs>
+        
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} className="dark:stroke-slate-800" />
 
         {goalLine != null && (
@@ -86,7 +109,7 @@ export default function TrendLineChart({
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => `${v}`}
-          width={32}
+          width={45}
         />
 
         <Tooltip content={<ChartTooltip />} />
@@ -97,20 +120,21 @@ export default function TrendLineChart({
         />
 
         {series.map((s) => (
-          <Line
+          <Area
             key={s.key}
             type="monotone"
             dataKey={s.key}
             name={s.name}
             stroke={s.color}
-            strokeWidth={2}
-            strokeDasharray={s.dashed ? '6 3' : undefined}
-            dot={false}
-            activeDot={<ActiveDot fill={s.color} />}
+            strokeWidth={3}
+            fillOpacity={1}
+            fill={`url(#gradient-${s.key})`}
+            dot={<CustomDot stroke={s.color} dataKey={s.key} />}
+            activeDot={{ r: 6, stroke: s.color, strokeWidth: 2, fill: s.color }}
             connectNulls
           />
         ))}
-      </LineChart>
+      </AreaChart>
     </ResponsiveContainer>
   );
 }

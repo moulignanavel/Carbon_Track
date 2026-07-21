@@ -39,8 +39,8 @@ export default function Sidebar({ isOpen, onClose }) {
       <aside
         className={[
           'fixed inset-y-0 left-0 z-40 flex w-64 flex-col',
-          'bg-white dark:bg-slate-900',
-          'border-r border-slate-200 dark:border-slate-800',
+          'bg-[#eaf0e6] dark:bg-[#030712]/75 dark:backdrop-blur-md',
+          'border-r border-slate-200 dark:border-white/5',
           'transition-transform duration-300 ease-in-out',
           isOpen ? 'translate-x-0' : '-translate-x-full',
           'md:translate-x-0 md:static md:z-auto',
@@ -48,7 +48,7 @@ export default function Sidebar({ isOpen, onClose }) {
         aria-label="Main navigation"
       >
         {/* Brand */}
-        <div className="flex h-16 items-center gap-3 border-b border-slate-100 dark:border-slate-800 px-5">
+        <div className="flex h-16 items-center gap-3 border-b border-slate-100 dark:border-white/5 px-5">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-teal-500 shadow-sm">
             <Leaf className="h-4 w-4 text-white" aria-hidden="true" />
           </div>
@@ -61,7 +61,7 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
 
         {/* User pill */}
-        <div className="mx-3 mt-4 mb-2 flex items-center gap-2.5 rounded-xl bg-green-50 dark:bg-green-900/20 px-3 py-2.5">
+        <div className="mx-3 mt-4 mb-2 flex items-center gap-2.5 rounded-xl bg-green-50 dark:bg-[#0e271c]/40 border border-transparent dark:border-[#1E4432]/50 px-3 py-2.5">
           <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-600 text-white text-xs font-bold uppercase overflow-hidden">
             {user?.avatarUrl ? (
               <img src={`http://localhost:8080${user.avatarUrl}`} alt="Profile" className="h-full w-full object-cover" />
@@ -97,7 +97,7 @@ export default function Sidebar({ isOpen, onClose }) {
         </nav>
 
         {/* Eco tip strip */}
-        <div className="mx-3 mb-4 rounded-xl bg-gradient-to-br from-green-50 to-teal-50 dark:from-green-900/20 dark:to-teal-900/20 border border-green-100 dark:border-green-900/40 p-3">
+        <div className="mx-3 mb-4 rounded-xl bg-gradient-to-br from-green-50 to-teal-50 dark:from-[#0a1815]/60 dark:to-[#081a17]/60 border border-green-100 dark:border-[#1E4432]/50 p-3">
           <div className="flex items-center gap-2 mb-1">
             <TrendingDown className="h-3.5 w-3.5 text-green-600 dark:text-green-400" aria-hidden="true" />
             <p className="text-xs font-semibold text-green-800 dark:text-green-300">Eco Tip</p>

@@ -77,7 +77,7 @@ export default function StackedBarChart({
           axisLine={false}
           tickLine={false}
           tickFormatter={(v) => `${v}`}
-          width={32}
+          width={45}
         />
         <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(34,197,94,0.04)' }} />
         <Legend

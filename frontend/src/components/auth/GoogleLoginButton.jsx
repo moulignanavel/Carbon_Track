@@ -43,11 +43,11 @@ export default function GoogleLoginButton() {
             const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
               headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
             });
-            
+
             if (!userInfoRes.ok) throw new Error('Failed to fetch user info');
-            
+
             const userInfo = await userInfoRes.json();
-            
+
             // The backend decodes the JWT without signature verification (just splits by "." and base64 decodes).
             // We construct a mock JWT payload that satisfies the backend parser.
             // userInfo contains: sub, name, email, picture
@@ -89,7 +89,7 @@ export default function GoogleLoginButton() {
     <button
       type="button"
       onClick={handleCustomGoogleLogin}
-      className="relative w-full h-14 group flex items-center justify-center gap-3 bg-[#0F2E22]/60 backdrop-blur-xl border border-[#1E4432] rounded-xl shadow-[0_4px_15px_rgba(0,0,0,0.2)] hover:bg-[#0F2E22] hover:border-[#7FBF8C]/30 hover:shadow-[0_0_20px_rgba(127,191,140,0.2)] transition-all duration-300 cursor-pointer"
+      className="relative w-full h-14 group flex items-center justify-center gap-3 bg-white border border-slate-200 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:bg-slate-50 hover:shadow-[0_4px_12px_rgba(0,0,0,0.12)] transition-all duration-300 cursor-pointer"
     >
       <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -97,7 +97,7 @@ export default function GoogleLoginButton() {
         <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
         <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
       </svg>
-      <span className="text-[#F3EFE4] font-semibold tracking-wide">Continue with Google</span>
+      <span className="text-slate-800 font-bold tracking-wide">Continue with Google</span>
     </button>
   );
 }

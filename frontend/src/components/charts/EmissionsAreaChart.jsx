@@ -81,7 +81,7 @@ export default function EmissionsAreaChart({
             dataKey={s.key}
             name={s.name}
             stroke={CHART_PALETTE[i]}
-            strokeWidth={2}
+            strokeWidth={3}
             fill={`url(#grad-${s.key})`}
             stackId={stacked ? 'stack' : undefined}
             dot={false}

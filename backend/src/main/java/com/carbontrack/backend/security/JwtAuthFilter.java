@@ -38,7 +38,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String email = jwtUtil.extractUsername(token);
+        String email = null;
+        try {
+            email = jwtUtil.extractUsername(token);
+        } catch (io.jsonwebtoken.JwtException e) {
+            // Token is expired or invalid
+            // Allow the request to proceed without setting authentication,
+            // which will result in a clean 401 Unauthorized
+        }
 
         if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             try {

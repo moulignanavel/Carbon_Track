@@ -1,4 +1,5 @@
 import { Trophy, Leaf, Zap } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import Badge from '@/components/ui/Badge';
 
 /**

@@ -1,196 +1,213 @@
-import { useState } from 'react';
-import { X, Award, ShieldCheck, Target, Leaf, ChevronLeft } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { X, ChevronLeft, Lock, Trophy } from 'lucide-react';
+import { BADGES, BadgeCoin } from '@/pages/badges/BadgesPage';
+import { useActivity } from '@/context/ActivityContext';
 
 export default function BadgeSidebar({ isOpen, onClose, user }) {
-  const [selectedBadge, setSelectedBadge] = useState(null);
+  const [selected, setSelected] = useState(null);
+  const { logs, fetchLogs } = useActivity();
+  const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchLogs();
+    }
+  }, [isOpen, fetchLogs]);
+
+  useEffect(() => {
+    const obs = new MutationObserver(() => setIsDark(document.documentElement.classList.contains('dark')));
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+    return () => obs.disconnect();
+  }, []);
+
+  const streak = useMemo(() => {
+    if (!logs || logs.length === 0) return 0;
+    const dates = Array.from(
+      new Set(
+        logs
+          .map((l) => {
+            const d = l.logDate ?? l.date;
+            if (!d) return null;
+            if (Array.isArray(d)) {
+              const y = d[0];
+              const m = String(d[1]).padStart(2, '0');
+              const day = String(d[2]).padStart(2, '0');
+              return `${y}-${m}-${day}`;
+            }
+            return d.split('T')[0];
+          })
+          .filter(Boolean)
+      )
+    ).sort((a, b) => b.localeCompare(a));
+
+    if (dates.length === 0) return 0;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    let currentTargetDate = null;
+    if (dates.includes(todayStr)) {
+      currentTargetDate = new Date();
+    } else if (dates.includes(yesterdayStr)) {
+      currentTargetDate = yesterday;
+    } else {
+      return 0;
+    }
+
+    let count = 0;
+    while (true) {
+      const targetStr = currentTargetDate.toISOString().split('T')[0];
+      if (dates.includes(targetStr)) {
+        count++;
+        currentTargetDate.setDate(currentTargetDate.getDate() - 1);
+      } else {
+        break;
+      }
+    }
+    return count;
+  }, [logs]);
 
   if (!isOpen) return null;
 
-  // We map backend badge strings to rich objects.
-  // Using theme colors (amber, blue, purple) for variety, but green is prominent.
-  const badgeDefinitions = {
-    'Goal Crusher': {
-      icon: Target,
-      color: 'text-purple-600 dark:text-purple-400',
-      glow: 'shadow-[0_0_30px_rgba(168,85,247,0.3)] dark:shadow-[0_0_30px_rgba(168,85,247,0.5)]',
-      border: 'border-purple-300 dark:border-purple-500/50',
-      bgColor: 'bg-purple-100 dark:bg-purple-900/40',
-      bgGradient: 'from-purple-100 to-purple-200 dark:from-purple-900/50 dark:to-purple-950/80',
-      description: 'Completed a goal while staying strictly under the emission limit.',
-    },
-    'Emission Target Master': {
-      icon: ShieldCheck,
-      color: 'text-blue-600 dark:text-blue-400',
-      glow: 'shadow-[0_0_30px_rgba(59,130,246,0.3)] dark:shadow-[0_0_30px_rgba(59,130,246,0.5)]',
-      border: 'border-blue-300 dark:border-blue-500/50',
-      bgColor: 'bg-blue-100 dark:bg-blue-900/40',
-      bgGradient: 'from-blue-100 to-blue-200 dark:from-blue-900/50 dark:to-blue-950/80',
-      description: 'Maintained a flawless track record of meeting emission targets.',
-    },
-    'Top Saver': {
-      icon: Award,
-      color: 'text-amber-600 dark:text-amber-400',
-      glow: 'shadow-[0_0_30px_rgba(245,158,11,0.3)] dark:shadow-[0_0_30px_rgba(245,158,11,0.5)]',
-      border: 'border-amber-300 dark:border-amber-500/50',
-      bgColor: 'bg-amber-100 dark:bg-amber-900/40',
-      bgGradient: 'from-amber-100 to-amber-200 dark:from-amber-900/50 dark:to-amber-950/80',
-      description: 'Recognized as one of the top carbon savers this month.',
-    },
-    'Eco Champion': {
-      icon: Leaf,
-      color: 'text-green-600 dark:text-green-400',
-      glow: 'shadow-[0_0_30px_rgba(34,197,94,0.4)] dark:shadow-[0_0_30px_rgba(34,197,94,0.5)]',
-      border: 'border-green-300 dark:border-green-500/50',
-      bgColor: 'bg-green-100 dark:bg-green-900/40',
-      bgGradient: 'from-green-100 to-green-200 dark:from-green-900/50 dark:to-green-950/80',
-      description: 'Overall dedication to a sustainable lifestyle and low footprint.',
-    },
-    'Community Leader': {
-      icon: Award,
-      color: 'text-rose-600 dark:text-rose-400',
-      glow: 'shadow-[0_0_30px_rgba(225,29,72,0.4)] dark:shadow-[0_0_30px_rgba(225,29,72,0.5)]',
-      border: 'border-rose-300 dark:border-rose-500/50',
-      bgColor: 'bg-rose-100 dark:bg-rose-900/40',
-      bgGradient: 'from-rose-100 to-rose-200 dark:from-rose-900/50 dark:to-rose-950/80',
-      description: 'Awarded to top contributors who inspire others in the community leaderboard.',
-    }
-  };
-
-  const getBadgeDef = (badgeName) => badgeDefinitions[badgeName] || {
-    icon: Award,
-    color: 'text-slate-600 dark:text-slate-400',
-    glow: 'shadow-[0_0_30px_rgba(148,163,184,0.3)] dark:shadow-[0_0_30px_rgba(148,163,184,0.5)]',
-    border: 'border-slate-300 dark:border-slate-500/50',
-    bgColor: 'bg-slate-100 dark:bg-slate-800/40',
-    bgGradient: 'from-slate-100 to-slate-200 dark:from-slate-800/50 dark:to-slate-900/80',
-    description: 'Special achievement unlocked.',
-  };
-
-  const badges = user?.badges || [];
+  const unlockedBadges = (user?.badges && user.badges.length > 0) ? user.badges : ['Eco Pioneer', 'Goal Crusher', '10 kg Reduction', 'Eco Warrior'];
+  const selectedBadge = BADGES.find(b => b.name === selected);
+  const isUnlocked = (name) => unlockedBadges.includes(name);
 
   const handleClose = () => {
-    setSelectedBadge(null);
+    setSelected(null);
     onClose();
   };
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-slate-50/95 dark:bg-slate-950/95 backdrop-blur-xl animate-in fade-in duration-300">
-      {/* Top Navigation Bar */}
-      <div className="flex items-center justify-between px-8 py-6 z-20 absolute top-0 w-full">
-        {selectedBadge ? (
-          <button 
-            onClick={() => setSelectedBadge(null)}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-800 dark:text-white transition-all font-medium border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 backdrop-blur-md shadow-sm"
+      {/* Absolute Top Floating Buttons: Back (Left Screen Corner) & Close X (Right Screen Corner) */}
+      <div className="absolute top-6 left-6 right-6 z-40 flex items-center justify-between pointer-events-none">
+        {selected ? (
+          <button
+            onClick={() => setSelected(null)}
+            className="pointer-events-auto flex items-center gap-2 px-5 py-2.5 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-800 dark:text-white transition-all font-semibold text-sm cursor-pointer shadow-md border border-slate-200 dark:border-slate-700"
           >
-            <ChevronLeft className="w-5 h-5" />
-            Back to Collection
+            <ChevronLeft className="w-4 h-4" /> Back to Collection
           </button>
         ) : (
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-green-500 to-teal-500 flex items-center justify-center shadow-[0_0_20px_rgba(34,197,94,0.4)]">
-              <Award className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                {user?.username}'s Trophy Room
-              </h2>
-              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
-                {badges.length} Achievement{badges.length !== 1 ? 's' : ''} Unlocked
-              </p>
-            </div>
-          </div>
+          <div />
         )}
-        <button 
+
+        <button
           onClick={handleClose}
-          className="p-3 rounded-full bg-white dark:bg-white/10 hover:bg-slate-100 dark:hover:bg-white/20 text-slate-800 dark:text-white transition-all border border-slate-200 dark:border-white/10 hover:border-slate-300 dark:hover:border-white/20 backdrop-blur-md shadow-sm"
+          className="pointer-events-auto p-3 rounded-full bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all shadow-md cursor-pointer border border-slate-200 dark:border-slate-700"
         >
           <X className="w-6 h-6" />
         </button>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 w-full flex items-center justify-center pt-24 pb-12 px-8 overflow-y-auto">
-        
-        {/* Showcase Mode */}
-        {selectedBadge ? (() => {
-          const def = getBadgeDef(selectedBadge);
-          const Icon = def.icon;
-          return (
-            <div className="flex flex-col items-center justify-center animate-in zoom-in-95 duration-500 w-full max-w-2xl text-center">
-              <div className="relative mb-16">
-                {/* Outer decorative ring */}
-                <div className={`absolute inset-[-40px] rounded-full border border-dashed ${def.border} opacity-50 animate-[spin_10s_linear_infinite]`} />
-                
-                {/* Background Glow */}
-                <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full blur-[80px] ${def.bgColor} opacity-60 animate-pulse mix-blend-multiply dark:mix-blend-screen`} />
-                
-                {/* The Spinning Badge */}
-                <div className={`relative w-72 h-72 rounded-full bg-gradient-to-br ${def.bgGradient} flex items-center justify-center animate-spin-y border-[12px] border-white dark:border-slate-900/80 ${def.glow} backdrop-blur-sm`}>
-                  <div className={`absolute inset-0 rounded-full border-2 ${def.border} opacity-50`} />
-                  <Icon className={`w-36 h-36 ${def.color} drop-shadow-2xl`} />
-                </div>
-              </div>
-              
-              <div className="inline-flex items-center gap-2 px-6 py-2 rounded-full bg-green-50 dark:bg-white/5 border border-green-200 dark:border-white/10 text-green-700 dark:text-white/90 text-sm uppercase tracking-[0.2em] font-bold mb-8 backdrop-blur-md shadow-sm dark:shadow-xl">
-                <Target className="w-4 h-4 text-green-600 dark:text-green-400" />
-                Achievement Unlocked
-              </div>
-
-              <h3 className={`text-6xl font-black text-slate-900 dark:text-transparent dark:bg-clip-text dark:bg-gradient-to-br dark:from-white dark:to-white/50 mb-6 tracking-tight drop-shadow-sm dark:drop-shadow-lg`}>
-                {selectedBadge}
-              </h3>
-              
-              <p className="text-xl text-slate-600 dark:text-slate-300 max-w-xl leading-relaxed font-medium">
-                {def.description}
-              </p>
+      {/* Main Centered Content Area */}
+      <div className="flex-1 w-full overflow-y-auto px-4 sm:px-12 pb-16 pt-20 flex flex-col items-center">
+        {selected && selectedBadge ? (
+          /* SHOWCASE MODE: Centered Showcase View */
+          <div className="flex flex-col items-center justify-center animate-in zoom-in-95 duration-300 max-w-2xl w-full my-auto text-center py-4">
+            <div className="relative flex items-center justify-center mb-10">
+              <div className="absolute w-[340px] h-[340px] rounded-full border border-dashed border-slate-300 dark:border-white/10 animate-[spin_30s_linear_infinite]" />
+              <div className="absolute w-[288px] h-[288px] rounded-full border border-dashed border-slate-200 dark:border-white/5 animate-[spin_20s_linear_infinite_reverse]" />
+              <BadgeCoin badge={selectedBadge} isUnlocked={isUnlocked(selectedBadge.name)} size="lg" isDark={isDark} streak={streak} />
             </div>
-          );
-        })() : (
-          /* Gallery Mode */
-          <div className="w-full max-w-7xl mx-auto flex flex-col items-center">
-            {badges.length === 0 ? (
-              <div className="text-center py-20 flex flex-col items-center">
-                <div className="w-32 h-32 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-center shadow-lg dark:shadow-2xl mb-8">
-                  <Award className="w-16 h-16 text-slate-400 dark:text-slate-600" />
-                </div>
-                <h3 className="text-4xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">Your showcase is empty</h3>
-                <p className="text-xl text-slate-500 dark:text-slate-400 max-w-lg leading-relaxed">
-                  Start tracking activities and crushing your emission targets to earn exclusive badges.
-                </p>
+
+            {isUnlocked(selectedBadge.name) ? (
+              <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/25 dark:text-emerald-400 text-xs uppercase tracking-widest font-extrabold mb-4">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping" />
+                Unlocked
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full mt-12">
-                {badges.map((badgeName, index) => {
-                  const def = getBadgeDef(badgeName);
-                  const Icon = def.icon;
-                  return (
-                    <div 
-                      key={index}
-                      onClick={() => setSelectedBadge(badgeName)}
-                      className={`relative group flex flex-col items-center p-8 rounded-3xl bg-white/60 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800 hover:border-green-400 dark:hover:border-green-500 cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-xl dark:hover:shadow-2xl overflow-hidden`}
-                    >
-                      {/* Background hover glow effect */}
-                      <div className={`absolute inset-0 bg-gradient-to-b ${def.bgGradient} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-                      
-                      <div className={`w-32 h-32 rounded-full bg-slate-50 dark:bg-slate-950 flex items-center justify-center mb-6 relative z-10 border-[6px] border-slate-100 dark:border-slate-800 group-hover:${def.border} transition-colors duration-300 ${def.glow}`}>
-                        <Icon className={`w-14 h-14 ${def.color} group-hover:scale-110 transition-transform duration-500 drop-shadow-md`} />
-                      </div>
-                      
-                      <h4 className="font-bold text-slate-900 dark:text-white text-xl mb-3 text-center tracking-tight relative z-10">{badgeName}</h4>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 text-center line-clamp-2 relative z-10 font-medium">
-                        {def.description}
-                      </p>
-                      
-                      <div className="mt-6 opacity-0 group-hover:opacity-100 transition-opacity duration-300 translate-y-4 group-hover:translate-y-0 relative z-10">
-                        <span className={`text-xs uppercase tracking-wider font-bold ${def.color}`}>
-                          Click to View
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-100 border border-slate-300 text-slate-500 dark:bg-slate-800/60 dark:border-white/6 dark:text-slate-400 text-xs uppercase tracking-widest font-bold mb-4">
+                <Lock className="w-3 h-3" /> Locked
               </div>
             )}
+
+            <h3 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight mb-3">
+              {selectedBadge.name}
+            </h3>
+            <p className="text-slate-600 dark:text-slate-300 text-base max-w-md leading-relaxed font-medium">
+              {isUnlocked(selectedBadge.name) ? selectedBadge.description : 'Keep logging activities and slashing emissions to unlock this rare trophy.'}
+            </p>
+          </div>
+        ) : (
+          /* GALLERY MODE - PERFECTLY CENTERED */
+          <div className="w-full max-w-7xl flex flex-col items-center mx-auto">
+            {/* Centered Header Section */}
+            <div className="w-full flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10">
+              <div>
+                <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight flex items-center gap-3">
+                  <Trophy className="w-8 h-8 text-emerald-500" />
+                  {user?.username ? `${user.username}'s` : 'My'} Trophy Room
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 text-sm mt-1.5 max-w-xl leading-relaxed">
+                  Complete eco-friendly actions and climb the leaderboard to unlock these achievements.
+                </p>
+              </div>
+              <div className="flex-shrink-0 bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-3.5 text-right shadow-sm">
+                <div className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+                  {unlockedBadges.length}
+                  <span className="text-slate-400 dark:text-slate-600 font-medium text-xl"> / {BADGES.length}</span>
+                </div>
+                <div className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold mt-0.5">Unlocked</div>
+              </div>
+            </div>
+
+            {/* Grid of 13 Badges - Centered */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-5 sm:gap-6 w-full justify-center justify-items-center">
+              {BADGES.map((badge) => {
+                const unlocked = isUnlocked(badge.name);
+                return (
+                  <button
+                    key={badge.name}
+                    onClick={() => setSelected(badge.name)}
+                    className={`group relative flex flex-col items-center pt-7 pb-6 px-4 rounded-3xl border transition-all duration-300 text-left overflow-hidden cursor-pointer w-full max-w-[240px]
+                      ${unlocked
+                        ? 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-white/8 hover:border-slate-300 dark:hover:border-white/18 hover:-translate-y-1.5 hover:shadow-xl dark:hover:shadow-2xl shadow-sm'
+                        : 'bg-slate-50/80 dark:bg-slate-950/50 border-slate-200/70 dark:border-white/4 hover:bg-slate-50 dark:hover:bg-slate-900/50'
+                      }`}
+                  >
+                    {/* Shine sweep on unlocked */}
+                    {unlocked && (
+                      <div className="absolute inset-0 before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 dark:before:via-white/8 before:to-transparent before:-translate-x-full group-hover:before:translate-x-full before:transition-transform before:duration-[800ms] pointer-events-none" />
+                    )}
+
+                    {/* 3D Coin */}
+                    <div className="mb-5 flex items-center justify-center">
+                      <BadgeCoin badge={badge} isUnlocked={unlocked} size="md" isDark={isDark} />
+                    </div>
+
+                    {/* Name */}
+                    <h3 className={`font-bold text-base text-center leading-snug mb-1.5 transition-colors
+                      ${unlocked
+                        ? 'text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300'
+                        : 'text-slate-500 dark:text-slate-500'
+                      }`}>
+                      {badge.name}
+                    </h3>
+
+                    {/* Description */}
+                    <p className={`text-xs text-center leading-relaxed mb-5 px-1 line-clamp-2 min-h-[2.5rem]
+                      ${unlocked ? 'text-slate-500 dark:text-slate-400 font-medium' : 'text-slate-400 dark:text-slate-600'}`}>
+                      {badge.description}
+                    </p>
+
+                    {/* Status pill */}
+                    {unlocked ? (
+                      <span className={`px-4 py-1.5 rounded-full border text-[10px] uppercase tracking-widest font-black ${isDark ? badge.pillDark : badge.pillLight}`}>
+                        UNLOCKED
+                      </span>
+                    ) : (
+                      <span className="px-4 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-600 text-[10px] uppercase tracking-widest font-black bg-slate-100/50 dark:bg-slate-800/40">
+                        LOCKED
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

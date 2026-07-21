@@ -499,12 +499,26 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, goalTitle }) {
    Main Page
    ══════════════════════════════════════════════════════════════ */
 export default function GoalsPage() {
-  const { goals, stats, addGoal: addGoalContext, updateGoal, deleteGoal: deleteGoalContext } = useGoals();
+  const { goals, stats, fetchGoals, addGoal: addGoalContext, updateGoal, deleteGoal: deleteGoalContext } = useGoals();
 
   const [formOpen,      setFormOpen]      = useState(false);
   const [deleteOpen,    setDeleteOpen]    = useState(false);
   const [editingGoal,   setEditingGoal]   = useState(null);
   const [deleteTarget,  setDeleteTarget]  = useState(null);
+
+  // Re-fetch goals on mount and every 30 s so progress stays live
+  useEffect(() => {
+    fetchGoals();
+    const interval = setInterval(fetchGoals, 30000);
+    return () => clearInterval(interval);
+  }, [fetchGoals]);
+
+  // Also re-fetch whenever an activity is logged (delayed to give backend time)
+  useEffect(() => {
+    const handler = () => fetchGoals();
+    window.addEventListener('activity-logged', handler);
+    return () => window.removeEventListener('activity-logged', handler);
+  }, [fetchGoals]);
 
   const handleCreate = () => {
     setEditingGoal(null);

@@ -2,10 +2,12 @@
  * Recommendations — personalised eco tips preview
  */
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
 
 function RecommendationCard({ rec, isExpanded, onToggle }) {
+  const navigate = useNavigate();
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-200">
       {/* Header row */}
@@ -40,6 +42,7 @@ function RecommendationCard({ rec, isExpanded, onToggle }) {
           </p>
           <button
             type="button"
+            onClick={() => navigate('/recommendations')}
             className="mt-3 flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 hover:underline cursor-pointer"
           >
             Learn more <ArrowRight className="h-3 w-3" aria-hidden="true" />

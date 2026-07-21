@@ -8,6 +8,7 @@ import com.carbontrack.backend.entity.User;
 import com.carbontrack.backend.entity.UserBadge;
 import com.carbontrack.backend.repository.ActivityLogRepository;
 import com.carbontrack.backend.repository.BadgeRepository;
+import com.carbontrack.backend.repository.GoalRepository;
 import com.carbontrack.backend.repository.UserBadgeRepository;
 import com.carbontrack.backend.repository.UserRepository;
 import com.carbontrack.backend.service.SecurityService;
@@ -25,17 +26,20 @@ public class LeaderboardController {
     private final ActivityLogRepository activityLogRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final BadgeRepository badgeRepository;
+    private final GoalRepository goalRepository;
     private final SecurityService securityService;
 
     public LeaderboardController(UserRepository userRepository,
                                  ActivityLogRepository activityLogRepository,
                                  UserBadgeRepository userBadgeRepository,
                                  BadgeRepository badgeRepository,
+                                 GoalRepository goalRepository,
                                  SecurityService securityService) {
         this.userRepository = userRepository;
         this.activityLogRepository = activityLogRepository;
         this.userBadgeRepository = userBadgeRepository;
         this.badgeRepository = badgeRepository;
+        this.goalRepository = goalRepository;
         this.securityService = securityService;
     }
 
@@ -178,11 +182,86 @@ public class LeaderboardController {
             return a.getUsername().compareToIgnoreCase(b.getUsername());
         });
 
-        // Assign ranks
+        // Names of all leaderboard-specific dynamic badges
+        final List<String> LEADERBOARD_BADGES = List.of(
+            "Earth Savior", "Community Leader", "Top Saver", "Eco Warrior"
+        );
+
+        // Step 1: Revoke all leaderboard badges from every ranked user
+        // so that rank changes are immediately reflected
+        for (LeaderboardUserResponse ur : responseList) {
+            for (String badgeName : LEADERBOARD_BADGES) {
+                revokeLeaderboardBadge(ur.getUserId(), badgeName);
+            }
+        }
+
+        // Step 2: Assign ranks and re-award based on current rank
         for (int i = 0; i < responseList.size(); i++) {
-            responseList.get(i).setRank(i + 1);
+            LeaderboardUserResponse ur = responseList.get(i);
+            int rank = i + 1;
+            ur.setRank(rank);
+
+            // Only award to active users
+            if (ur.getActivityCount() > 0) {
+                if (rank == 1) {
+                    awardBadgeIfMissing(ur.getUserId(), "Earth Savior", "Awarded to the #1 user on the global leaderboard.");
+
+                    // Community Leader: #1 AND 3+ goals achieved
+                    long achievedGoalCount = goalRepository.findByUserIdAndStatus(ur.getUserId(), "ACHIEVED").size();
+                    if (achievedGoalCount >= 3) {
+                        awardBadgeIfMissing(ur.getUserId(), "Community Leader", "Ranked #1 on the leaderboard with 3 or more goals achieved.");
+                    }
+                } else if (rank == 2) {
+                    awardBadgeIfMissing(ur.getUserId(), "Top Saver", "Awarded to the #2 user on the global leaderboard.");
+                } else if (rank == 3) {
+                    awardBadgeIfMissing(ur.getUserId(), "Eco Warrior", "Awarded to the #3 user on the global leaderboard.");
+                }
+            }
         }
 
         return responseList;
+    }
+
+    /**
+     * Removes a leaderboard badge from a user if they currently hold it.
+     * Called before re-awarding so rank changes are always accurate.
+     */
+    private void revokeLeaderboardBadge(Long userId, String badgeName) {
+        badgeRepository.findAll().stream()
+            .filter(b -> badgeName.equals(b.getName()))
+            .findFirst()
+            .ifPresent(badge -> {
+                userBadgeRepository.findAll().stream()
+                    .filter(ub -> ub.getUserId().equals(userId) && ub.getBadgeId().equals(badge.getId()))
+                    .findFirst()
+                    .ifPresent(userBadgeRepository::delete);
+            });
+    }
+
+    private void awardBadgeIfMissing(Long userId, String badgeName, String description) {
+        Badge badge = badgeRepository.findAll().stream()
+                .filter(b -> badgeName.equals(b.getName()))
+                .findFirst()
+                .orElse(null);
+
+        if (badge == null) {
+            badge = new Badge();
+            badge.setName(badgeName);
+            badge.setDescription(description);
+            badge.setTriggerType("LEADERBOARD");
+            badge.setThreshold(0.0);
+            badge = badgeRepository.save(badge);
+        }
+
+        final Badge finalBadge = badge;
+        boolean alreadyHasBadge = userBadgeRepository.findAll().stream()
+                .anyMatch(ub -> ub.getUserId().equals(userId) && ub.getBadgeId().equals(finalBadge.getId()));
+
+        if (!alreadyHasBadge) {
+            UserBadge userBadge = new UserBadge();
+            userBadge.setUserId(userId);
+            userBadge.setBadgeId(finalBadge.getId());
+            userBadgeRepository.save(userBadge);
+        }
     }
 }

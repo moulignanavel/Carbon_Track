@@ -19,7 +19,12 @@ public class ElectricityLogRequest {
 
     private String notes;
 
+    private String unit;
+
     public ElectricityLogRequest() {}
+
+    public String getUnit() { return unit; }
+    public void setUnit(String unit) { this.unit = unit; }
 
     public String getEnergySource() { return energySource; }
     public void setEnergySource(String energySource) { this.energySource = energySource; }

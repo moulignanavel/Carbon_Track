@@ -8,4 +8,6 @@ import java.util.List;
 @Repository
 public interface GoalRepository extends JpaRepository<Goal, Long> {
     List<Goal> findByUserId(Long userId);
+    List<Goal> findByUserIdAndStatus(Long userId, String status);
+    List<Goal> findByStatus(String status);
 }

@@ -73,7 +73,7 @@ export default function LoginPage() {
   return (
     <div className="slide-up relative">
       {/* ── Card ─────────────────────────────────────────────── */}
-      <div className="bg-[#0F2E22]/40 backdrop-blur-3xl border border-[#1E4432] rounded-3xl p-8 sm:p-12 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-[#F3EFE4] relative overflow-hidden group">
+      <div className="bg-[#0F2E22]/40 backdrop-blur-3xl border border-white/10 rounded-3xl p-8 sm:p-12 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-[#F3EFE4] relative overflow-hidden group">
 
         {/* Ambient Top Glow */}
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#7FBF8C]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
@@ -120,7 +120,7 @@ export default function LoginPage() {
               required
               leftIcon={<Mail className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
               error={errors.email?.message}
-              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-[#1E293B] !border-[#334155] focus:!border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
               {...register('email')}
             />
           </div>
@@ -151,7 +151,7 @@ export default function LoginPage() {
               required
               leftIcon={<Lock className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
               error={errors.password?.message}
-              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-[#1E293B] !border-[#334155] focus:!border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
               {...register('password')}
             />
           </div>

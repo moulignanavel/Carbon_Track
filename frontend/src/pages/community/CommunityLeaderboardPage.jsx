@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, TrendingUp } from 'lucide-react';
 import { getCommunityLeaderboard, searchLeaderboard } from '@/api/leaderboardApi';
 import { useAuth } from '@/context/AuthContext';
@@ -12,19 +13,9 @@ import Input from '@/components/ui/Input';
 
 import BadgeSidebar from '@/components/badges/BadgeSidebar';
 
-/**
- * CommunityLeaderboardPage
- * ─────────────────────────────────────────────────────────────
- * Main leaderboard page featuring:
- *   - Top 3 highlighted cards
- *   - Full ranking table (up to 50)
- *   - Search and filtering
- *   - Current user's rank highlight
- *   - Responsive design
- */
-
 export default function CommunityLeaderboardPage() {
   const { user: currentUser } = useAuth();
+  const navigate = useNavigate();
   
   const [leaderboardData, setLeaderboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -53,6 +44,9 @@ export default function CommunityLeaderboardPage() {
         setError(null);
         const data = await getCommunityLeaderboard();
         setLeaderboardData(data);
+        // Backend re-calculates rank badges on every leaderboard call.
+        // Dispatch event so AuthContext re-fetches the updated badge list.
+        window.dispatchEvent(new CustomEvent('leaderboard-viewed'));
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load leaderboard');
         console.error('Leaderboard error:', err);
@@ -134,7 +128,7 @@ export default function CommunityLeaderboardPage() {
                 placeholder="Search by username or email…"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-10 bg-white dark:bg-slate-900 border border-[#cbd5e1] dark:border-slate-700 shadow-sm"
               />
             </div>
             <Button type="submit" variant="primary" disabled={isSearching}>
