@@ -9,12 +9,12 @@ import { formatEmission } from '@/utils/formatters';
 function Pill({ label, value, icon: Icon }) {
   return (
     <div className="flex items-center gap-2 rounded-xl px-3 py-2"
-      style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.30)', backdropFilter: 'blur(8px)' }}
+      style={{ background: 'rgba(255,255,255,0.22)', border: '1px solid rgba(255,255,255,0.35)', backdropFilter: 'blur(8px)' }}
     >
-      <Icon className="h-3.5 w-3.5 shrink-0" style={{ color: 'rgba(255,255,255,0.85)' }} aria-hidden="true" />
+      <Icon className="h-3.5 w-3.5 shrink-0 text-emerald-200" aria-hidden="true" />
       <div>
-        <p className="text-[10px] font-medium leading-none" style={{ color: 'rgba(255,255,255,0.70)' }}>{label}</p>
-        <p className="text-xs font-bold text-white mt-0.5 leading-none tabular-nums">{value}</p>
+        <p className="text-[10px] font-bold leading-none text-emerald-100">{label}</p>
+        <p className="text-xs font-black text-white mt-0.5 leading-none tabular-nums">{value}</p>
       </div>
     </div>
   );
@@ -49,15 +49,15 @@ export default function WelcomeBanner({ user, kpi, percentile }) {
         {/* Left — greeting */}
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <Leaf className="h-4 w-4 text-green-300" aria-hidden="true" />
-            <span className="text-xs text-white/60 font-medium uppercase tracking-wide">
+            <Leaf className="h-4 w-4 text-emerald-300" aria-hidden="true" />
+            <span className="text-xs text-emerald-200 font-bold uppercase tracking-wider">
               {greeting}
             </span>
           </div>
-          <h2 className="text-2xl font-bold text-white leading-tight">
+          <h2 className="text-2xl font-black text-white leading-tight">
             {user?.username ?? 'Eco Warrior'}
           </h2>
-          <p className="mt-1.5 text-sm text-white/70 max-w-xs leading-relaxed">
+          <p className="mt-1.5 text-sm text-emerald-100 font-medium max-w-xs leading-relaxed">
             {kpi?.today?.trend === 'down'
               ? `You're doing great today — already ${Math.abs(kpi.today.delta).toFixed(2)} kg below yesterday.`
               : `You've logged ${formatEmission(kpi?.today?.value ?? 0)} today. Keep it up!`}

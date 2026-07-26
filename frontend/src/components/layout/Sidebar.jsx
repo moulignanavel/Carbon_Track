@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Zap, Target, BarChart2,
-  Settings, Leaf, ShieldCheck, TrendingDown, Lightbulb, Trophy, Building2,
+  Settings, Leaf, ShieldCheck, TrendingDown, Lightbulb, Trophy, Building2, Flag,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: '/dashboard',       label: 'Dashboard',       icon: LayoutDashboard },
   { to: '/activities',      label: 'Activities',      icon: Zap             },
   { to: '/goals',           label: 'Goals',           icon: Target          },
+  { to: '/challenges',      label: 'Challenges',      icon: Flag            },
   { to: '/reports',         label: 'Reports',         icon: BarChart2       },
   { to: '/badges',          label: 'My Badges',       icon: Trophy          },
   { to: '/community',       label: 'Community',       icon: Trophy          },
@@ -16,14 +17,16 @@ const NAV_ITEMS = [
   { to: '/settings',        label: 'Settings',        icon: Settings        },
 ];
 
-const ADMIN_ITEMS = [
-  { to: '/organisation',  label: 'Organization',   icon: Building2 },
-  { to: '/admin', label: 'Admin', icon: ShieldCheck },
+const ADMIN_NAV_ITEMS = [
+  { to: '/admin',        label: 'Admin Panel',        icon: ShieldCheck },
+  { to: '/organisation', label: 'Organization Overview', icon: Building2   },
+  { to: '/reports',      label: 'Platform Reports',   icon: BarChart2   },
+  { to: '/settings',     label: 'Admin Settings',     icon: Settings    },
 ];
 
 export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin, user } = useAuth();
-  const links = isAdmin ? [...NAV_ITEMS, ...ADMIN_ITEMS] : NAV_ITEMS;
+  const links = isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
 
   return (
     <>
@@ -56,13 +59,13 @@ export default function Sidebar({ isOpen, onClose }) {
             <span className="text-sm font-bold text-slate-900 dark:text-white leading-none">
               CarbonTrack
             </span>
-            <p className="text-[10px] text-slate-400 mt-0.5 leading-none">Sustainability Platform</p>
+            <p className="text-[10px] text-emerald-800/80 dark:text-emerald-300 font-semibold mt-0.5 leading-none">Sustainability Platform</p>
           </div>
         </div>
 
         {/* User pill */}
-        <div className="mx-3 mt-4 mb-2 flex items-center gap-2.5 rounded-xl bg-green-50 dark:bg-[#0e271c]/40 border border-transparent dark:border-[#1E4432]/50 px-3 py-2.5">
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-600 text-white text-xs font-bold uppercase overflow-hidden">
+        <div className="mx-3 mt-4 mb-2 flex items-center gap-2.5 rounded-xl bg-white/70 dark:bg-[#0e271c]/60 border border-emerald-200/60 dark:border-[#1E4432]/50 px-3 py-2.5 shadow-sm">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-green-700 text-white text-xs font-bold uppercase overflow-hidden">
             {user?.avatarUrl ? (
               <img src={`http://localhost:8080${user.avatarUrl}`} alt="Profile" className="h-full w-full object-cover" />
             ) : (
@@ -70,16 +73,16 @@ export default function Sidebar({ isOpen, onClose }) {
             )}
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
+            <p className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">
               {user?.username ?? 'User'}
             </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user?.role ?? 'USER'}</p>
+            <p className="text-[10px] font-semibold text-emerald-800/75 dark:text-slate-300 truncate">{user?.role ?? 'USER'}</p>
           </div>
         </div>
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto p-3 space-y-0.5" aria-label="Sidebar navigation">
-          <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-600">
+          <p className="px-3 mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-600 dark:text-slate-400">
             Menu
           </p>
           {links.map(({ to, label, icon: Icon }) => (

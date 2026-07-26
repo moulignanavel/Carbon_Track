@@ -29,15 +29,24 @@ public class BadgeEventListener {
     private final BadgeRepository badgeRepository;
     private final UserBadgeRepository userBadgeRepository;
     private final GoalRepository goalRepository;
+    private final com.carbontrack.backend.repository.AlertRepository alertRepository;
+    private final com.carbontrack.backend.repository.UserRepository userRepository;
+    private final com.carbontrack.backend.service.EmailService emailService;
 
     public BadgeEventListener(ActivityLogRepository activityLogRepository,
                               BadgeRepository badgeRepository,
                               UserBadgeRepository userBadgeRepository,
-                              GoalRepository goalRepository) {
+                              GoalRepository goalRepository,
+                              com.carbontrack.backend.repository.AlertRepository alertRepository,
+                              com.carbontrack.backend.repository.UserRepository userRepository,
+                              com.carbontrack.backend.service.EmailService emailService) {
         this.activityLogRepository = activityLogRepository;
         this.badgeRepository = badgeRepository;
         this.userBadgeRepository = userBadgeRepository;
         this.goalRepository = goalRepository;
+        this.alertRepository = alertRepository;
+        this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     // Fires AFTER the activity-log transaction commits — badge failures
@@ -178,6 +187,22 @@ public class BadgeEventListener {
             userBadge.setBadgeId(finalBadge.getId());
             userBadgeRepository.save(userBadge);
             log.info("Awarded badge '{}' to user {}", badgeName, userId);
+
+            try {
+                String msg = String.format("🏆 Badge Unlocked! You earned the '%s' achievement on CarbonTrack.", badgeName);
+                com.carbontrack.backend.entity.Alert badgeAlert = new com.carbontrack.backend.entity.Alert();
+                badgeAlert.setUserId(userId);
+                badgeAlert.setAlertType("ECO_BADGE_UNLOCKED");
+                badgeAlert.setMessage(msg);
+                badgeAlert.setIsRead(false);
+                alertRepository.save(badgeAlert);
+
+                userRepository.findById(userId).ifPresent(user -> {
+                    emailService.sendNotificationAlertEmail(user.getEmail(), "Badge Unlocked: " + badgeName, msg);
+                });
+            } catch (Exception e) {
+                log.warn("Failed to save or email badge unlock alert: {}", e.getMessage());
+            }
         }
     }
 }

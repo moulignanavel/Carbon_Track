@@ -2,3 +2,9 @@ node_modules/
 .env
 .DS_Store
 application-secret.properties
+Web-Platform-for-Environmental-Impact-Tracking-and-Sustainability-Analytics-Jun-2026/
+.agents/
+target/
+.mvn/
+.idea/
+*.log

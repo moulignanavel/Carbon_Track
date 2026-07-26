@@ -54,6 +54,7 @@ export const API_ENDPOINTS = {
   // Activity Logs
   ACTIVITY_LOGS: '/activity-logs',
   ACTIVITY_LOGS_CREATE: '/activity-logs',
+  ACTIVITY_LOGS_SCAN: '/activity-logs/scan',
   ACTIVITY_LOGS_DELETE: (id) => `/activity-logs/${id}`,
 
   // Goals

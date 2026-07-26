@@ -6,19 +6,19 @@
  * Centered card with glowing ambient background, no splits!
  */
 
-import { useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { Leaf } from 'lucide-react';
 import heroVideo from '@/assets/hero.mp4';
-import heroImage from '@/assets/hero_illustration.png';
 
 export default function AuthLayout() {
+  const [videoLoaded, setVideoLoaded] = useState(false);
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (videoRef.current) {
-      videoRef.current.playbackRate = 1.5;
+    if (videoRef.current && videoRef.current.readyState >= 2) {
+      setVideoLoaded(true);
     }
   }, []);
 
@@ -32,32 +32,26 @@ export default function AuthLayout() {
       `}</style>
 
       {/* FULL PAGE BACKGROUND */}
-      <div className="absolute inset-0 pointer-events-none z-0 flex items-center justify-center" aria-hidden="true">
-        <div className="absolute inset-0 bg-[#06140F]/90 z-0" />
-        
-        <div 
-          className="w-full h-full absolute z-10 opacity-20 mix-blend-lighten"
-          style={{ 
-            WebkitMaskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)', 
-            maskImage: 'radial-gradient(ellipse at center, black 40%, transparent 80%)' 
-          }}
-        >
-          <video
-            ref={videoRef}
-            src={heroVideo}
-            poster={heroImage}
-            preload="auto"
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        <div className="absolute inset-0 grain z-20 opacity-30" />
-        <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] rounded-full bg-[#7FBF8C]/[0.05] blur-[120px] z-20" />
-        <div className="absolute bottom-[10%] left-[5%] w-[400px] h-[400px] rounded-full bg-[#E8C468]/[0.04] blur-[100px] z-20" />
+      <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden" aria-hidden="true">
+        {/* Full-bleed video background with instant smooth display */}
+        <video
+          ref={videoRef}
+          src={heroVideo}
+          preload="auto"
+          autoPlay
+          loop
+          muted
+          playsInline
+          onLoadedData={() => setVideoLoaded(true)}
+          onCanPlay={() => setVideoLoaded(true)}
+          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ease-out ${
+            videoLoaded ? 'opacity-35' : 'opacity-0'
+          }`}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#06140F]/65 via-[#06140F]/45 to-[#06140F]/80 z-10" />
+        <div className="absolute inset-0 grain z-20 opacity-20" />
+        <div className="absolute top-[10%] right-[10%] w-[500px] h-[500px] rounded-full bg-[#7FBF8C]/[0.08] blur-[120px] z-20" />
+        <div className="absolute bottom-[10%] left-[5%] w-[400px] h-[400px] rounded-full bg-[#E8C468]/[0.06] blur-[100px] z-20" />
       </div>
 
       {/* ── Top Header Brand ───────────────────────────────── */}

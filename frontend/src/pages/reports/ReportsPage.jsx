@@ -13,17 +13,21 @@
  *   6. Top Activities  (ranked highest-emission entries)
  */
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import {
   Download, BarChart2, TrendingDown, TrendingUp,
-  Calendar, Zap, Leaf, Target,
+  Calendar, Zap, Leaf, Target, FileText, Loader2,
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 import { useActivity }  from '@/context/ActivityContext';
+import { useAuth }      from '@/context/AuthContext';
 import { CATEGORY_META } from '@/constants/activities';
 import { COLORS }        from '@/constants/theme';
 import { formatEmission, capitalize } from '@/utils/formatters';
 import { Card, Badge, Button, Tabs } from '@/components/ui';
+import ecoScoreService from '@/services/api/ecoScoreService';
+import { generateMonthlyReport } from '@/services/api/reportService';
 
 import StackedBarChart, { DEFAULT_SERIES } from '@/components/charts/StackedBarChart';
 import TrendLineChart                       from '@/components/charts/TrendLineChart';
@@ -495,9 +499,19 @@ function TopActivities({ activities }) {
    ────────────────────────────────────────────────────────────── */
 export default function ReportsPage() {
   const { logs, isLoading, fetchLogs } = useActivity();
+  const { user }    = useAuth();
   const [period, setPeriod] = useState('monthly');
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [ecoScore, setEcoScore]     = useState(null);
+
+  // No DOM refs needed — PDF is drawn programmatically
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
+
+  // Fetch eco score once on mount
+  useEffect(() => {
+    ecoScoreService.getEcoScore().then((r) => setEcoScore(r?.score ?? null)).catch(() => {});
+  }, []);
 
   const {
     totalNow, totalPrev, catData, topCat,
@@ -506,6 +520,30 @@ export default function ReportsPage() {
   } = useAnalytics(logs, period);
 
   const pieData = catData.map((c) => ({ name: c.name, value: c.value, category: c.category }));
+
+  const handleDownloadPdf = useCallback(async () => {
+    setPdfLoading(true);
+    try {
+      const fileName = await generateMonthlyReport({
+        username:       user?.username ?? user?.email ?? 'User',
+        period,
+        ecoScore,
+        totalNow,
+        topCat,
+        avgPerEntry,
+        entries,
+        catData,
+        topActivities,
+        weeklyTrendData,
+      });
+      toast.success(`Report downloaded! 📄 ${fileName}`);
+    } catch (err) {
+      console.error('PDF generation failed:', err);
+      toast.error('Failed to generate PDF. Please try again.');
+    } finally {
+      setPdfLoading(false);
+    }
+  }, [user, period, ecoScore, totalNow, topCat, avgPerEntry, entries, catData, topActivities, weeklyTrendData]);
 
   return (
     <div className="space-y-6 fade-in">
@@ -518,15 +556,22 @@ export default function ReportsPage() {
             Your personal carbon footprint trends
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <Tabs
             tabs={PERIOD_TABS}
             variant="pills"
             defaultTab="monthly"
             onChange={setPeriod}
           />
-          <Button variant="outline" size="sm" leftIcon={<Download className="h-4 w-4" />}>
-            Export
+          <Button
+            id="download-pdf-btn"
+            variant="primary"
+            size="sm"
+            isLoading={pdfLoading}
+            onClick={handleDownloadPdf}
+            leftIcon={pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+          >
+            {pdfLoading ? 'Generating…' : 'Download PDF Report'}
           </Button>
         </div>
       </div>
@@ -544,55 +589,57 @@ export default function ReportsPage() {
       />
 
       {/* ── 2. Stacked bar + Trend line ─────────────────────── */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        <Card className="xl:col-span-2">
-          <Card.Header
-            title={`${capitalize(period)} Emissions`}
-            subtitle="Stacked by category · kg CO₂e"
-          />
-          {stackedData.length > 0
-            ? <StackedBarChart data={stackedData} height={288} series={DEFAULT_SERIES} />
-            : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No activity data yet</div>
-          }
-        </Card>
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+          <Card className="xl:col-span-2">
+            <Card.Header
+              title={`${capitalize(period)} Emissions`}
+              subtitle="Stacked by category · kg CO₂e"
+            />
+            {stackedData.length > 0
+              ? <StackedBarChart data={stackedData} height={288} series={DEFAULT_SERIES} />
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No activity data yet</div>
+            }
+          </Card>
 
-        <Card>
-          <Card.Header
-            title="Emissions Trend"
-            subtitle="Your total over time · kg CO₂e"
-            action={<Badge variant="green" dot size="sm">Live</Badge>}
-          />
-          {trendData.length > 0
-            ? <TrendLineChart data={trendData} series={TREND_SERIES} height={288} />
-            : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No data for this period</div>
-          }
-        </Card>
-      </div>
+          <Card>
+            <Card.Header
+              title="Emissions Trend"
+              subtitle="Your total over time · kg CO₂e"
+              action={<Badge variant="green" dot size="sm">Live</Badge>}
+            />
+            {trendData.length > 0
+              ? <TrendLineChart data={trendData} series={TREND_SERIES} height={288} />
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No data for this period</div>
+            }
+          </Card>
+        </div>
 
-      {/* ── 3. Pie + Weekly Trend ──────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <Card.Header
-            title="Category Split"
-            subtitle={`${capitalize(period)} — proportional breakdown`}
-          />
-          {pieData.length > 0
-            ? <CategoryPieChart data={pieData} height={288} innerRadius={64} />
-            : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No categories logged yet</div>
-          }
-        </Card>
+        {/* ── 3. Pie + Weekly Trend ──────────────────────────── */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <Card.Header
+              title="Category Split"
+              subtitle={`${capitalize(period)} — proportional breakdown`}
+            />
+            {pieData.length > 0
+              ? <CategoryPieChart data={pieData} height={288} innerRadius={64} />
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No categories logged yet</div>
+            }
+          </Card>
 
-        <Card>
-          <Card.Header
-            title="7-Day Trend"
-            subtitle="Daily stacked by category"
-            action={<Badge variant="slate" size="sm">Last 7 days</Badge>}
-          />
-          {weeklyTrendData.length > 0
-            ? <WeeklyTrendChart data={weeklyTrendData} height={288} />
-            : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No recent activity</div>
-          }
-        </Card>
+          <Card>
+            <Card.Header
+              title="7-Day Trend"
+              subtitle="Daily stacked by category"
+              action={<Badge variant="slate" size="sm">Last 7 days</Badge>}
+            />
+            {weeklyTrendData.length > 0
+              ? <WeeklyTrendChart data={weeklyTrendData} height={288} />
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No recent activity</div>
+            }
+          </Card>
+        </div>
       </div>
 
       {/* ── 4. Monthly Comparison ──────────────────────────── */}

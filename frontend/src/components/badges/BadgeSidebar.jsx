@@ -69,9 +69,37 @@ export default function BadgeSidebar({ isOpen, onClose, user }) {
     return count;
   }, [logs]);
 
+  const unlockedBadges = useMemo(() => {
+    const set = new Set(user?.badges || []);
+
+    if (logs && logs.length > 0) {
+      set.add('Eco Pioneer');
+    }
+    if (streak >= 7) {
+      set.add('7-Day Streak');
+    }
+    if (logs && logs.length >= 10) {
+      set.add('Goal Crusher');
+    }
+
+    try {
+      const userId = user?.id || user?.username || 'guest';
+      const stored = localStorage.getItem(`carbontrack_unlocked_badges_${userId}`);
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          list.forEach((b) => set.add(b));
+        }
+      }
+    } catch (e) {
+      /* ignore storage errors */
+    }
+
+    return Array.from(set);
+  }, [user, logs, streak]);
+
   if (!isOpen) return null;
 
-  const unlockedBadges = (user?.badges && user.badges.length > 0) ? user.badges : ['Eco Pioneer', 'Goal Crusher', '10 kg Reduction', 'Eco Warrior'];
   const selectedBadge = BADGES.find(b => b.name === selected);
   const isUnlocked = (name) => unlockedBadges.includes(name);
 

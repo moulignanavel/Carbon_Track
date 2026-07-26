@@ -24,11 +24,12 @@ import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import {
   Plus, Search, Filter, Trash2, Leaf,
   ChevronDown, X, SlidersHorizontal,
-  CalendarDays, FileText, Zap,
+  CalendarDays, FileText, Zap, Camera, UploadCloud, Sparkles, Loader2, CheckCircle2,
 } from 'lucide-react';
 
 import { useActivity } from '@/context/ActivityContext';
 import { useAuth }     from '@/context/AuthContext';
+import activityService from '@/services/api/activityService';
 import { activityLogSchema } from '@/utils/validators';
 import { formatEmission, formatDate, capitalize } from '@/utils/formatters';
 import {
@@ -37,7 +38,7 @@ import {
 } from '@/constants/activities';
 import {
   Button, Card, Badge, Table, Input,
-  Select, EmptyState, StatCard,
+  Select, EmptyState, StatCard, Modal,
 } from '@/components/ui';
 import EmissionsBarChart from '@/components/charts/EmissionsBarChart';
 
@@ -53,7 +54,8 @@ const BADGE_VARIANT = {
   energy:      'red',
 };
 
-const today = new Date().toISOString().split('T')[0];
+const _now = new Date();
+const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
 
 /** Build category tabs in fixed order */
 const CAT_TABS = CATEGORY_TAB_ORDER.map((key) => {
@@ -74,11 +76,18 @@ const COLUMNS = [
   },
   {
     key: 'category', header: 'Category', sortable: true,
-    render: (v) => (
-      <Badge variant={BADGE_VARIANT[v] ?? 'slate'} size="sm" dot>
-        {CATEGORY_META[v]?.emoji ?? ''} {CATEGORY_META[v]?.label ?? capitalize(v ?? '—')}
-      </Badge>
-    ),
+    render: (v, row) => {
+      const type = (row?.activityType || '').toLowerCase();
+      const isHomeEnergy = v === 'energy' || type.includes('gas') || type.includes('oil') || type.includes('lpg') || type.includes('propane') || type.includes('wood') || type.includes('coal');
+      const catKey = isHomeEnergy ? 'energy' : (v || 'electricity');
+      const meta = CATEGORY_META[catKey] || CATEGORY_META.electricity;
+
+      return (
+        <Badge variant={meta.badge || BADGE_VARIANT[catKey] || 'slate'} size="sm" dot>
+          {meta.emoji} {meta.label}
+        </Badge>
+      );
+    },
   },
   {
     key: 'activityLabel', header: 'Activity', sortable: true,
@@ -227,9 +236,230 @@ function Co2Preview({ activityType, amount, category }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   Receipt Scan Modal Component
+   ═══════════════════════════════════════════════════════════════ */
+function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanResult, setScanResult] = useState(null);
+  const [error, setError] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleFileChange = (e) => {
+    const selected = e.target.files?.[0];
+    if (selected) {
+      setFile(selected);
+      setPreview(URL.createObjectURL(selected));
+      setScanResult(null);
+      setError(null);
+    }
+  };
+
+  const handleScan = async () => {
+    if (!file) return;
+    setIsScanning(true);
+    setError(null);
+    try {
+      const result = await activityService.scanReceipt(file);
+      setScanResult(result);
+    } catch (err) {
+      console.error('Scan error:', err);
+      setError('Failed to process image with AI. Please try another photo.');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const handleApply = () => {
+    if (scanResult) {
+      onScanComplete(scanResult);
+      handleReset();
+      onClose();
+    }
+  };
+
+  const handleReset = () => {
+    setFile(null);
+    setPreview(null);
+    setScanResult(null);
+    setError(null);
+    setIsScanning(false);
+  };
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={() => { handleReset(); onClose(); }}
+      title="📷 AI Receipt & Utility Bill Scanner"
+      size="md"
+    >
+      <div className="space-y-4">
+        <p className="text-xs text-slate-500 dark:text-slate-400">
+          Upload a utility bill, fuel invoice, or grocery receipt. CarbonBot AI (Gemini 2.5 Flash) will analyze the image and automatically extract the log details for you.
+        </p>
+
+        {!preview ? (
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-green-500 dark:hover:border-green-500 rounded-2xl p-8 text-center cursor-pointer transition-colors bg-slate-50 dark:bg-slate-800/40"
+          >
+            <UploadCloud className="h-10 w-10 text-slate-400 dark:text-slate-500 mx-auto mb-2" />
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+              Click to upload image file
+            </p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+              Supports JPEG, PNG, WEBP (bills, fuel tickets, grocery receipts)
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="relative rounded-2xl overflow-hidden max-h-48 border border-slate-200 dark:border-slate-700 bg-slate-900 flex items-center justify-center">
+              <img src={preview} alt="Receipt preview" className="object-contain max-h-48 w-full" />
+              <button
+                type="button"
+                onClick={handleReset}
+                className="absolute top-2 right-2 rounded-full p-1 bg-slate-900/70 text-white hover:bg-slate-900 cursor-pointer"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {!scanResult && !isScanning && (
+              <Button
+                variant="primary"
+                fullWidth
+                leftIcon={<Sparkles className="h-4 w-4" />}
+                onClick={handleScan}
+              >
+                Analyze Bill with Gemini AI
+              </Button>
+            )}
+
+            {isScanning && (
+              <div className="flex flex-col items-center justify-center py-4 space-y-2">
+                <Loader2 className="h-8 w-8 text-green-600 animate-spin" />
+                <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                  Scanning image with Gemini 2.5 Flash AI...
+                </p>
+              </div>
+            )}
+
+            {error && (
+              <div className="p-3 rounded-xl bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-xs">
+                {error}
+              </div>
+            )}
+
+            {scanResult && (
+              <div className="p-4 rounded-2xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800/40 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold text-sm">
+                    <CheckCircle2 className="h-5 w-5 shrink-0" />
+                    <span>
+                      {scanResult.items?.length > 1
+                        ? `Extracted ${scanResult.items.length} Items from ${scanResult.merchant || 'Receipt'}`
+                        : 'Successfully Extracted Receipt Data!'}
+                    </span>
+                  </div>
+                  <span className="text-xs text-slate-500 font-medium">{scanResult.logDate}</span>
+                </div>
+
+                {/* Multi-item breakdown list */}
+                {scanResult.items && scanResult.items.length > 0 ? (
+                  <div className="space-y-2 border-t border-green-200/60 dark:border-green-800/40 pt-2">
+                    {scanResult.items.map((item, idx) => {
+                      const co2 = estimateEmissions(item.activityType, item.amount);
+                      return (
+                        <div key={idx} className="flex items-center justify-between bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-green-100 dark:border-green-900/40 text-xs">
+                          <div>
+                            <p className="font-semibold text-slate-800 dark:text-slate-100">{item.notes || item.activityType}</p>
+                            <p className="text-[10px] text-slate-400 capitalize">{item.category} · {item.activityType}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="font-bold text-slate-700 dark:text-slate-200 block">{item.amount} {item.unit}</span>
+                            <span className="text-[10px] text-green-600 dark:text-green-400 font-semibold">{formatEmission(co2)}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Total receipt emissions summary */}
+                    <div className="flex items-center justify-between pt-2 border-t border-dashed border-green-300 dark:border-green-700 text-xs font-bold">
+                      <span className="text-slate-700 dark:text-slate-200">Total Receipt Footprint:</span>
+                      <span className="text-green-700 dark:text-green-400 text-sm">
+                        {formatEmission(
+                          scanResult.items.reduce((sum, item) => sum + estimateEmissions(item.activityType, item.amount), 0)
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <span className="text-slate-400 block">Category</span>
+                      <span className="font-semibold capitalize text-slate-700 dark:text-slate-200">{scanResult.category}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Activity Type</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{scanResult.activityType}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Quantity</span>
+                      <span className="font-bold text-green-600 dark:text-green-400">{scanResult.amount} {scanResult.unit}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block">Date</span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{scanResult.logDate}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-1">
+                  {scanResult.items && scanResult.items.length > 1 ? (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      leftIcon={<Sparkles className="h-4 w-4" />}
+                      onClick={() => {
+                        onScanComplete(scanResult, true); // Batch log mode
+                        handleReset();
+                        onClose();
+                      }}
+                    >
+                      Log All {scanResult.items.length} Items to Tracker
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      fullWidth
+                      leftIcon={<Sparkles className="h-4 w-4" />}
+                      onClick={handleApply}
+                    >
+                      Auto-fill Form with these Details
+                    </Button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Modal>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    Log Activity Form
    ═══════════════════════════════════════════════════════════════ */
-function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0 }) {
+function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scannedData = null }) {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultCategory ?? CAT_TABS[0].key);
 
@@ -257,6 +487,21 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0 }) {
   const amount       = watch('amount');
   const unit         = watch('unit');
 
+  /* Handle pre-filling form from OCR scan result */
+  useEffect(() => {
+    if (scannedData) {
+      if (scannedData.category) {
+        setActiveTab(scannedData.category);
+        setValue('category', scannedData.category, { shouldValidate: true });
+      }
+      if (scannedData.activityType) setValue('activityType', scannedData.activityType, { shouldValidate: true });
+      if (scannedData.amount) setValue('amount', String(scannedData.amount), { shouldValidate: true });
+      if (scannedData.unit) setValue('unit', scannedData.unit, { shouldValidate: true });
+      if (scannedData.logDate) setValue('logDate', scannedData.logDate, { shouldValidate: true });
+      if (scannedData.notes) setValue('notes', scannedData.notes, { shouldValidate: true });
+    }
+  }, [scannedData, setValue]);
+
   /* switch tab → update category field, reset type/unit */
   const handleTabSwitch = useCallback((key) => {
     setActiveTab(key);
@@ -282,12 +527,21 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0 }) {
     const emissions = estimateEmissions(data.activityType, Number(data.amount));
     await onSaved({
       ...data,
-      amount:              Number(data.amount),
-      activityLabel:       typeObj2?.label ?? data.activityType,
+      category: activeTab,
+      amount: Number(data.amount),
+      activityLabel: typeObj2?.label ?? data.activityType,
       calculatedEmissions: emissions,
-      userId:              user?.userId,
+      userId: user?.userId,
     });
     reset({ category: activeTab, activityType: '', amount: '', unit: '', logDate: today, notes: '' });
+  };
+
+  const onInvalid = (formErrors) => {
+    console.warn('Form validation failed:', formErrors);
+    const firstKey = Object.keys(formErrors)[0];
+    if (firstKey) {
+      toast.error(`Please fill ${firstKey}: ${formErrors[firstKey]?.message}`);
+    }
   };
 
   return (
@@ -319,7 +573,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0 }) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} noValidate id="activity-form">
+      <form onSubmit={handleSubmit(onSubmit, onInvalid)} noValidate id="activity-form">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           {/* ── Left: form fields ────────────────────────── */}
           <div className="lg:col-span-2 space-y-4">
@@ -344,7 +598,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0 }) {
                 required
                 error={errors.amount?.message}
                 hint={typeObj ? `per ${typeObj.unit}` : undefined}
-                {...register('amount', { valueAsNumber: true })}
+                {...register('amount')}
               />
               <div>
                 <label className="form-label">
@@ -403,10 +657,10 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0 }) {
             <div className="flex items-center gap-3 pt-1">
               <Button
                 type="submit"
-                form="activity-form"
                 variant="primary"
                 size="md"
                 isLoading={isSubmitting}
+                onClick={handleSubmit(onSubmit, onInvalid)}
                 leftIcon={<Plus className="h-4 w-4" />}
                 className="flex-1 sm:flex-none"
               >
@@ -539,6 +793,37 @@ export default function ActivitiesPage() {
   const [dateTo,     setDateTo]     = useState('');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [defaultCat, setDefaultCat] = useState(null);
+  const [scanModalOpen, setScanModalOpen] = useState(false);
+  const [scannedData, setScannedData] = useState(null);
+
+  const handleScanComplete = async (data, isBatchMode = false) => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (isBatchMode && data.items && data.items.length > 0) {
+      let totalAdded = 0;
+      for (const item of data.items) {
+        const emissions = estimateEmissions(item.activityType, Number(item.amount));
+        await addLog({
+          category: item.category,
+          activityType: item.activityType,
+          amount: Number(item.amount),
+          unit: item.unit,
+          logDate: todayStr, // Always set logDate to current date so it instantly reflects on Dashboard & KPIs!
+          notes: `${data.merchant ? data.merchant + ' - ' : ''}${item.notes || item.activityType}`,
+          calculatedEmissions: emissions,
+        });
+        totalAdded += emissions;
+      }
+      toast.success(`Successfully logged ${data.items.length} items (${formatEmission(totalAdded)} CO₂e total)!`);
+    } else {
+      setScannedData({ ...data, logDate: todayStr });
+      setDefaultCat(data.category);
+      setFormOpen(true);
+      toast.success(`Pre-filled activity log from scanned ${data.category} bill!`);
+      setTimeout(() => {
+        document.getElementById('activity-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  };
 
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
@@ -654,6 +939,10 @@ export default function ActivitiesPage() {
   /* ── save handler ──────────────────────────────────────────── */
   const handleSave = async (data) => {
     await addLog(data);
+    await fetchLogs();
+    setCatFilter(null);
+    setDateFrom('');
+    setDateTo('');
     toast.success(
       <div>
         <p className="font-semibold">Activity logged! 🌱</p>
@@ -712,13 +1001,22 @@ export default function ActivitiesPage() {
             </motion.div>
           )}
         </div>
-        <Button
-          variant="primary"
-          leftIcon={<Plus className="h-4 w-4" />}
-          onClick={() => { setDefaultCat(null); setFormOpen((o) => !o); }}
-        >
-          {formOpen ? 'Close Form' : 'Log Activity'}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            leftIcon={<Camera className="h-4 w-4 text-green-600 dark:text-green-400" />}
+            onClick={() => setScanModalOpen(true)}
+          >
+            Scan Bill / Receipt
+          </Button>
+          <Button
+            variant="primary"
+            leftIcon={<Plus className="h-4 w-4" />}
+            onClick={() => { setDefaultCat(null); setScannedData(null); setFormOpen((o) => !o); }}
+          >
+            {formOpen ? 'Close Form' : 'Log Activity'}
+          </Button>
+        </div>
       </div>
 
       {/* ── KPI strip ────────────────────────────────────────── */}
@@ -755,11 +1053,11 @@ export default function ActivitiesPage() {
 
       {/* ── Log Activity form panel ───────────────────────────── */}
       {formOpen && (
-        <Card className="border-green-200 dark:border-green-900/50">
+        <Card id="activity-form" className="border-green-200 dark:border-green-900/50">
           <Card.Header
-            title="Log New Activity"
-            subtitle="Fill in the details below"
-            icon={Plus}
+            title={scannedData ? `Log Activity (Scanned ${capitalize(scannedData.category)})` : "Log New Activity"}
+            subtitle="Fill in the details below or edit scanned fields"
+            icon={scannedData ? Camera : Plus}
             action={
               <button
                 type="button"
@@ -776,6 +1074,7 @@ export default function ActivitiesPage() {
             onCancel={() => setFormOpen(false)}
             defaultCategory={defaultCat}
             streak={streak}
+            scannedData={scannedData}
           />
         </Card>
       )}
@@ -919,6 +1218,13 @@ export default function ActivitiesPage() {
         }
         zebra
         stickyHeader
+      />
+
+      {/* Receipt Scan Modal */}
+      <ReceiptScanModal
+        isOpen={scanModalOpen}
+        onClose={() => setScanModalOpen(false)}
+        onScanComplete={handleScanComplete}
       />
     </div>
   );

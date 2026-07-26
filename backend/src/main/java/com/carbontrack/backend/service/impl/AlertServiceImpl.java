@@ -41,8 +41,17 @@ public class AlertServiceImpl implements AlertService {
     @Override
     public List<AlertResponse> getAlertsForCurrentUser() {
         User user = securityService.getCurrentUser();
-        return alertRepository.findByUserIdOrderByIdDesc(user.getId())
-                .stream()
+        List<Alert> allAlerts = alertRepository.findByUserIdOrderByIdDesc(user.getId());
+        
+        java.util.Set<String> seen = new java.util.HashSet<>();
+        List<Alert> uniqueAlerts = new java.util.ArrayList<>();
+        for (Alert a : allAlerts) {
+            if (seen.add(a.getMessage())) {
+                uniqueAlerts.add(a);
+            }
+        }
+
+        return uniqueAlerts.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }

@@ -81,8 +81,8 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Permit all auth endpoints and OAuth2 endpoints
-                        .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/error", "/error/**", 
+                        // Permit all auth endpoints, public AI suggestions, and static assets
+                        .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/ai/suggestions", "/error", "/error/**", 
                                        "/login/**", "/oauth2/**", "/h2-console/**", "/uploads/**").permitAll()
                         .anyRequest().authenticated())
                 .authenticationProvider(authenticationProvider())

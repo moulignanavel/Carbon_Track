@@ -6,5 +6,6 @@ import java.util.List;
 
 public interface ActivityLoggingService {
     ActivityLog logActivity(ActivityLogRequest request);
+
     List<ActivityLog> getLogsForCurrentUser();
 }

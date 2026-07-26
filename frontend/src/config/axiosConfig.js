@@ -85,11 +85,13 @@ export function createAxiosInstance() {
 
       // Handle 401 Unauthorized
       if (response?.status === HTTP_STATUS.UNAUTHORIZED) {
-        // Do not redirect on 401 from login endpoints
+        // Do not redirect on 401 from login endpoints or if already on session_expired URL
         const isAuthEndpoint = config.url?.includes('/auth/login') || config.url?.includes('/auth/register');
         if (env.auth.autoLogoutOn401 && !isAuthEndpoint) {
           clearAuth();
-          window.location.replace('/?reason=session_expired');
+          if (!window.location.search.includes('session_expired')) {
+            window.location.replace('/?reason=session_expired');
+          }
         }
       }
 

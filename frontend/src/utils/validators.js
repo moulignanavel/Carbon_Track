@@ -84,6 +84,7 @@ export const activityLogSchema = z.object({
   category:     z.string().min(1, 'Category is required'),
   activityType: z.string().min(1, 'Activity type is required'),
   amount: z
+    .coerce
     .number({ invalid_type_error: 'Amount must be a number' })
     .positive('Amount must be greater than 0'),
   unit:    z.string().min(1, 'Unit is required'),

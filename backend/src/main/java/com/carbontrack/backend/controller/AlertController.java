@@ -12,14 +12,31 @@ import java.util.List;
 public class AlertController {
 
     private final AlertService alertService;
+    private final com.carbontrack.backend.service.EmailService emailService;
+    private final com.carbontrack.backend.service.SecurityService securityService;
 
-    public AlertController(AlertService alertService) {
+    public AlertController(AlertService alertService,
+                           com.carbontrack.backend.service.EmailService emailService,
+                           com.carbontrack.backend.service.SecurityService securityService) {
         this.alertService = alertService;
+        this.emailService = emailService;
+        this.securityService = securityService;
     }
 
     @GetMapping
     public ResponseEntity<List<AlertResponse>> getAlerts() {
         return ResponseEntity.ok(alertService.getAlertsForCurrentUser());
+    }
+
+    @PostMapping("/test-email")
+    public ResponseEntity<String> sendTestEmail() {
+        com.carbontrack.backend.entity.User currentUser = securityService.getCurrentUser();
+        emailService.sendNotificationAlertEmail(
+                currentUser.getEmail(),
+                "CarbonTrack Email Notification Test 🌿",
+                "Hello " + currentUser.getUsername() + ",\n\nThis is a test notification email from CarbonTrack! Your email alert service is active and working properly."
+        );
+        return ResponseEntity.ok("Test email successfully sent to " + currentUser.getEmail());
     }
 
     @PostMapping("/{id}/read")

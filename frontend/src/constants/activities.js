@@ -51,7 +51,7 @@ export const CATEGORY_META = {
     iconCls:  'text-purple-600 dark:text-purple-400',
   },
   energy: {
-    label:    'Energy',
+    label:    'Home Energy',
     emoji:    '🔥',
     color:    '#ef4444',   // red-500
     bgLight:  'bg-red-50    dark:bg-red-900/20',
@@ -316,6 +316,24 @@ export const ACTIVITY_CATEGORIES = [
         unitOptions: ['cups', 'kg'],
         factor: 0.28,
         description: 'Per cup brewed (280 g CO₂e)',
+      },
+      {
+        value: 'water_bottle',
+        label: 'Water Bottle (packaged)',
+        icon: '🧴',
+        unit: 'items',
+        unitOptions: ['items', 'litres'],
+        factor: 0.09,
+        description: 'Single-use 500mL plastic water bottle (90 g CO₂e/bottle)',
+      },
+      {
+        value: 'beverages',
+        label: 'Soft Drinks / Beverages',
+        icon: '🥤',
+        unit: 'items',
+        unitOptions: ['items', 'litres'],
+        factor: 0.20,
+        description: 'Soft drink / canned soda (200 g CO₂e/item)',
       },
     ],
   },

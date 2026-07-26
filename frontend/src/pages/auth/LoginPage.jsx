@@ -58,13 +58,17 @@ export default function LoginPage() {
 
   const onSubmit = async (data) => {
     try {
-      await login({
+      const loggedUser = await login({
         email: data.email,
         password: data.password,
         rememberMe: data.rememberMe,
       });
       toast.success('Welcome back! 👋', { id: 'login-success' });
-      navigate(from, { replace: true });
+      if (loggedUser?.role === 'ADMIN') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate(from, { replace: true });
+      }
     } catch (err) {
       setError('root', { message: extractErrorMessage(err) });
     }
@@ -118,9 +122,9 @@ export default function LoginPage() {
               autoComplete="email"
               autoFocus
               required
-              leftIcon={<Mail className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              leftIcon={<Mail className="h-4.5 w-4.5 text-emerald-600" />}
               error={errors.email?.message}
-              className="!bg-[#1E293B] !border-[#334155] focus:!border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
               {...register('email')}
             />
           </div>
@@ -149,9 +153,9 @@ export default function LoginPage() {
               placeholder="Enter your password"
               autoComplete="current-password"
               required
-              leftIcon={<Lock className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              leftIcon={<Lock className="h-4.5 w-4.5 text-emerald-600" />}
               error={errors.password?.message}
-              className="!bg-[#1E293B] !border-[#334155] focus:!border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
               {...register('password')}
             />
           </div>

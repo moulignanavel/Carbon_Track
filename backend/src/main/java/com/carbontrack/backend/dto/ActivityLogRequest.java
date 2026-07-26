@@ -9,8 +9,8 @@ import java.time.LocalDate;
 public class ActivityLogRequest {
 
     @NotBlank(message = "Category is required")
-    @Pattern(regexp = "^(?i)(transport|electricity|food|shopping)$", 
-             message = "Category must be one of: transport, electricity, food, shopping")
+    @Pattern(regexp = "^(?i)(transport|electricity|food|shopping|energy|home_energy|home energy|other)$", 
+             message = "Category must be one of: transport, electricity, food, shopping, energy")
     private String category;
 
     @NotBlank(message = "Activity type is required")
@@ -46,6 +46,9 @@ public class ActivityLogRequest {
 
     public Double getQuantity() { return quantity; }
     public void setQuantity(Double quantity) { this.quantity = quantity; }
+
+    public Double getAmount() { return quantity; }
+    public void setAmount(Double amount) { this.quantity = amount; }
 
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }

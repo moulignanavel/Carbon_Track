@@ -182,11 +182,17 @@ export default function RecommendationsPage() {
           
           if (type.includes('flight')) {
             title = "Flight Tip"; category = "transport";
-          } else if (type.includes('car') || type.includes('transport') || type.includes('transit')) {
+          } else if (type.includes('petrol')) {
+            title = "Petrol Vehicle Tip"; category = "transport";
+          } else if (type.includes('diesel')) {
+            title = "Diesel Vehicle Tip"; category = "transport";
+          } else if (type.includes('bus') || type.includes('train') || type.includes('transit') || type.includes('subway')) {
+            title = "Public Transit Tip"; category = "transport";
+          } else if (type.includes('car') || type.includes('transport') || type.includes('taxi') || type.includes('motorcycle')) {
             title = "Transport Tip"; category = "transport";
-          } else if (type.includes('beef') || type.includes('meat') || type.includes('food') || type.includes('lamb') || type.includes('chicken')) {
+          } else if (type.includes('beef') || type.includes('meat') || type.includes('food') || type.includes('lamb') || type.includes('chicken') || type.includes('dairy')) {
             title = "Diet Tip"; category = "food";
-          } else if (type.includes('energy') || type.includes('electricity')) {
+          } else if (type.includes('energy') || type.includes('electricity') || type.includes('grid')) {
             title = "Energy Tip"; category = "energy";
           } else if (type.includes('furniture')) {
             title = "Home Tip"; category = "home";

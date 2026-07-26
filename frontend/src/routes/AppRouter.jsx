@@ -24,6 +24,7 @@ import PublicRoute    from './PublicRoute';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import AuthLayout      from '@/components/layout/AuthLayout';
 import NotFound        from '@/components/errors/NotFound';
+import LandingPage     from '@/pages/landing/LandingPage';
 
 /* ── Lazy page bundles ───────────────────────────────────────── */
 const LoginPage          = lazy(() => import('@/pages/auth/LoginPage'));
@@ -33,6 +34,7 @@ const ResetPasswordPage  = lazy(() => import('@/pages/auth/ResetPasswordPage'));
 const DashboardPage      = lazy(() => import('@/pages/dashboard/DashboardPage'));
 const ActivitiesPage     = lazy(() => import('@/pages/activities/ActivitiesPage'));
 const GoalsPage          = lazy(() => import('@/pages/goals/GoalsPage'));
+const ChallengesPage     = lazy(() => import('@/pages/challenges/ChallengesPage'));
 const BadgesPage         = lazy(() => import('@/pages/badges/BadgesPage'));
 const ReportsPage        = lazy(() => import('@/pages/reports/ReportsPage'));
 const RecommendationsPage = lazy(() => import('@/pages/recommendations/RecommendationsPage'));
@@ -40,7 +42,7 @@ const CommunityLeaderboardPage = lazy(() => import('@/pages/community/CommunityL
 const OrganisationDashboardPage = lazy(() => import('@/pages/admin/OrganisationDashboardPage'));
 const SettingsPage       = lazy(() => import('@/pages/settings/SettingsPage'));
 const AdminPage          = lazy(() => import('@/pages/admin/AdminPage'));
-const LandingPage        = lazy(() => import('@/pages/landing/LandingPage'));
+const AdminLoginPage     = lazy(() => import('@/pages/auth/AdminLoginPage'));
 
 function PageFallback() {
   return <Spinner fullPage label="Loading page…" />;
@@ -52,6 +54,10 @@ export default function AppRouter() {
       <Routes>
         {/* Root */}
         <Route path="/" element={<LandingPage />} />
+
+        {/* Dedicated Admin Login Routes */}
+        <Route path="/admin-login" element={<AdminLoginPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
 
         {/* ── Public-only auth routes ───────────────────────── */}
         <Route
@@ -78,6 +84,7 @@ export default function AppRouter() {
           <Route path="/dashboard"       element={<DashboardPage />} />
           <Route path="/activities"      element={<ActivitiesPage />} />
           <Route path="/goals"           element={<GoalsPage />} />
+          <Route path="/challenges"      element={<ChallengesPage />} />
           <Route path="/badges"          element={<BadgesPage />} />
           <Route path="/reports"         element={<ReportsPage />} />
           <Route path="/recommendations" element={<RecommendationsPage />} />

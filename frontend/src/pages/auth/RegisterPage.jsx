@@ -156,10 +156,10 @@ export default function RegisterPage() {
               autoComplete="username"
               autoFocus
               required
-              leftIcon={<User className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              leftIcon={<User className="h-4.5 w-4.5 text-emerald-600" />}
               hint="3–50 chars. Letters, numbers, dots, dashes, underscores."
               error={errors.username?.message}
-              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
               {...register('username')}
             />
           </div>
@@ -173,9 +173,9 @@ export default function RegisterPage() {
               placeholder="you@example.com"
               autoComplete="email"
               required
-              leftIcon={<Mail className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              leftIcon={<Mail className="h-4.5 w-4.5 text-emerald-600" />}
               error={errors.email?.message}
-              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
               {...register('email')}
             />
           </div>
@@ -189,9 +189,9 @@ export default function RegisterPage() {
               placeholder="Min. 8 characters"
               autoComplete="new-password"
               required
-              leftIcon={<Lock className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              leftIcon={<Lock className="h-4.5 w-4.5 text-emerald-600" />}
               error={errors.password?.message}
-              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
               {...register('password')}
             />
             <PasswordStrength password={password} />
@@ -206,9 +206,9 @@ export default function RegisterPage() {
               placeholder="Re-enter your password"
               autoComplete="new-password"
               required
-              leftIcon={<Lock className="h-4.5 w-4.5 text-[#7FBF8C]/70" />}
+              leftIcon={<Lock className="h-4.5 w-4.5 text-emerald-600" />}
               error={errors.confirmPassword?.message}
-              className="bg-[#06140F]/50 border-[#1E4432] focus:border-[#7FBF8C]/50 text-[#F3EFE4] placeholder-[#5B7A67] !rounded-xl"
+              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
               {...register('confirmPassword')}
             />
           </div>

@@ -17,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
+import org.springframework.transaction.event.TransactionalEventListener;
+import org.springframework.transaction.event.TransactionPhase;
+import org.springframework.transaction.annotation.Propagation;
 import com.carbontrack.backend.event.GoalAchievedEvent;
 import com.carbontrack.backend.event.ActivityLoggedEvent;
 
@@ -32,15 +35,21 @@ public class GoalEvaluationService {
     private final ActivityLogRepository activityLogRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final AlertRepository alertRepository;
+    private final com.carbontrack.backend.repository.UserRepository userRepository;
+    private final com.carbontrack.backend.service.EmailService emailService;
 
     public GoalEvaluationService(GoalRepository goalRepository,
                                  ActivityLogRepository activityLogRepository,
                                  ApplicationEventPublisher eventPublisher,
-                                 AlertRepository alertRepository) {
+                                 AlertRepository alertRepository,
+                                 com.carbontrack.backend.repository.UserRepository userRepository,
+                                 com.carbontrack.backend.service.EmailService emailService) {
         this.goalRepository = goalRepository;
         this.activityLogRepository = activityLogRepository;
         this.eventPublisher = eventPublisher;
         this.alertRepository = alertRepository;
+        this.userRepository = userRepository;
+        this.emailService = emailService;
     }
 
     // Run every minute for demonstration purposes (in prod, run daily at midnight)
@@ -76,7 +85,7 @@ public class GoalEvaluationService {
                     } else if (usagePct >= 80.0) {
                         // Approaching the limit (≥80 %)
                         createAlertIfMissing(g.getUserId(), "GOAL_WARNING",
-                            String.format("⚠️ Watch out! You've used %.0f%% of your '%s' goal (%.2f / %.2f kg CO₂e). You have %.2f kg remaining.",
+                            String.format("⚠️ Watch out! You've used %.1f%% of your '%s' goal (%.2f / %.2f kg CO₂e). You have %.2f kg remaining.",
                                 usagePct, g.getTitle(), currentKg, g.getTargetKg(), g.getTargetKg() - currentKg), currentKg);
                     } else if (projectedFinal > g.getTargetKg()) {
                         // On track to breach by end of period
@@ -104,9 +113,9 @@ public class GoalEvaluationService {
     }
 
     private void createAlertIfMissing(Long userId, String alertType, String message, Double triggerValue) {
-        java.time.LocalDateTime startOfToday = LocalDate.now().atStartOfDay();
-        List<Alert> existing = alertRepository.findByUserIdAndAlertTypeAndCreatedAtAfter(userId, alertType, startOfToday);
-        if (existing.isEmpty()) {
+        boolean exists = alertRepository.findByUserId(userId).stream()
+                .anyMatch(a -> alertType.equals(a.getAlertType()) && message.equals(a.getMessage()));
+        if (!exists) {
             Alert alert = new Alert();
             alert.setUserId(userId);
             alert.setAlertType(alertType);
@@ -115,6 +124,16 @@ public class GoalEvaluationService {
             alert.setIsRead(false);
             alertRepository.save(alert);
             log.info("Saved alert: {} for user {}", alertType, userId);
+
+            userRepository.findById(userId).ifPresent(user -> {
+                String subject = alertType.replace("_", " ");
+                log.info("📧 Triggering email alert to user '{}' ({}) for [{}]", user.getUsername(), user.getEmail(), subject);
+                try {
+                    emailService.sendNotificationAlertEmail(user.getEmail(), subject, message);
+                } catch (Exception e) {
+                    log.error("Failed to send email alert to {}: {}", user.getEmail(), e.getMessage());
+                }
+            });
         }
     }
 
@@ -122,9 +141,16 @@ public class GoalEvaluationService {
         if (g.getStartDate() == null || g.getEndDate() == null) return 0.0;
 
         Double result;
-        if ("all".equalsIgnoreCase(g.getCategory())) {
+        String cat = g.getCategory() != null ? g.getCategory().toLowerCase().trim() : "";
+        if ("all".equals(cat)) {
             result = activityLogRepository.sumEmissionsByUserAndDateRange(
                     g.getUserId(), g.getStartDate(), g.getEndDate());
+        } else if (cat.contains("energy") || cat.contains("electric")) {
+            Double val1 = activityLogRepository.sumEmissionsByUserCategoryAndDateRange(
+                    g.getUserId(), "electricity", g.getStartDate(), g.getEndDate());
+            Double val2 = activityLogRepository.sumEmissionsByUserCategoryAndDateRange(
+                    g.getUserId(), "energy", g.getStartDate(), g.getEndDate());
+            result = (val1 != null ? val1 : 0.0) + (val2 != null ? val2 : 0.0);
         } else {
             result = activityLogRepository.sumEmissionsByUserCategoryAndDateRange(
                     g.getUserId(), g.getCategory(), g.getStartDate(), g.getEndDate());
@@ -132,10 +158,69 @@ public class GoalEvaluationService {
         return result != null ? result : 0.0;
     }
 
-    @EventListener
-    @Transactional
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void handleActivityLogged(ActivityLoggedEvent event) {
-        log.info("Activity logged event received for user {}. Triggering real-time goal evaluation...", event.getUserId());
-        evaluateCompletedGoals();
+        try {
+            log.info("Activity logged event received for user {}. Triggering real-time goal evaluation...", event.getUserId());
+            if (event.getUserId() != null) {
+                List<Goal> userGoals = goalRepository.findByUserId(event.getUserId());
+                evaluateGoalsList(userGoals);
+            }
+        } catch (Exception e) {
+            log.error("Error evaluating goals for user {}: {}", event.getUserId(), e.getMessage(), e);
+        }
+    }
+
+    private void evaluateGoalsList(List<Goal> goals) {
+        LocalDate today = LocalDate.now();
+        for (Goal g : goals) {
+            try {
+                double currentKg = computeCurrentKg(g);
+                g.setCurrentKg(currentKg);
+
+                if ("ACTIVE".equals(g.getStatus()) && g.getStartDate() != null && g.getEndDate() != null
+                        && g.getStartDate().isBefore(today.plusDays(1))) {
+
+                    long elapsedDays = java.time.temporal.ChronoUnit.DAYS.between(g.getStartDate(), today) + 1;
+                    long totalDays   = java.time.temporal.ChronoUnit.DAYS.between(g.getStartDate(), g.getEndDate()) + 1;
+
+                    if (elapsedDays > 0 && g.getTargetKg() != null && g.getTargetKg() > 0) {
+                        double dailyAverage  = currentKg / elapsedDays;
+                        double projectedFinal = dailyAverage * totalDays;
+                        double usagePct      = (currentKg / g.getTargetKg()) * 100.0;
+
+                        if (currentKg > g.getTargetKg()) {
+                            createAlertIfMissing(g.getUserId(), "THRESHOLD_BREACH",
+                                String.format("🚨 Threshold breached! Your emissions for '%s' are at %.2f kg CO₂e, exceeding your target of %.2f kg.",
+                                    g.getTitle(), currentKg, g.getTargetKg()), currentKg);
+                        } else if (usagePct >= 80.0) {
+                            createAlertIfMissing(g.getUserId(), "GOAL_WARNING",
+                                String.format("⚠️ Watch out! You've used %.1f%% of your '%s' goal (%.2f / %.2f kg CO₂e). You have %.2f kg remaining.",
+                                    usagePct, g.getTitle(), currentKg, g.getTargetKg(), g.getTargetKg() - currentKg), currentKg);
+                        } else if (projectedFinal > g.getTargetKg()) {
+                            createAlertIfMissing(g.getUserId(), "GOAL_OFF_TRACK",
+                                String.format("📈 Goal '%s' is off-track! At your current pace you are projected to reach %.2f kg (Target: %.2f kg).",
+                                    g.getTitle(), projectedFinal, g.getTargetKg()), projectedFinal);
+                        }
+                    }
+                }
+
+                if ("ACTIVE".equals(g.getStatus()) && g.getEndDate() != null
+                        && (g.getEndDate().isBefore(today) || g.getEndDate().isEqual(today))) {
+                    if (g.getTargetKg() != null && currentKg <= g.getTargetKg()) {
+                        g.setStatus("ACHIEVED");
+                        log.info("Goal {} achieved by user {}", g.getId(), g.getUserId());
+                        eventPublisher.publishEvent(new GoalAchievedEvent(this, g.getUserId(), g.getId()));
+                    } else {
+                        g.setStatus("MISSED");
+                        log.info("Goal {} missed by user {}", g.getId(), g.getUserId());
+                    }
+                    goalRepository.save(g);
+                }
+            } catch (Exception e) {
+                log.error("Error evaluating goal id {}: {}", g.getId(), e.getMessage());
+            }
+        }
     }
 }

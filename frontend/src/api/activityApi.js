@@ -56,29 +56,29 @@ export async function getActivityLogs() {
  * @returns {Promise<ActivityLog>}
  */
 export async function createActivityLog(logData) {
-  const category = logData.category.toLowerCase();
-  let endpoint = `/activity-logs/${category}`;
+  const rawCat = (logData.category || '').toLowerCase().trim();
+  const category = rawCat.replace(/[\s_]/g, '');
+  let endpoint = '/activity-logs/transport';
   let payload = {};
-  const qty = parseFloat(logData.amount || logData.quantity);
+  const qty = parseFloat(logData.amount || logData.quantity || 1);
+  const unit = logData.unit || 'items';
+  const now = new Date();
+  const defaultDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const logDate = logData.logDate || defaultDate;
 
-  switch (category) {
-    case 'transport':
-      payload = { transportMode: logData.activityType, distance: qty, unit: logData.unit || 'km', logDate: logData.logDate, notes: logData.notes };
-      break;
-    case 'energy':
-    case 'electricity':
-      payload = { energySource: logData.activityType, kwhConsumed: qty, unit: logData.unit || 'kWh', logDate: logData.logDate, notes: logData.notes };
-      // Override endpoint to use electricity since energy is just a UI alias
-      endpoint = '/activity-logs/electricity';
-      break;
-    case 'food':
-      payload = { mealType: logData.activityType, amount: qty, unit: logData.unit || 'servings', logDate: logData.logDate, notes: logData.notes };
-      break;
-    case 'shopping':
-      payload = { productCategory: logData.activityType, spendAmount: qty, currency: logData.unit || 'items', logDate: logData.logDate, notes: logData.notes };
-      break;
-    default:
-      throw new Error("Invalid category: " + category);
+  if (category === 'transport') {
+    endpoint = '/activity-logs/transport';
+    payload = { transportMode: logData.activityType, distance: qty, unit: unit || 'km', logDate, notes: logData.notes };
+  } else if (category === 'electricity' || category === 'energy' || category === 'homeenergy') {
+    endpoint = '/activity-logs/electricity';
+    payload = { energySource: logData.activityType, kwhConsumed: qty, unit: unit || 'kWh', logDate, notes: logData.notes };
+  } else if (category === 'food' || category === 'diet' || category === 'meal') {
+    endpoint = '/activity-logs/food';
+    payload = { mealType: logData.activityType, amount: qty, unit: unit || 'servings', logDate, notes: logData.notes };
+  } else {
+    // Shopping / Retail / Other
+    endpoint = '/activity-logs/shopping';
+    payload = { productCategory: logData.activityType || 'other', spendAmount: qty, currency: unit || 'items', logDate, notes: logData.notes };
   }
 
   const response = await axiosInstance.post(endpoint, payload);

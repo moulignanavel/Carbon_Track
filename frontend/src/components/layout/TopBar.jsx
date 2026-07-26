@@ -3,6 +3,10 @@ import { Menu, Sun, Moon, Bell, LogOut, ChevronDown, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useAlerts } from '@/context/AlertContext';
+import NotificationDrawer from '@/components/notifications/NotificationDrawer';
+
+import alertService from '@/services/api/alertService';
+import toast from 'react-hot-toast';
 
 function timeAgo(dateString) {
   if (!dateString) return '';
@@ -53,80 +57,29 @@ export default function TopBar({ onMenuClick, title }) {
 
         {/* Notifications */}
         {(() => {
-          const { alerts, unreadCount, fetchAlerts, markAsRead, markAllAsRead, deleteAlert } = useAlerts();
+          const { alerts, unreadCount, markAsRead, markAllAsRead, deleteAlert } = useAlerts();
           return (
-            <div className="relative">
+            <>
               <button
-                onClick={() => { setNotifOpen((o) => !o); fetchAlerts(); }}
+                onClick={() => setNotifOpen(true)}
                 className="relative rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                 aria-label="Notifications"
               >
-                <Bell className="h-4 w-4" aria-hidden="true" />
-                {/* unread dot */}
+                <Bell className="h-4 w-4 text-slate-600 dark:text-slate-300" aria-hidden="true" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true" />
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-rose-500 animate-pulse" aria-hidden="true" />
                 )}
               </button>
 
-              {notifOpen && (
-                <div
-                  className="absolute right-0 top-full mt-2 w-80 card-glass rounded-2xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 scale-in overflow-hidden z-50 animate-in fade-in slide-in-from-top-1 duration-200"
-                  onMouseLeave={() => setNotifOpen(false)}
-                >
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-slate-800">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Notifications</p>
-                      {unreadCount > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 text-[10px] font-bold">
-                          {unreadCount} new
-                        </span>
-                      )}
-                    </div>
-                    {unreadCount > 0 && (
-                      <span
-                        onClick={markAllAsRead}
-                        className="text-xs font-semibold text-green-600 dark:text-green-400 cursor-pointer hover:underline"
-                      >
-                        Mark all read
-                      </span>
-                    )}
-                  </div>
-                  <ul className="max-h-[300px] overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                    {alerts.length === 0 ? (
-                      <li className="px-4 py-8 text-center text-xs text-slate-400 dark:text-slate-500">
-                        No notifications yet
-                      </li>
-                    ) : (
-                      alerts.map((n) => (
-                        <li
-                          key={n.id}
-                          onClick={() => !n.isRead && markAsRead(n.id)}
-                          className={`group flex items-start gap-2.5 px-4 py-3 text-sm transition-colors hover:bg-green-50/50 dark:hover:bg-slate-800/50 cursor-pointer ${!n.isRead ? 'bg-green-50/20 dark:bg-green-950/10' : ''}`}
-                        >
-                          <span className={`mt-2 h-1.5 w-1.5 shrink-0 rounded-full ${!n.isRead ? 'bg-green-500' : 'bg-transparent'}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className={`leading-snug text-xs ${!n.isRead ? 'text-slate-800 dark:text-slate-200 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
-                              {n.message}
-                            </p>
-                            <p className="text-[10px] text-slate-400 mt-1">{timeAgo(n.createdAt)}</p>
-                          </div>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteAlert(n.id);
-                            }}
-                            className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-red-500 transition-all"
-                            aria-label="Delete notification"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                </div>
-              )}
-            </div>
+              <NotificationDrawer
+                isOpen={notifOpen}
+                onClose={() => setNotifOpen(false)}
+                alerts={alerts}
+                onMarkAsRead={markAsRead}
+                onMarkAllAsRead={markAllAsRead}
+                onDeleteAlert={deleteAlert}
+              />
+            </>
           );
         })()}
 

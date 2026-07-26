@@ -3,6 +3,7 @@ import { ChevronLeft, Lock, Trophy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { useActivity } from '@/context/ActivityContext';
+import { useCelebration } from '@/context/CelebrationContext';
 
 /* ─── Badge data ─────────────────────────────────────────────────────────── */
 export const BADGES = [
@@ -282,6 +283,7 @@ export function BadgeCoin({ badge, isUnlocked, size = 'md', isDark, streak = 0 }
 /* ─── Page ───────────────────────────────────────────────────────────────── */
 export default function BadgesPage() {
   const { user } = useAuth();
+  const { triggerCelebration } = useCelebration();
   const [selected, setSelected] = useState(null);
   const { logs, fetchLogs } = useActivity();
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
@@ -321,7 +323,40 @@ export default function BadgesPage() {
     return count;
   }, [logs]);
 
-  const unlockedBadges = (user?.badges && user.badges.length > 0) ? user.badges : ['Eco Pioneer', 'Goal Crusher'];
+  const unlockedBadges = useMemo(() => {
+    const set = new Set(user?.badges || []);
+
+    // 1. Eco Pioneer: Unlocked when user logs their 1st activity
+    if (logs && logs.length > 0) {
+      set.add('Eco Pioneer');
+    }
+
+    // 2. 7-Day Streak: Unlocked when logging streak reaches 7 days
+    if (streak >= 7) {
+      set.add('7-Day Streak');
+    }
+
+    // 3. Goal Crusher: Unlocked after 10 activities or completed goal
+    if (logs && logs.length >= 10) {
+      set.add('Goal Crusher');
+    }
+
+    // 4. Include badges stored in user's celebration history
+    try {
+      const userId = user?.id || user?.username || 'guest';
+      const stored = localStorage.getItem(`carbontrack_unlocked_badges_${userId}`);
+      if (stored) {
+        const list = JSON.parse(stored);
+        if (Array.isArray(list)) {
+          list.forEach((b) => set.add(b));
+        }
+      }
+    } catch (e) {
+      /* ignore storage errors */
+    }
+
+    return Array.from(set);
+  }, [user, logs, streak]);
   const selectedBadge = BADGES.find(b => b.name === selected);
   const isUnlocked = (name) => unlockedBadges.includes(name);
 
@@ -366,6 +401,22 @@ export default function BadgesPage() {
 
           {selectedBadge.name === '7-Day Streak' && (
             <div className="text-sm font-bold text-orange-500 dark:text-orange-400 mb-6">Streak Progress: {streak} / 7 days</div>
+          )}
+
+          {isUnlocked(selectedBadge.name) && (
+            <button
+              onClick={() => triggerCelebration({
+                title: '🎉 Trophy Showcase',
+                badgeName: selectedBadge.name,
+                emoji: selectedBadge.emoji || '🏆',
+                description: selectedBadge.description,
+                subtitle: 'Celebrated sustainability milestone on CarbonTrack!',
+                force: true
+              })}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/25 transition-all cursor-pointer hover:scale-105 active:scale-95 mb-6"
+            >
+              Celebrate Achievement
+            </button>
           )}
         </div>
       ) : (

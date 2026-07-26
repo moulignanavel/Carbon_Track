@@ -43,9 +43,16 @@ public class GoalServiceImpl implements GoalService {
         if (g.getStartDate() == null || g.getEndDate() == null) return 0.0;
 
         Double result;
-        if ("all".equalsIgnoreCase(g.getCategory())) {
+        String cat = g.getCategory() != null ? g.getCategory().toLowerCase().trim() : "";
+        if ("all".equals(cat)) {
             result = activityLogRepository.sumEmissionsByUserAndDateRange(
                     g.getUserId(), g.getStartDate(), g.getEndDate());
+        } else if (cat.contains("energy") || cat.contains("electric")) {
+            Double val1 = activityLogRepository.sumEmissionsByUserCategoryAndDateRange(
+                    g.getUserId(), "electricity", g.getStartDate(), g.getEndDate());
+            Double val2 = activityLogRepository.sumEmissionsByUserCategoryAndDateRange(
+                    g.getUserId(), "energy", g.getStartDate(), g.getEndDate());
+            result = (val1 != null ? val1 : 0.0) + (val2 != null ? val2 : 0.0);
         } else {
             result = activityLogRepository.sumEmissionsByUserCategoryAndDateRange(
                     g.getUserId(), g.getCategory(), g.getStartDate(), g.getEndDate());

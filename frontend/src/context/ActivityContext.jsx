@@ -50,7 +50,7 @@ export function ActivityProvider({ children }) {
           setLogs(data);
         } catch (_) { /* ignore background refresh errors */ }
       }, 300);
-      // Notify GoalContext (and any other listeners) immediately for optimistic UI
+      window.dispatchEvent(new CustomEvent('activity-created', { detail: { newLog, logCount: logs.length + 1 } }));
       window.dispatchEvent(new Event('activity-logged'));
       // Fire a second delayed event so goals + alerts re-fetch AFTER the backend
       // has finished its async goal-evaluation and alert-creation (takes ~500ms)

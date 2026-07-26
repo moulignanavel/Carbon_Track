@@ -48,7 +48,14 @@ export function AuthProvider({ children }) {
             saveUser(updated);
             return updated;
           });
-        }).catch(err => console.error("Failed to fetch full profile", err));
+        }).catch(err => {
+          console.error("Failed to fetch full profile", err);
+          if (err?.response?.status === 401) {
+            clearAuth();
+            setToken(null);
+            setUser(null);
+          }
+        });
       });
     }
   }, [token]);

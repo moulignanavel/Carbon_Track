@@ -15,34 +15,35 @@
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, Badge, Tabs } from '@/components/ui';
-import { ChartSkeleton }     from '@/components/skeletons';
-import { useAuth }           from '@/context/AuthContext';
-import { useActivity }       from '@/context/ActivityContext';
-import { useGoals }          from '@/context/GoalContext';
-import { TYPE_MAP }          from '@/constants/activities';
+import { ChartSkeleton } from '@/components/skeletons';
+import { useAuth } from '@/context/AuthContext';
+import { useActivity } from '@/context/ActivityContext';
+import { useGoals } from '@/context/GoalContext';
+import { TYPE_MAP } from '@/constants/activities';
 import { getCommunityLeaderboard } from '@/api/leaderboardApi';
 import { getPlatformAverages, getUserPercentile } from '@/api/benchmarkingApi';
 import recommendationsService from '@/services/api/recommendationsService';
 
 /* ── Chart components ─────────────────────────────────────────── */
-import WeeklyTrendChart      from '@/components/charts/WeeklyTrendChart';
+import WeeklyTrendChart from '@/components/charts/WeeklyTrendChart';
 import MonthlyComparisonChart from '@/components/charts/MonthlyComparisonChart';
-import CategoryPieChart      from '@/components/charts/CategoryPieChart';
+import CategoryPieChart from '@/components/charts/CategoryPieChart';
 import PlatformBenchmarkChart from '@/components/charts/PlatformBenchmarkChart';
 
 /* ── Widget components ────────────────────────────────────────── */
-import WelcomeBanner    from './widgets/WelcomeBanner';
-import KpiRow           from './widgets/KpiRow';
-import GoalProgress     from './widgets/GoalProgress';
+import WelcomeBanner from './widgets/WelcomeBanner';
+import EcoScoreWidget from '@/components/dashboard/EcoScoreWidget';
+import KpiRow from './widgets/KpiRow';
+import GoalProgress from './widgets/GoalProgress';
 import RecentActivities from './widgets/RecentActivities';
-import Recommendations  from './widgets/Recommendations';
-import Leaderboard      from './widgets/Leaderboard';
+import Recommendations from './widgets/Recommendations';
+import Leaderboard from './widgets/Leaderboard';
 
 /* ── Chart tab config ─────────────────────────────────────────── */
 const CHART_TABS = [
-  { id: 'weekly',   label: 'Weekly Trend'  },
-  { id: 'monthly',  label: 'Monthly'       },
-  { id: 'category', label: 'By Category'   },
+  { id: 'weekly', label: 'Weekly Trend' },
+  { id: 'monthly', label: 'Monthly' },
+  { id: 'category', label: 'By Category' },
   { id: 'benchmarks', label: 'vs Platform' },
 ];
 
@@ -50,10 +51,10 @@ const CHART_TABS = [
    Main component
    ══════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
-  const { user }     = useAuth();
+  const { user } = useAuth();
   const { logs, isLoading: logsLoading, fetchLogs } = useActivity();
-  const { goals, isLoading: goalsLoading }           = useGoals();
-  
+  const { goals, isLoading: goalsLoading } = useGoals();
+
   const [leaderboardEntries, setLeaderboardEntries] = useState([]);
   const [leaderboardLoading, setLeaderboardLoading] = useState(true);
   const [recommendations, setRecommendations] = useState([]);
@@ -175,16 +176,16 @@ export default function DashboardPage() {
       return new Date(d);
     };
 
-    const now           = new Date();
-    const todayStr      = now.toISOString().split('T')[0];
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
     const yesterdayDate = new Date(now);
     yesterdayDate.setDate(now.getDate() - 1);
-    const yesterdayStr  = yesterdayDate.toISOString().split('T')[0];
+    const yesterdayStr = yesterdayDate.toISOString().split('T')[0];
 
-    const oneWeekAgo    = new Date(now); oneWeekAgo.setDate(now.getDate() - 7);
-    const twoWeeksAgo   = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
+    const oneWeekAgo = new Date(now); oneWeekAgo.setDate(now.getDate() - 7);
+    const twoWeeksAgo = new Date(now); twoWeeksAgo.setDate(now.getDate() - 14);
 
-    const startOfMonth  = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
     const todayEmissions = logs
@@ -217,7 +218,7 @@ export default function DashboardPage() {
       .filter((l) => { const d = parseLogDate(l); return d && d >= startOfPrevMonth && d < startOfMonth; })
       .reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
 
-    const totalAll    = logs.reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
+    const totalAll = logs.reduce((sum, l) => sum + (l.calculatedEmissions ?? 0), 0);
     const distinctDays = new Set(
       logs.map((l) => {
         const d = parseLogDate(l);
@@ -227,10 +228,10 @@ export default function DashboardPage() {
     const avgEmissions = totalAll / distinctDays;
 
     return {
-      today:     { value: todayEmissions,   trend: todayEmissions >= yesterdayEmissions ? 'up' : 'down', delta: todayEmissions - yesterdayEmissions, deltaLabel: 'vs yesterday' },
-      weekly:    { value: weeklyEmissions,  trend: weeklyEmissions >= prevWeeklyEmissions ? 'up' : 'down', delta: weeklyEmissions - prevWeeklyEmissions, deltaLabel: 'vs last week' },
-      monthly:   { value: monthlyEmissions, trend: monthlyEmissions >= prevMonthlyEmissions ? 'up' : 'down', delta: monthlyEmissions - prevMonthlyEmissions, deltaLabel: 'vs last month' },
-      avgPerDay: { value: avgEmissions,     trend: avgEmissions > 20 ? 'up' : 'down', delta: avgEmissions - 20, deltaLabel: 'vs target' },
+      today: { value: todayEmissions, trend: todayEmissions >= yesterdayEmissions ? 'up' : 'down', delta: todayEmissions - yesterdayEmissions, deltaLabel: 'vs yesterday' },
+      weekly: { value: weeklyEmissions, trend: weeklyEmissions >= prevWeeklyEmissions ? 'up' : 'down', delta: weeklyEmissions - prevWeeklyEmissions, deltaLabel: 'vs last week' },
+      monthly: { value: monthlyEmissions, trend: monthlyEmissions >= prevMonthlyEmissions ? 'up' : 'down', delta: monthlyEmissions - prevMonthlyEmissions, deltaLabel: 'vs last month' },
+      avgPerDay: { value: avgEmissions, trend: avgEmissions > 20 ? 'up' : 'down', delta: avgEmissions - 20, deltaLabel: 'vs target' },
     };
   }, [logs]);
 
@@ -273,7 +274,7 @@ export default function DashboardPage() {
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dayLabel = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
+      const dayLabel = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getDay()];
       const dayDateStr = d.toISOString().split('T')[0];
 
       const dayLogs = recentLogs.filter((l) => {
@@ -320,7 +321,7 @@ export default function DashboardPage() {
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const mStart = new Date(d.getFullYear(), d.getMonth(), 1);
-      const mEnd   = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
+      const mEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59);
 
       const mLogs = logs.filter((l) => {
         const ld = parseDate(l);
@@ -449,14 +450,13 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 fade-in">
 
-      {/* ════════════════════════════════════════════════════════
-          1 · WELCOME BANNER  (full width)
-          ════════════════════════════════════════════════════════ */}
+      {/* 1 · WELCOME BANNER  (full width) */}
       <WelcomeBanner user={user} kpi={realKpi} percentile={percentile} />
 
-      {/* ════════════════════════════════════════════════════════
-          2 · KPI ROW  — Today / Week / Month / Avg
-          ════════════════════════════════════════════════════════ */}
+      {/* 2 · SUSTAINABILITY ECO CREDIT SCORE DIAL GAUGE */}
+      <EcoScoreWidget />
+
+      {/* 3 · KPI ROW  — Today / Week / Month / Avg */}
       <KpiRow kpi={realKpi} isLoading={globalLoading} />
 
       {/* ════════════════════════════════════════════════════════
@@ -546,7 +546,7 @@ export default function DashboardPage() {
               </>
             )}
           </Card>
- 
+
           {/* ── Two-col sub-grid: Recent Activities + Leaderboard */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <RecentActivities
@@ -559,14 +559,14 @@ export default function DashboardPage() {
             />
           </div>
         </div>
- 
+
         {/* ── Right sidebar block ─────────────────────────────── */}
         <div className="space-y-6">
           <GoalProgress goals={goals} isLoading={globalLoading} />
           <Recommendations recommendations={recommendations} isLoading={recsLoading} />
         </div>
       </div>
- 
+
       {/* ════════════════════════════════════════════════════════
           5 · MONTHLY COMPARISON  (full width, always visible)
           ════════════════════════════════════════════════════════ */}

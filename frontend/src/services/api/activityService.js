@@ -28,13 +28,32 @@ class ActivityService {
    * @returns {Promise<ActivityLog>}
    */
   async createActivity(activityData) {
+    const qty = Number(activityData.amount ?? activityData.quantity ?? 1);
     const { data } = await axiosInstance.post(API_ENDPOINTS.ACTIVITY_LOGS_CREATE, {
       category: activityData.category,
       activityType: activityData.activityType,
-      amount: activityData.amount,
+      amount: qty,
+      quantity: qty,
       unit: activityData.unit,
       calculatedEmissions: activityData.calculatedEmissions,
       logDate: activityData.logDate,
+      notes: activityData.notes,
+    });
+    return data;
+  }
+
+  /**
+   * Scan receipt or utility bill using AI Vision
+   * @param {File} file - Receipt / utility bill image file
+   * @returns {Promise<Object>} Extracted activity fields
+   */
+  async scanReceipt(file) {
+    const formData = new FormData();
+    formData.append('file', file);
+    const { data } = await axiosInstance.post(API_ENDPOINTS.ACTIVITY_LOGS_SCAN, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
     return data;
   }
