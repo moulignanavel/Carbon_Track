@@ -10,11 +10,11 @@ import Badge from '@/components/ui/Badge';
  * Highlights top 3 and current user.
  */
 
-export default function LeaderboardRow({ 
-  user, 
-  isCurrentUser = false, 
+export default function LeaderboardRow({
+  user,
+  isCurrentUser = false,
   isTopThree = false,
-  isAlternate = false 
+  isAlternate = false
 }) {
   // Rank styling
   const getRankColor = (rank) => {
@@ -43,11 +43,11 @@ export default function LeaderboardRow({
       onClick={() => window.dispatchEvent(new CustomEvent('open-badge-sidebar', { detail: user }))}
       className={`
         border-b border-slate-200 dark:border-slate-700 transition-colors cursor-pointer
-        ${isCurrentUser 
-          ? 'bg-green-50 dark:bg-green-950/20 ring-2 ring-green-400 dark:ring-green-600 ring-inset' 
-          : isAlternate 
-          ? 'bg-slate-50 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-700/50' 
-          : 'hover:bg-slate-50 dark:hover:bg-slate-800/20'
+        ${isCurrentUser
+          ? 'bg-green-50 dark:bg-green-950/20 ring-2 ring-green-400 dark:ring-green-600 ring-inset'
+          : isAlternate
+            ? 'bg-slate-50 dark:bg-slate-800/30 hover:bg-slate-100 dark:hover:bg-slate-700/50'
+            : 'hover:bg-slate-50 dark:hover:bg-slate-800/20'
         } hover:shadow-sm
       `}
     >
@@ -79,8 +79,8 @@ export default function LeaderboardRow({
           <Leaf className="w-4 h-4 text-green-600 flex-shrink-0" />
           <div className="text-right">
             <p className="font-bold text-slate-900 dark:text-slate-50">
-              {user.totalCO2Saved.toLocaleString('en-US', { 
-                maximumFractionDigits: 1 
+              {user.totalCO2Saved.toLocaleString('en-US', {
+                maximumFractionDigits: 1
               })}
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400">kg</p>

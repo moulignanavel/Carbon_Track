@@ -12,19 +12,19 @@ import { useNavigate } from 'react-router-dom';
 
 /* Per-badge high-contrast pill styles */
 const BADGE_STYLES = {
-  'Eco Pioneer':            'bg-[#e8f0fe] text-[#1a73e8]',
-  'Goal Crusher':           'bg-[#fef7e0] text-[#b06000]',
-  '7-Day Streak':           'bg-[#fce8e6] text-[#c5221f]',
-  '10 kg Reduction':        'bg-[#e6f4ea] text-[#137333]',
-  '25 kg Reduction':        'bg-[#e6f4ea] text-[#137333]',
-  '50 kg Reduction':        'bg-[#e6f4ea] text-[#137333]',
-  '100 kg Reduction':       'bg-[#e6f4ea] text-[#137333]',
-  'Forest Guardian':        'bg-[#e6f4ea] text-[#137333]',
-  'Eco Warrior':            'bg-[#e8f0fe] text-[#1a73e8]',
-  'Earth Savior':           'bg-[#e8f0fe] text-[#1a73e8]',
-  'Top Saver':              'bg-[#fef7e0] text-[#b06000]',
-  'Eco Champion':           'bg-[#f3e8fd] text-[#6d28d9]',
-  'Community Leader':       'bg-[#f3e8fd] text-[#6d28d9]',
+  'Eco Pioneer': 'bg-[#e8f0fe] text-[#1a73e8]',
+  'Goal Crusher': 'bg-[#fef7e0] text-[#b06000]',
+  '7-Day Streak': 'bg-[#fce8e6] text-[#c5221f]',
+  '10 kg Reduction': 'bg-[#e6f4ea] text-[#137333]',
+  '25 kg Reduction': 'bg-[#e6f4ea] text-[#137333]',
+  '50 kg Reduction': 'bg-[#e6f4ea] text-[#137333]',
+  '100 kg Reduction': 'bg-[#e6f4ea] text-[#137333]',
+  'Forest Guardian': 'bg-[#e6f4ea] text-[#137333]',
+  'Eco Warrior': 'bg-[#e8f0fe] text-[#1a73e8]',
+  'Earth Savior': 'bg-[#e8f0fe] text-[#1a73e8]',
+  'Top Saver': 'bg-[#fef7e0] text-[#b06000]',
+  'Eco Champion': 'bg-[#f3e8fd] text-[#6d28d9]',
+  'Community Leader': 'bg-[#f3e8fd] text-[#6d28d9]',
   'Emission Target Master': 'bg-[#e8f0fe] text-[#1a73e8]',
 };
 const DEFAULT_BADGE_STYLE = 'bg-[#e6f4ea] text-[#137333]';

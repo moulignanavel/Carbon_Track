@@ -1,13 +1,16 @@
 package com.carbontrack.backend.controller;
 
+import com.carbontrack.backend.dto.DailyTrendDto;
 import com.carbontrack.backend.dto.LeaderboardResponse;
 import com.carbontrack.backend.dto.LeaderboardUserResponse;
+import com.carbontrack.backend.dto.RecentAchievementDto;
 import com.carbontrack.backend.entity.ActivityLog;
 import com.carbontrack.backend.entity.Badge;
 import com.carbontrack.backend.entity.User;
 import com.carbontrack.backend.entity.UserBadge;
 import com.carbontrack.backend.repository.ActivityLogRepository;
 import com.carbontrack.backend.repository.BadgeRepository;
+import com.carbontrack.backend.repository.ChallengeRepository;
 import com.carbontrack.backend.repository.GoalRepository;
 import com.carbontrack.backend.repository.UserBadgeRepository;
 import com.carbontrack.backend.repository.UserRepository;
@@ -15,6 +18,9 @@ import com.carbontrack.backend.service.SecurityService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.format.TextStyle;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -27,6 +33,7 @@ public class LeaderboardController {
     private final UserBadgeRepository userBadgeRepository;
     private final BadgeRepository badgeRepository;
     private final GoalRepository goalRepository;
+    private final ChallengeRepository challengeRepository;
     private final SecurityService securityService;
 
     public LeaderboardController(UserRepository userRepository,
@@ -34,49 +41,31 @@ public class LeaderboardController {
                                  UserBadgeRepository userBadgeRepository,
                                  BadgeRepository badgeRepository,
                                  GoalRepository goalRepository,
+                                 ChallengeRepository challengeRepository,
                                  SecurityService securityService) {
         this.userRepository = userRepository;
         this.activityLogRepository = activityLogRepository;
         this.userBadgeRepository = userBadgeRepository;
         this.badgeRepository = badgeRepository;
         this.goalRepository = goalRepository;
+        this.challengeRepository = challengeRepository;
         this.securityService = securityService;
     }
 
     @GetMapping
     public ResponseEntity<LeaderboardResponse> getLeaderboard() {
-        User currentUser = securityService.getCurrentUser();
-        List<LeaderboardUserResponse> list = calculateLeaderboard(null);
-
-        // top three
-        List<LeaderboardUserResponse> topThree = list.stream()
-                .limit(3)
-                .collect(Collectors.toList());
-
-        // all (up to 50)
-        List<LeaderboardUserResponse> all = list.stream()
-                .limit(50)
-                .collect(Collectors.toList());
-
-        // current user
-        LeaderboardUserResponse curUserResp = list.stream()
-                .filter(u -> u.getUserId().equals(currentUser.getId()))
-                .findFirst()
-                .orElse(null);
-
-        return ResponseEntity.ok(new LeaderboardResponse(
-                topThree,
-                all,
-                curUserResp,
-                System.currentTimeMillis() / 1000L
-        ));
+        return ResponseEntity.ok(buildLeaderboardResponse(null, 50));
     }
 
     @GetMapping("/search")
     public ResponseEntity<LeaderboardResponse> searchLeaderboard(@RequestParam("q") String query,
                                                                  @RequestParam(value = "limit", defaultValue = "50") int limit) {
+        return ResponseEntity.ok(buildLeaderboardResponse(query, limit));
+    }
+
+    private LeaderboardResponse buildLeaderboardResponse(String searchQuery, int limit) {
         User currentUser = securityService.getCurrentUser();
-        List<LeaderboardUserResponse> list = calculateLeaderboard(query);
+        List<LeaderboardUserResponse> list = calculateLeaderboard(searchQuery);
 
         // top three
         List<LeaderboardUserResponse> topThree = list.stream()
@@ -94,12 +83,147 @@ public class LeaderboardController {
                 .findFirst()
                 .orElse(null);
 
-        return ResponseEntity.ok(new LeaderboardResponse(
+        // 100% Strict Dynamic Community Metrics from Database
+        List<User> validUsers = userRepository.findAll().stream()
+                .filter(u -> {
+                    String un = u.getUsername() != null ? u.getUsername().toLowerCase() : "";
+                    String em = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
+                    return !un.contains("test") && !em.contains("test");
+                })
+                .collect(Collectors.toList());
+
+        long totalCommunityMembers = validUsers.size();
+
+        List<ActivityLog> allLogs = activityLogRepository.findAll();
+        double totalCO2Saved = allLogs.stream()
+                .mapToDouble(ActivityLog::getCalculatedEmissions)
+                .sum();
+
+        LocalDate today = LocalDate.now();
+        long activitiesLoggedToday = allLogs.stream()
+                .filter(log -> log.getLogDate() == null || log.getLogDate().equals(today))
+                .count();
+
+        long activeChallenges = challengeRepository.count();
+
+        // Build Dynamic Recent Achievements Stream (100% Real Database Events)
+        List<RecentAchievementDto> recentAchievements = buildRecentAchievements(validUsers, allLogs);
+
+        // Build Dynamic 7-Day Trend Chart Data
+        List<DailyTrendDto> dailyTrends = buildDailyTrends(allLogs);
+
+        return new LeaderboardResponse(
                 topThree,
                 all,
                 curUserResp,
-                System.currentTimeMillis() / 1000L
-        ));
+                System.currentTimeMillis() / 1000L,
+                totalCommunityMembers,
+                totalCO2Saved,
+                activitiesLoggedToday,
+                activeChallenges,
+                recentAchievements,
+                dailyTrends
+        );
+    }
+
+    private List<RecentAchievementDto> buildRecentAchievements(List<User> validUsers, List<ActivityLog> allLogs) {
+        List<RecentAchievementDto> list = new ArrayList<>();
+        Map<Long, String> userNameMap = validUsers.stream()
+                .collect(Collectors.toMap(User::getId, User::getUsername, (a, b) -> a));
+
+        LocalDate today = LocalDate.now();
+
+        // 1. Add Recent Activity Logs (Most recent first)
+        List<ActivityLog> sortedLogs = new ArrayList<>(allLogs);
+        sortedLogs.sort((a, b) -> Long.compare(b.getId(), a.getId()));
+
+        for (ActivityLog log : sortedLogs) {
+            if (list.size() >= 6) break;
+            String username = userNameMap.get(log.getUserId());
+            if (username != null) {
+                String cat = log.getCategory() != null ? log.getCategory().toLowerCase() : "activity";
+                String detail = String.format("%s (%.1f kg CO₂e)", log.getActivityType() != null ? log.getActivityType() : "Eco Log", log.getCalculatedEmissions() != null ? log.getCalculatedEmissions() : 0.0);
+                
+                String timeAgo = "Today";
+                if (log.getLogDate() != null) {
+                    long days = ChronoUnit.DAYS.between(log.getLogDate(), today);
+                    if (days <= 0) timeAgo = "Today";
+                    else if (days == 1) timeAgo = "Yesterday";
+                    else timeAgo = days + "d ago";
+                }
+
+                list.add(new RecentAchievementDto(
+                        log.getId(),
+                        username,
+                        "logged " + cat,
+                        detail,
+                        "activity",
+                        timeAgo
+                ));
+            }
+        }
+
+        // 2. Add Recent User Badges if space permits
+        if (list.size() < 6) {
+            List<UserBadge> allUserBadges = userBadgeRepository.findAll();
+            List<Badge> allBadges = badgeRepository.findAll();
+            Map<Long, String> badgeNameMap = allBadges.stream()
+                    .collect(Collectors.toMap(Badge::getId, Badge::getName, (a, b) -> a));
+
+            for (int i = allUserBadges.size() - 1; i >= 0 && list.size() < 6; i--) {
+                UserBadge ub = allUserBadges.get(i);
+                String uName = userNameMap.get(ub.getUserId());
+                String bName = badgeNameMap.get(ub.getBadgeId());
+                if (uName != null && bName != null) {
+                    list.add(new RecentAchievementDto(
+                            ub.getId(),
+                            uName,
+                            "unlocked badge",
+                            bName,
+                            "badge",
+                            "Recent"
+                    ));
+                }
+            }
+        }
+
+        // 3. Add Recent Member Registrations if space permits
+        if (list.size() < 6) {
+            for (int i = validUsers.size() - 1; i >= 0 && list.size() < 6; i--) {
+                User u = validUsers.get(i);
+                list.add(new RecentAchievementDto(
+                        u.getId(),
+                        u.getUsername(),
+                        "joined community",
+                        "Welcome new member",
+                        "join",
+                        "Recent"
+                ));
+            }
+        }
+
+        return list;
+    }
+
+    private List<DailyTrendDto> buildDailyTrends(List<ActivityLog> allLogs) {
+        List<DailyTrendDto> trends = new ArrayList<>();
+        LocalDate today = LocalDate.now();
+
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = today.minusDays(i);
+            String dayName = date.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.ENGLISH);
+
+            List<ActivityLog> dayLogs = allLogs.stream()
+                    .filter(log -> log.getLogDate() != null && log.getLogDate().equals(date))
+                    .collect(Collectors.toList());
+
+            double dayCO2 = dayLogs.stream().mapToDouble(ActivityLog::getCalculatedEmissions).sum();
+            long dayCount = dayLogs.size();
+
+            trends.add(new DailyTrendDto(dayName, dayCO2, dayCount));
+        }
+
+        return trends;
     }
 
     private List<LeaderboardUserResponse> calculateLeaderboard(String searchQuery) {
@@ -120,14 +244,12 @@ public class LeaderboardController {
         List<LeaderboardUserResponse> responseList = new ArrayList<>();
 
         for (User user : users) {
-            // Exclude test users (username or email containing "test" case-insensitive)
             String usernameLower = user.getUsername() != null ? user.getUsername().toLowerCase() : "";
             String emailLower = user.getEmail() != null ? user.getEmail().toLowerCase() : "";
             if (usernameLower.contains("test") || emailLower.contains("test")) {
                 continue;
             }
 
-            // Apply search query filter if present (by username or email)
             if (searchQuery != null && !searchQuery.isEmpty()) {
                 String q = searchQuery.toLowerCase();
                 boolean matchesUsername = usernameLower.contains(q);
@@ -143,7 +265,6 @@ public class LeaderboardController {
                     .mapToDouble(ActivityLog::getCalculatedEmissions)
                     .sum();
 
-            // Total CO2 emitted: sum of actual logged emissions
             double totalCO2Emitted = totalEmissions;
 
             List<UserBadge> userBadges = userBadgesByUser.getOrDefault(user.getId(), Collections.emptyList());
@@ -158,17 +279,15 @@ public class LeaderboardController {
             responseList.add(new LeaderboardUserResponse(
                     user.getId(),
                     user.getUsername(),
-                    0, // rank will be computed after sorting
+                    0,
                     totalCO2Emitted,
-                    totalCO2Emitted, // totalEmissionsSaved
+                    totalCO2Emitted,
                     activityCount,
                     badges,
                     badge
             ));
         }
 
-        // Sort: active users (activityCount > 0) come first, sorted by emissions ascending (lowest emissions first).
-        // Inactive users come last, sorted alphabetically by username.
         responseList.sort((a, b) -> {
             boolean aActive = a.getActivityCount() > 0;
             boolean bActive = b.getActivityCount() > 0;
@@ -182,31 +301,24 @@ public class LeaderboardController {
             return a.getUsername().compareToIgnoreCase(b.getUsername());
         });
 
-        // Names of all leaderboard-specific dynamic badges
         final List<String> LEADERBOARD_BADGES = List.of(
             "Earth Savior", "Community Leader", "Top Saver", "Eco Warrior"
         );
 
-        // Step 1: Revoke all leaderboard badges from every ranked user
-        // so that rank changes are immediately reflected
         for (LeaderboardUserResponse ur : responseList) {
             for (String badgeName : LEADERBOARD_BADGES) {
                 revokeLeaderboardBadge(ur.getUserId(), badgeName);
             }
         }
 
-        // Step 2: Assign ranks and re-award based on current rank
         for (int i = 0; i < responseList.size(); i++) {
             LeaderboardUserResponse ur = responseList.get(i);
             int rank = i + 1;
             ur.setRank(rank);
 
-            // Only award to active users
             if (ur.getActivityCount() > 0) {
                 if (rank == 1) {
                     awardBadgeIfMissing(ur.getUserId(), "Earth Savior", "Awarded to the #1 user on the global leaderboard.");
-
-                    // Community Leader: #1 AND 3+ goals achieved
                     long achievedGoalCount = goalRepository.findByUserIdAndStatus(ur.getUserId(), "ACHIEVED").size();
                     if (achievedGoalCount >= 3) {
                         awardBadgeIfMissing(ur.getUserId(), "Community Leader", "Ranked #1 on the leaderboard with 3 or more goals achieved.");
@@ -222,10 +334,6 @@ public class LeaderboardController {
         return responseList;
     }
 
-    /**
-     * Removes a leaderboard badge from a user if they currently hold it.
-     * Called before re-awarding so rank changes are always accurate.
-     */
     private void revokeLeaderboardBadge(Long userId, String badgeName) {
         badgeRepository.findAll().stream()
             .filter(b -> badgeName.equals(b.getName()))

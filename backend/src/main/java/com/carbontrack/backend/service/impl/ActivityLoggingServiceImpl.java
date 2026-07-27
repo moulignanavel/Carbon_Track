@@ -12,6 +12,7 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import org.springframework.context.ApplicationEventPublisher;
 import com.carbontrack.backend.event.ActivityLoggedEvent;
@@ -78,7 +79,7 @@ public class ActivityLoggingServiceImpl implements ActivityLoggingService {
         log.setAmount(request.getQuantity());
         log.setUnit(request.getUnit());
         log.setCalculatedEmissions(emissions);
-        log.setLogDate(request.getLogDate());
+        log.setLogDate(request.getLogDate() != null ? request.getLogDate() : LocalDate.now());
         log.setNotes(request.getNotes());
 
         ActivityLog savedLog = activityLogRepository.save(log);

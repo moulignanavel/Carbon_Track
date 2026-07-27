@@ -44,7 +44,7 @@ public class GeminiClientService {
     }
 
     public String generateRecommendation(String prompt, String userMessage, String username, String email, Double totalEmissions, Double todayEmissions, List<ActivityLog> logs) {
-        if (geminiApiKey == null || geminiApiKey.contains("your_api_key_here")) {
+        if (geminiApiKey == null || geminiApiKey.isBlank() || geminiApiKey.contains("your") || geminiApiKey.contains("placeholder") || geminiApiKey.length() < 10) {
             return getPersonalizedFallback(userMessage, username, email, totalEmissions, todayEmissions, logs);
         }
 

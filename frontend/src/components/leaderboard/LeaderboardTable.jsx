@@ -19,10 +19,10 @@ export default function LeaderboardTable({ users = [], currentUserId, isSearchin
   const columns = [
     { key: 'rank', header: 'Rank', sortable: true, align: 'left', width: '80px' },
     { key: 'username', header: 'User', sortable: true, align: 'left' },
-    { 
-      key: 'totalEmissionsSaved', 
-      header: 'CO₂ Emitted', 
-      sortable: true, 
+    {
+      key: 'totalEmissionsSaved',
+      header: 'CO₂ Emitted',
+      sortable: true,
       align: 'center',
       hidden: 'md',
       render: (value) => `${value?.toLocaleString('en-US', { maximumFractionDigits: 1 }) || 0} kg`
