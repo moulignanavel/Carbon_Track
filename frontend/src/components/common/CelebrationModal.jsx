@@ -126,9 +126,17 @@ export default function CelebrationModal({ isOpen, celebrationData, onClose }) {
             <div className={`w-full h-full rounded-full bg-gradient-to-br ${badgeObj.innerBg} flex items-center justify-center shadow-inner relative overflow-hidden`}>
               {/* Specular glass highlight */}
               <div className="absolute top-1.5 left-1.5 w-4 h-4 rounded-full bg-white/25 blur-[2px] pointer-events-none" />
-              <span className="text-4xl select-none animate-bounce" style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))' }}>
-                {badgeObj.emoji || emoji || '🏆'}
-              </span>
+              {badgeObj.iconUrl ? (
+                <img
+                  src={badgeObj.iconUrl}
+                  alt={badgeObj.name || title}
+                  className="w-full h-full object-cover rounded-full drop-shadow-lg relative z-10"
+                />
+              ) : (
+                <span className="text-4xl select-none animate-bounce" style={{ filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.5))' }}>
+                  {badgeObj.emoji || emoji || '🏆'}
+                </span>
+              )}
             </div>
           </div>
         </div>

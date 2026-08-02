@@ -19,6 +19,7 @@ import {
   useCallback, useMemo, useEffect,
 } from 'react';
 import { loginUser, registerUser } from '@/api/authApi';
+import { getCommunityLeaderboard } from '@/api/leaderboardApi';
 import {
   saveToken, saveUser, clearAuth,
   getToken, getUser,
@@ -67,7 +68,9 @@ export function AuthProvider({ children }) {
       fetchProfile();
     };
     const handleLeaderboardViewed = () => {
-      setTimeout(fetchProfile, 800);
+      getCommunityLeaderboard()
+        .then(() => fetchProfile())
+        .catch(() => fetchProfile());
     };
 
     window.addEventListener('activity-logged', handleActivityLogged);
