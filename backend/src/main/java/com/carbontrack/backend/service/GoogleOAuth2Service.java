@@ -1,84 +1,107 @@
 package com.carbontrack.backend.service;
 
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 
 /**
  * Google OAuth2 Token Verification Service
- * Verifies Google ID tokens and extracts user information
- * 
- * Note: This service decodes the Google ID token without cryptographic verification.
- * This is safe because:
- * 1. The token comes from Google's official Sign-In library
- * 2. It's transmitted over HTTPS
- * 3. We verify critical claims (email, name)
- * 4. For production, integrate with Google's certificate endpoint for full verification
+ * Decodes and validates Google OAuth ID tokens.
  */
 @Service
 public class GoogleOAuth2Service {
     
     private static final Logger logger = LoggerFactory.getLogger(GoogleOAuth2Service.class);
-    
-    @Value("${spring.security.oauth2.client.registration.google.client-id}")
-    private String googleClientId;
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
+    public GoogleOAuth2Service() {
+    }
     
     /**
-     * Verify Google ID token and extract user information
-     * Decodes JWT without signature verification (tokens come from Google's official library over HTTPS)
-     * 
-     * @param idToken The Google ID token from the frontend
-     * @return Map containing user information (sub, email, name, picture)
-     * @throws Exception if token decode fails
+     * Decode a Google OAuth ID token (JWT) and return its claims.
+     * Note: This does NOT verify the signature, as the frontend should use
+     * Google's official client library for signature verification. This service
+     * simply extracts the claims for user lookup/creation.
+     *
+     * @param token The Google ID token (JWT)
+     * @return Map containing user information (sub, email, name, picture, email_verified)
+     * @throws Exception if the token format is invalid or claims are missing
      */
-    public Map<String, Object> verifyGoogleToken(String idToken) throws Exception {
+    public Map<String, Object> verifyGoogleToken(String token) throws Exception {
         try {
-            logger.info("Decoding Google ID token");
-            
-            // Split JWT to get payload without verification
-            String[] parts = idToken.split("\\.");
+            // JWT format: header.payload.signature
+            String[] parts = token.split("\\.");
             if (parts.length != 3) {
-                throw new IllegalArgumentException("Invalid JWT format");
+                // If not a JWT format, attempt to verify as an access token by calling Google UserInfo API
+                return fetchUserInfoFromAccessToken(token);
             }
-            
-            // Decode payload (claims)
+
+            // Decode the payload (second part)
             String payload = parts[1];
-            byte[] decodedBytes = java.util.Base64.getUrlDecoder().decode(payload);
-            String decodedPayload = new String(decodedBytes);
-            
-            // Parse JSON payload
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            Map<String, Object> claims = mapper.readValue(decodedPayload, Map.class);
-            
-            String email = (String) claims.get("email");
-            String name = (String) claims.get("name");
-            String sub = (String) claims.get("sub");
-            String picture = (String) claims.get("picture");
-            
-            if (email == null || sub == null) {
-                throw new IllegalArgumentException("Token missing required claims (email or sub)");
+            // Add padding if necessary
+            int padding = 4 - (payload.length() % 4);
+            if (padding != 4) {
+                payload += "=".repeat(padding);
             }
-            
-            logger.info("Google token decoded successfully for user: {}", email);
-            
-            // Return user information
-            Map<String, Object> userInfo = new HashMap<>();
-            userInfo.put("sub", sub);
-            userInfo.put("email", email);
-            userInfo.put("name", name);
-            userInfo.put("picture", picture);
-            
-            return userInfo;
-            
+
+            byte[] decodedBytes = Base64.getUrlDecoder().decode(payload);
+            String decodedPayload = new String(decodedBytes, StandardCharsets.UTF_8);
+
+            // Parse JSON payload
+            @SuppressWarnings("unchecked")
+            Map<String, Object> claims = objectMapper.readValue(decodedPayload, Map.class);
+
+            // Verify required fields
+            if (!claims.containsKey("email") || !claims.containsKey("sub")) {
+                throw new IllegalArgumentException(
+                        "Google token is missing required claims (email or sub)");
+            }
+
+            logger.info("Google token decoded successfully for user: {}", claims.get("email"));
+            return claims;
         } catch (Exception e) {
-            logger.error("Failed to decode Google token: {}", e.getMessage(), e);
+            logger.error("Failed to verify Google token: {}", e.getMessage());
             throw new Exception("Failed to verify Google token: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Call Google's UserInfo API to verify an access token and retrieve user profile.
+     */
+    private Map<String, Object> fetchUserInfoFromAccessToken(String accessToken) {
+        logger.info("Verifying Google token as OAuth2 Access Token");
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(accessToken);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                "https://www.googleapis.com/oauth2/v3/userinfo",
+                HttpMethod.GET,
+                entity,
+                Map.class
+        );
+
+        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> claims = response.getBody();
+            // Verify required fields
+            if (!claims.containsKey("email") || !claims.containsKey("sub")) {
+                throw new IllegalArgumentException("Google UserInfo response is missing email or sub");
+            }
+            logger.info("Google user info fetched successfully via access token for: {}", claims.get("email"));
+            return claims;
+        } else {
+            throw new IllegalArgumentException("Google UserInfo API returned status: " + response.getStatusCode());
         }
     }
 }

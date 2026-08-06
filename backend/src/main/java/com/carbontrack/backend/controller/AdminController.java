@@ -4,6 +4,9 @@ import com.carbontrack.backend.dto.AdminStatsDto;
 import com.carbontrack.backend.dto.AdminUserDto;
 import com.carbontrack.backend.entity.EmissionFactor;
 import com.carbontrack.backend.service.AdminService;
+import com.carbontrack.backend.service.OrganisationAdminService;
+import com.carbontrack.backend.dto.OrganisationRequest;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -17,9 +20,11 @@ import java.util.Map;
 public class AdminController {
 
     private final AdminService adminService;
+    private final OrganisationAdminService organisationAdminService;
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, OrganisationAdminService organisationAdminService) {
         this.adminService = adminService;
+        this.organisationAdminService = organisationAdminService;
     }
 
     @GetMapping("/stats")
@@ -55,5 +60,43 @@ public class AdminController {
     @GetMapping("/users/{id}/logs")
     public ResponseEntity<List<com.carbontrack.backend.entity.ActivityLog>> getUserLogs(@PathVariable("id") Long id) {
         return ResponseEntity.ok(adminService.getUserLogsForAdmin(id));
+    }
+
+    @GetMapping("/audit-logs")
+    public ResponseEntity<List<com.carbontrack.backend.entity.RoleAuditLog>> getAuditLogs() {
+        return ResponseEntity.ok(adminService.getRoleAuditLogs());
+    }
+
+    @GetMapping("/organisations")
+    public ResponseEntity<List<com.carbontrack.backend.dto.OrganisationAdminResponse>> getOrganisations(
+            @RequestParam(required = false) String search) {
+        return ResponseEntity.ok(organisationAdminService.list(search));
+    }
+
+    @PostMapping("/organisations")
+    public ResponseEntity<com.carbontrack.backend.dto.OrganisationAdminResponse> createOrganisation(
+            @Valid @RequestBody OrganisationRequest request) {
+        return ResponseEntity.status(201).body(organisationAdminService.create(request.getName()));
+    }
+
+    @PutMapping("/organisations/{id}")
+    public ResponseEntity<com.carbontrack.backend.dto.OrganisationAdminResponse> updateOrganisation(
+            @PathVariable Long id, @Valid @RequestBody OrganisationRequest request) {
+        return ResponseEntity.ok(organisationAdminService.update(id, request.getName()));
+    }
+
+    @PatchMapping("/organisations/{id}/status")
+    public ResponseEntity<com.carbontrack.backend.dto.OrganisationAdminResponse> updateOrganisationStatus(
+            @PathVariable Long id, @RequestBody Map<String, Boolean> body) {
+        if (!body.containsKey("active")) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(organisationAdminService.setActive(id, body.get("active")));
+    }
+
+    @GetMapping("/organisations/{id}/members")
+    public ResponseEntity<List<com.carbontrack.backend.dto.OrganisationMemberResponse>> getOrganisationMembers(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(organisationAdminService.members(id));
     }
 }

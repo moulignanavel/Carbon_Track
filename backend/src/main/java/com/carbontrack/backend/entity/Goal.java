@@ -47,6 +47,14 @@ public class Goal {
     @Column(nullable = false, length = 20)
     private String status; // ACTIVE, ACHIEVED, MISSED
 
+    @Column(name = "responsible_department", length = 120)
+    private String responsibleDepartment;
+
+    // Organisation goals use administrator-entered aggregate progress. They
+    // must never be recalculated from one user's personal activity logs.
+    @Column(name = "organisation_managed")
+    private Boolean organisationManaged = false;
+
     // Legacy columns — kept nullable for backward compatibility
     @Column(name = "target_reduction_pct")
     private Double targetReductionPct;

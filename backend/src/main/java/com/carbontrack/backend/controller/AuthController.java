@@ -3,6 +3,7 @@ package com.carbontrack.backend.controller;
 import com.carbontrack.backend.dto.AuthResponse;
 import com.carbontrack.backend.dto.LoginRequest;
 import com.carbontrack.backend.dto.RegisterRequest;
+import com.carbontrack.backend.dto.OrganisationRegistrationRequest;
 import com.carbontrack.backend.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -22,6 +23,15 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    }
+    @PostMapping("/register/user")
+    public ResponseEntity<AuthResponse> registerUser(@Valid @RequestBody RegisterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.register(request));
+    }
+
+    @PostMapping("/register/organisation")
+    public ResponseEntity<AuthResponse> registerOrganisation(@Valid @RequestBody OrganisationRegistrationRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(authService.registerOrganisation(request));
     }
 
     @PostMapping("/login")

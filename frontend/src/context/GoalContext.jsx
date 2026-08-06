@@ -18,7 +18,7 @@
 
 import {
   createContext, useContext, useState,
-  useCallback, useMemo, useEffect,
+  useCallback, useMemo, useEffect, useRef,
 } from 'react';
 import toast from 'react-hot-toast';
 import { getGoals, createGoal, updateGoalApi, deleteGoalApi } from '@/api/goalsApi';
@@ -30,29 +30,34 @@ const GoalContext = createContext(null);
 export function GoalProvider({ children }) {
   const [goals,     setGoals]     = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const requestVersion = useRef(0);
 
   /* ── fetch ──────────────────────────────────────────────────── */
   const fetchGoals = useCallback(async () => {
+    const version = ++requestVersion.current;
     setIsLoading(true);
     try {
       const data = await getGoals();
       // Backend returns target/current (mapped in GoalResponse DTO)
-      setGoals(data);
+      if (version === requestVersion.current) setGoals(data);
     } catch (err) {
-      toast.error(formatError(err, 'Failed to load goals'));
+      if (version === requestVersion.current) {
+        toast.error(formatError(err, 'Failed to load goals'));
+      }
     } finally {
-      setIsLoading(false);
+      if (version === requestVersion.current) setIsLoading(false);
     }
   }, []);
 
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, user } = useAuth();
 
   // Auto-fetch on mount
   useEffect(() => {
-    if (isLoggedIn) {
-      fetchGoals();
-    }
-  }, [fetchGoals, isLoggedIn]);
+    requestVersion.current += 1;
+    setGoals([]);
+    setIsLoading(false);
+    if (isLoggedIn && user?.userId) fetchGoals();
+  }, [fetchGoals, isLoggedIn, user?.userId]);
 
   // Re-fetch goals whenever an activity is logged so progress updates immediately
   useEffect(() => {

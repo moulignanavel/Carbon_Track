@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { ShieldCheck, Users, Activity, Database, Search, RefreshCw, Eye, Download, Flame, Car, Utensils, ShoppingBag } from 'lucide-react';
+import { ShieldCheck, Users, Activity, Database, Search, RefreshCw, Eye, Download, Flame, Car, Utensils, ShoppingBag, Building2, Pencil, Power } from 'lucide-react';
 import { Card, Badge, StatCard, Alert, Button, Input, Modal, ProgressBar } from '@/components/ui';
 import adminService from '@/services/api/adminService';
 import toast from 'react-hot-toast';
@@ -8,9 +8,16 @@ export default function AdminPage() {
   const [stats, setStats] = useState({ totalUsers: 0, totalActivityLogs: 0, totalEmissionsKg: 0, totalAdmins: 0, categoryBreakdown: {} });
   const [users, setUsers] = useState([]);
   const [factors, setFactors] = useState([]);
+  const [organisations, setOrganisations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('users'); // 'users' | 'factors'
+  const [organisationSearch, setOrganisationSearch] = useState('');
+  const [organisationPage, setOrganisationPage] = useState(1);
+  const [organisationForm, setOrganisationForm] = useState(undefined);
+  const [organisationName, setOrganisationName] = useState('');
+  const [organisationMembers, setOrganisationMembers] = useState(null);
+  const pageSize = 8;
 
   // User activity log inspection modal state
   const [inspectUser, setInspectUser] = useState(null);
@@ -20,15 +27,17 @@ export default function AdminPage() {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [statsRes, usersRes, factorsRes] = await Promise.allSettled([
+      const [statsRes, usersRes, factorsRes, organisationsRes] = await Promise.allSettled([
         adminService.getStats(),
         adminService.getUsers(),
-        adminService.getEmissionFactors()
+        adminService.getEmissionFactors(),
+        adminService.getOrganisations()
       ]);
 
       if (statsRes.status === 'fulfilled') setStats(statsRes.value || {});
       if (usersRes.status === 'fulfilled') setUsers(usersRes.value || []);
       if (factorsRes.status === 'fulfilled') setFactors(factorsRes.value || []);
+      if (organisationsRes.status === 'fulfilled') setOrganisations(organisationsRes.value || []);
     } catch (err) {
       toast.error('Failed to load admin panel data');
     } finally {
@@ -51,6 +60,52 @@ export default function AdminPage() {
       toast.error('Failed to fetch user activity logs');
     } finally {
       setLoadingLogs(false);
+    }
+  };
+
+  const handleRoleChange = async (user, role) => {
+    try {
+      const updated = await adminService.updateUserRole(user.id, role);
+      setUsers((current) => current.map((item) => item.id === user.id ? updated : item));
+      toast.success(`${user.username} is now ${role}`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Role update failed');
+    }
+  };
+
+  const saveOrganisation = async () => {
+    if (!organisationName.trim()) return;
+    try {
+      const saved = organisationForm
+        ? await adminService.updateOrganisation(organisationForm.id, organisationName)
+        : await adminService.createOrganisation(organisationName);
+      setOrganisations((current) => organisationForm
+        ? current.map((item) => item.id === saved.id ? saved : item)
+        : [...current, saved].sort((a, b) => a.name.localeCompare(b.name)));
+      setOrganisationForm(undefined);
+      setOrganisationName('');
+      toast.success('Organisation saved');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.response?.data?.error || 'Unable to save organisation');
+    }
+  };
+
+  const toggleOrganisation = async (organisation) => {
+    if (!window.confirm(`${organisation.active ? 'Deactivate' : 'Activate'} ${organisation.name}?`)) return;
+    try {
+      const updated = await adminService.setOrganisationActive(organisation.id, !organisation.active);
+      setOrganisations((current) => current.map((item) => item.id === updated.id ? updated : item));
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Unable to update organisation');
+    }
+  };
+
+  const viewMembers = async (organisation) => {
+    try {
+      const members = await adminService.getOrganisationMembers(organisation.id);
+      setOrganisationMembers({ organisation, members });
+    } catch {
+      toast.error('Unable to load organisation members');
     }
   };
 
@@ -88,6 +143,13 @@ export default function AdminPage() {
       (u) => u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q) || u.role?.toLowerCase().includes(q)
     );
   }, [users, search]);
+
+  const filteredOrganisations = useMemo(() => {
+    const query = organisationSearch.trim().toLowerCase();
+    return organisations.filter((organisation) => !query || organisation.name.toLowerCase().includes(query));
+  }, [organisations, organisationSearch]);
+  const organisationPages = Math.max(1, Math.ceil(filteredOrganisations.length / pageSize));
+  const visibleOrganisations = filteredOrganisations.slice((organisationPage - 1) * pageSize, organisationPage * pageSize);
 
   const catMap = stats.categoryBreakdown || {};
   const totalEmissions = stats.totalEmissionsKg || 1;
@@ -129,7 +191,7 @@ export default function AdminPage() {
       <div className="p-4 rounded-2xl bg-[#EBF5ED] dark:bg-emerald-950/60 border-2 border-[#7FBF8C] dark:border-emerald-700 text-[#0F2E22] dark:text-emerald-100 flex items-center gap-3 shadow-xs">
         <ShieldCheck className="w-5 h-5 text-[#1E4432] dark:text-[#7FBF8C] shrink-0" />
         <p className="text-xs font-bold leading-relaxed">
-          Administrative Portal: You are logged in as Administrator (<span className="font-black underline">admin@carbontrack.com</span>). Active governance mode enabled for platform oversight, user activity inspection, category breakdown analytics, and system factor management.
+          Administrative Portal: Active governance mode is enabled for platform oversight, user management, organisation management, audit review, analytics, and system factor control.
         </p>
       </div>
 
@@ -158,7 +220,7 @@ export default function AdminPage() {
         />
         <StatCard
           title="System Administrator"
-          value={`${stats.totalAdmins || users.filter((u) => u.role === 'ADMIN').length} / 1 Max`}
+          value={stats.totalAdmins || users.filter((u) => u.role === 'ADMIN').length}
           icon={ShieldCheck}
           iconBg="bg-emerald-100 dark:bg-emerald-900/40"
           iconColor="text-[#1E4432] dark:text-[#7FBF8C]"
@@ -219,6 +281,16 @@ export default function AdminPage() {
           }`}
         >
           Emission Factors ({factors.length})
+        </button>
+        <button
+          onClick={() => setActiveTab('organisations')}
+          className={`px-5 py-2.5 rounded-2xl text-xs font-black transition-all ${
+            activeTab === 'organisations'
+              ? 'bg-[#1E4432] text-white shadow-md border border-[#7FBF8C]/40'
+              : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700'
+          }`}
+        >
+          Organisations ({organisations.length})
         </button>
       </div>
 
@@ -288,13 +360,25 @@ export default function AdminPage() {
                         {((u.totalEmissionsKg || 0)).toFixed(2)} kg CO₂e
                       </td>
                       <td className="py-3.5 px-4 text-center">
-                        <button
-                          onClick={() => handleInspectUser(u)}
-                          className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border-2 border-emerald-600 dark:border-emerald-500 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5 mx-auto"
-                        >
-                          <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                          <span>Inspect Logs</span>
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <select
+                            aria-label={`Role for ${u.username}`}
+                            value={u.role}
+                            onChange={(event) => handleRoleChange(u, event.target.value)}
+                            className="px-2 py-1.5 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 rounded-xl font-bold"
+                          >
+                            <option value="USER">USER</option>
+                            <option value="ORG_ADMIN">ORG_ADMIN</option>
+                            <option value="ADMIN">ADMIN</option>
+                          </select>
+                          <button
+                            onClick={() => handleInspectUser(u)}
+                            className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border-2 border-emerald-600 dark:border-emerald-500 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                            <span>Inspect Logs</span>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -345,6 +429,77 @@ export default function AdminPage() {
             </table>
           </div>
         </Card>
+      )}
+
+      {activeTab === 'organisations' && (
+        <Card className="shadow-sm border-2 border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
+          <div className="p-5 border-b-2 border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row gap-3 justify-between">
+            <div>
+              <h3 className="font-black text-lg">Organisation Management</h3>
+              <p className="text-xs font-bold text-slate-500">Create, edit, activate, deactivate, and inspect members.</p>
+            </div>
+            <div className="flex gap-2">
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
+                <input value={organisationSearch} onChange={(event) => { setOrganisationSearch(event.target.value); setOrganisationPage(1); }}
+                  placeholder="Search organisations..."
+                  className="pl-9 pr-3 py-2 border-2 border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold" />
+              </div>
+              <Button onClick={() => { setOrganisationForm(null); setOrganisationName(''); }}>Create Organisation</Button>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-100 dark:bg-slate-800 uppercase">
+                <tr><th className="p-4">Organisation</th><th className="p-4">Status</th><th className="p-4">Members</th><th className="p-4">Org Admins</th><th className="p-4 text-right">Actions</th></tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {visibleOrganisations.map((organisation) => (
+                  <tr key={organisation.id}>
+                    <td className="p-4 font-black flex items-center gap-2"><Building2 className="w-4 h-4 text-emerald-700" />{organisation.name}</td>
+                    <td className="p-4"><Badge variant={organisation.active ? 'success' : 'neutral'}>{organisation.active ? 'Active' : 'Inactive'}</Badge></td>
+                    <td className="p-4 font-bold">{organisation.memberCount}</td>
+                    <td className="p-4 font-bold">{organisation.orgAdminCount}</td>
+                    <td className="p-4"><div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => viewMembers(organisation)}><Eye className="w-4 h-4" /> Members</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setOrganisationForm(organisation); setOrganisationName(organisation.name); }}><Pencil className="w-4 h-4" /> Edit</Button>
+                      <Button size="sm" variant="ghost" onClick={() => toggleOrganisation(organisation)}><Power className="w-4 h-4" />{organisation.active ? 'Deactivate' : 'Activate'}</Button>
+                    </div></td>
+                  </tr>
+                ))}
+                {!visibleOrganisations.length && <tr><td colSpan={5} className="p-10 text-center text-slate-500">No organisations found.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+          <div className="p-4 flex justify-end items-center gap-3">
+            <Button size="sm" variant="ghost" disabled={organisationPage === 1} onClick={() => setOrganisationPage((page) => page - 1)}>Previous</Button>
+            <span className="text-xs font-bold">Page {organisationPage} of {organisationPages}</span>
+            <Button size="sm" variant="ghost" disabled={organisationPage === organisationPages} onClick={() => setOrganisationPage((page) => page + 1)}>Next</Button>
+          </div>
+        </Card>
+      )}
+
+      {organisationForm !== undefined && (
+        <Modal isOpen onClose={() => { setOrganisationForm(undefined); setOrganisationName(''); }} title={organisationForm ? 'Edit Organisation' : 'Create Organisation'}>
+          <div className="space-y-4">
+            <Input label="Organisation name" value={organisationName} onChange={(event) => setOrganisationName(event.target.value)} maxLength={100} />
+            <div className="flex justify-end gap-2"><Button variant="ghost" onClick={() => { setOrganisationForm(undefined); setOrganisationName(''); }}>Cancel</Button><Button onClick={saveOrganisation}>Save</Button></div>
+          </div>
+        </Modal>
+      )}
+
+      {organisationMembers && (
+        <Modal isOpen onClose={() => setOrganisationMembers(null)} title={`${organisationMembers.organisation.name} Members`}>
+          <div className="max-h-96 overflow-auto divide-y divide-slate-200 dark:divide-slate-700">
+            {organisationMembers.members.map((member) => (
+              <div key={member.id} className="py-3 flex justify-between gap-3">
+                <div><p className="font-bold">{member.username}</p><p className="text-xs text-slate-500">{member.email}</p></div>
+                <Badge>{member.role}</Badge>
+              </div>
+            ))}
+            {!organisationMembers.members.length && <p className="py-8 text-center text-slate-500">No members yet.</p>}
+          </div>
+        </Modal>
       )}
 
       {/* INSPECT USER LOGS MODAL */}

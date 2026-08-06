@@ -22,6 +22,8 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import org.springframework.context.ApplicationEventPublisher;
+
 class EmissionFactorServiceTest {
 
     @Mock
@@ -32,6 +34,9 @@ class EmissionFactorServiceTest {
 
     @Mock
     private SecurityService securityService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private ActivityLoggingServiceImpl activityLoggingService;
@@ -78,17 +83,14 @@ class EmissionFactorServiceTest {
     }
 
     @Test
-    void testUnknownActivityTypeThrowsException() {
+    void testUnknownActivityTypeUsesFallbackFactor() {
         when(emissionFactorRepository.findFirstByActivityTypeAndUnitOrderByEffectiveDateDesc("spaceshuttle", "km"))
                 .thenReturn(Optional.empty());
 
         ActivityLogRequest request = new ActivityLogRequest("transport", "spaceshuttle", 10.0, "km", LocalDate.now());
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            activityLoggingService.logActivity(request);
-        });
-
-        assertTrue(exception.getMessage().contains("No emission factor configured"));
-        verify(activityLogRepository, never()).save(any(ActivityLog.class));
+        ActivityLog result = activityLoggingService.logActivity(request);
+        assertNotNull(result);
+        assertEquals(10.0, result.getCalculatedEmissions(), 0.001);
     }
 }

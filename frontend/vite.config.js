@@ -24,6 +24,7 @@ export default defineConfig({
         manualChunks(id) {
           // Vendor libraries — separate chunks for parallel loading
           if (id.includes('node_modules')) {
+            if (id.includes('lottie-react') || id.includes('lottie-web')) return 'vendor-lottie';
             if (id.includes('recharts')) return 'vendor-charts';
             if (id.includes('react-hook-form')) return 'vendor-form';
             if (id.includes('lucide-react')) return 'vendor-icons';
@@ -50,7 +51,9 @@ export default defineConfig({
 
   // Dev server
   server: {
+    host: 'localhost',
     port: 5173,
+    strictPort: true,
     // headers: {
     //   'Cross-Origin-Opener-Policy': 'same-origin-allow-popups',
     //   'Referrer-Policy': 'no-referrer-when-downgrade',

@@ -2,10 +2,13 @@
  * RecentActivities — scrollable list of latest logged items
  */
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ArrowRight, Clock } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
 import { formatEmission, formatDate } from '@/utils/formatters';
 import { CATEGORY_COLORS } from '@/constants/theme';
+import LazyLottie from '@/components/common/LazyLottie';
+import emptyAnimation from '@/assets/lottie/eco-empty.json';
 
 const BADGE_VARIANT = {
   transport: 'green',
@@ -21,7 +24,7 @@ function ActivityItem({ activity }) {
   const isHighEmission = emissions > 5;
 
   return (
-    <li className="group flex items-center gap-3 py-2.5 border-b border-slate-100 dark:border-slate-800/70 last:border-0 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 -mx-2 px-2 rounded-lg transition-colors duration-100">
+    <li className="group flex items-center gap-3 py-2 border-b border-slate-100 dark:border-slate-800/70 last:border-0 hover:bg-slate-50/70 dark:hover:bg-slate-800/30 -mx-2 px-2 rounded-lg transition-colors duration-100">
       {/* Icon badge */}
       <span
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-base shadow-sm"
@@ -61,10 +64,12 @@ function ActivityItem({ activity }) {
 }
 
 export default function RecentActivities({ activities, isLoading }) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <Card>
-        <Card.Header title="Recent Activities" icon={Clock} />
+        <Card.Header title={t('dashboard.recentActivities')} icon={Clock} />
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3 py-1">
@@ -84,9 +89,10 @@ export default function RecentActivities({ activities, isLoading }) {
   return (
     <Card>
       <Card.Header
-        title="Recent Activities"
-        subtitle={`${activities.length} entries`}
+        title={t('dashboard.recentActivities')}
+        subtitle={`${activities.length} ${t('community.members')}`}
         icon={Clock}
+        className="mb-3"
         action={
           <Link to="/activities">
             <Button
@@ -94,15 +100,16 @@ export default function RecentActivities({ activities, isLoading }) {
               size="xs"
               rightIcon={<ArrowRight className="h-3.5 w-3.5" />}
             >
-              View all
+              {t('dashboard.viewAll')}
             </Button>
           </Link>
         }
       />
 
       {activities.length === 0 ? (
-        <div className="py-8 text-center text-sm text-slate-400 dark:text-slate-600">
-          No activities yet — start logging!
+        <div className="py-6 flex flex-col items-center justify-center text-center text-sm text-slate-400 dark:text-slate-600">
+          <LazyLottie animationData={emptyAnimation} height={80} width={80} loop={true} />
+          <p className="mt-2">{t('dashboard.noActivities')}</p>
         </div>
       ) : (
         <ul className="space-y-0">
@@ -113,10 +120,10 @@ export default function RecentActivities({ activities, isLoading }) {
       )}
 
       {/* Total strip */}
-      <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-        <span className="text-slate-500 dark:text-slate-400">Showing last {activities.length}</span>
+      <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
+        <span className="text-slate-500 dark:text-slate-400">{t('dashboard.showingLast')} {activities.length}</span>
         <span className="font-semibold text-slate-700 dark:text-slate-300">
-          Total: {formatEmission(activities.reduce((s, a) => s + a.emissions, 0))}
+          {t('dashboard.total')}: {formatEmission(activities.reduce((s, a) => s + a.emissions, 0))}
         </span>
       </div>
     </Card>

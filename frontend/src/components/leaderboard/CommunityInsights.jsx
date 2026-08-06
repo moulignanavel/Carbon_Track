@@ -57,38 +57,38 @@ export default function CommunityInsights({ totalCO2Saved = 0 }) {
   ];
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3.5 shadow-sm">
+      <div className="flex items-center justify-between mb-2.5">
+        <h3 className="text-sm font-extrabold text-slate-900 dark:text-slate-50 flex items-center gap-1.5">
           <span>🌐</span> Community Environmental Impact
         </h3>
-        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
           Real Database Data
         </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {insights.map((item) => {
           const IconComp = item.icon;
           return (
             <div
               key={item.id}
-              className={`p-4 rounded-2xl bg-slate-50/80 dark:bg-slate-800/50 border ${item.borderColor} transition-all hover:scale-[1.02]`}
+              className={`p-2.5 rounded-xl bg-slate-50/80 dark:bg-slate-800/50 border ${item.borderColor} transition-all hover:scale-[1.01]`}
             >
-              <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2 rounded-xl ${item.bgColor} ${item.color}`}>
-                  <IconComp className="w-4 h-4" />
+              <div className="flex items-center gap-2 mb-1">
+                <div className={`p-1.5 rounded-lg ${item.bgColor} ${item.color}`}>
+                  <IconComp className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     {item.title}
                   </p>
-                  <p className="text-lg font-black text-slate-900 dark:text-slate-50">
-                    {item.value} <span className="text-xs font-normal text-slate-500">{item.unit}</span>
+                  <p className="text-base font-black text-slate-900 dark:text-slate-50 leading-tight">
+                    {item.value} <span className="text-[10px] font-normal text-slate-500">{item.unit}</span>
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 pl-1">
+              <div className="flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 pl-0.5">
                 <TrendingUp className="w-3 h-3" />
                 <span>{item.trend}</span>
               </div>

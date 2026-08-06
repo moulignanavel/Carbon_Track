@@ -35,7 +35,6 @@ class ActivityService {
       amount: qty,
       quantity: qty,
       unit: activityData.unit,
-      calculatedEmissions: activityData.calculatedEmissions,
       logDate: activityData.logDate,
       notes: activityData.notes,
     });

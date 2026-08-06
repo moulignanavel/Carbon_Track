@@ -44,8 +44,8 @@ import axiosInstance from './axiosInstance';
  * @param {number} organisationId - Organization ID
  * @returns {Promise<OrganisationDashboardResponse>}
  */
-export async function getDashboardMetrics(organisationId) {
-  const { data } = await axiosInstance.get(`/organisations/${organisationId}/dashboard`);
+export async function getDashboardMetrics() {
+  const { data } = await axiosInstance.get('/organisations/me/dashboard');
   return data;
 }
 
@@ -56,7 +56,51 @@ export async function getDashboardMetrics(organisationId) {
  * @param {number} organisationId - Organization ID
  * @returns {Promise<string>}
  */
-export async function getCSRReport(organisationId) {
-  const { data } = await axiosInstance.get(`/organisations/${organisationId}/csr-report`);
+export async function getCSRReport() {
+  const { data } = await axiosInstance.get('/organisations/me/csr-report');
+  return data;
+}
+
+export async function getPublicOrganisations() {
+  const { data } = await axiosInstance.get('/organisations/public');
+  return data;
+}
+
+export async function getOrganisationPortal() {
+  const { data } = await axiosInstance.get('/org-portal/overview', {
+    params: { _live: Date.now() },
+    headers: { 'Cache-Control': 'no-cache' },
+  });
+  return data;
+}
+export async function updateOrganisationProfile(payload) {
+  const { data } = await axiosInstance.put('/org-portal/organisation-profile', payload); return data;
+}
+export async function updateOrganisationAdminProfile(payload) {
+  const { data } = await axiosInstance.put('/org-portal/my-profile', payload); return data;
+}
+export async function changeOrganisationPassword(payload) {
+  await axiosInstance.post('/org-portal/change-password', payload);
+}
+export async function createOrganisationGoal(payload) {
+  const { data } = await axiosInstance.post('/org-portal/goals', payload); return data;
+}
+export async function updateOrganisationGoal(id, payload) {
+  const { data } = await axiosInstance.put(`/org-portal/goals/${id}`, payload); return data;
+}
+export async function deleteOrganisationGoal(id) {
+  await axiosInstance.delete(`/org-portal/goals/${id}`);
+}
+export async function createOrganisationEmployee(payload) {
+  const { data } = await axiosInstance.post('/org-portal/employees', payload); return data;
+}
+export async function updateOrganisationEmployee(id, payload) {
+  const { data } = await axiosInstance.put(`/org-portal/employees/${id}`, payload); return data;
+}
+export async function createOrganisationActivity(payload) {
+  const { data } = await axiosInstance.post('/org-portal/activities', payload); return data;
+}
+export async function updateOrganisationActivityVerification(id, status) {
+  const { data } = await axiosInstance.patch(`/org-portal/activities/${id}/verification`, { status });
   return data;
 }

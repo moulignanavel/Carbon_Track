@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Bell, AlertTriangle, CheckCheck, Trash2, Calendar, Flame, Target, ShieldAlert, Check } from 'lucide-react';
-import Button from '@/components/ui/Button';
+import { X, Bell, CheckCheck, Trash2, Calendar, Flame, Target, ShieldAlert, Check } from 'lucide-react';
 
 const FILTER_TABS = [
   { id: 'all', label: 'All' },

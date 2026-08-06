@@ -573,3 +573,123 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Organisation module motion system */
+.organisation-module {
+  --org-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.organisation-module button,
+.organisation-module a {
+  transition-duration: 180ms;
+  transition-timing-function: var(--org-ease);
+}
+
+.organisation-module button:not(:disabled):hover,
+.organisation-module a:hover {
+  transform: translateY(-1px);
+}
+
+.organisation-module .org-sidebar {
+  transition-duration: 220ms;
+  transition-timing-function: var(--org-ease);
+}
+
+.organisation-module .org-sidebar-overlay {
+  animation: orgFadeIn 200ms var(--org-ease) both;
+}
+
+.organisation-module .org-profile-menu {
+  transform-origin: top right;
+}
+
+.organisation-module .org-page-content section,
+.organisation-module .org-page-content article {
+  animation: orgCardReveal 380ms var(--org-ease) both;
+}
+
+.organisation-module .org-page-content section:nth-of-type(2),
+.organisation-module .org-page-content article:nth-of-type(2) { animation-delay: 35ms; }
+.organisation-module .org-page-content section:nth-of-type(3),
+.organisation-module .org-page-content article:nth-of-type(3) { animation-delay: 70ms; }
+.organisation-module .org-page-content section:nth-of-type(n+4),
+.organisation-module .org-page-content article:nth-of-type(n+4) { animation-delay: 100ms; }
+
+.organisation-module tbody tr {
+  transition: background-color 180ms var(--org-ease), box-shadow 180ms var(--org-ease);
+}
+
+.organisation-module tbody tr:hover {
+  background-color: color-mix(in srgb, #10b981 5%, transparent);
+  box-shadow: inset 3px 0 0 color-mix(in srgb, #059669 65%, transparent);
+}
+
+.organisation-module .recharts-responsive-container {
+  transform-origin: center bottom;
+  animation: orgChartReveal 400ms var(--org-ease) both;
+}
+
+.organisation-module [class*="fixed"][class*="inset-0"] {
+  animation: orgFadeIn 220ms var(--org-ease) both;
+}
+
+.organisation-module [class*="fixed"][class*="inset-0"] > form,
+.organisation-module [class*="fixed"][class*="inset-0"] > div,
+.organisation-module [class*="fixed"][class*="inset-0"] > aside {
+  animation: orgModalEnter 260ms var(--org-ease) both;
+}
+
+.organisation-module [role="dialog"] > aside,
+.organisation-module aside[role="dialog"] {
+  animation: orgDrawerEnter 250ms var(--org-ease) both;
+}
+
+.organisation-module [class*="bg-emerald-5"][style*="width"],
+.organisation-module [class*="bg-emerald-6"][style*="width"] {
+  transition: width 420ms var(--org-ease);
+}
+
+.org-toast {
+  animation: orgToastEnter 220ms var(--org-ease) both;
+}
+
+@keyframes orgFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes orgCardReveal {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes orgChartReveal {
+  from { opacity: 0; transform: translate3d(0, 8px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes orgModalEnter {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.985); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes orgDrawerEnter {
+  from { opacity: 0; transform: translate3d(28px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes orgToastEnter {
+  from { opacity: 0; transform: translate3d(12px, -6px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .organisation-module *,
+  .organisation-module *::before,
+  .organisation-module *::after,
+  .org-toast {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

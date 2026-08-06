@@ -2,19 +2,23 @@
  * Recommendations — personalised eco tips preview
  */
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Lightbulb, ChevronDown, ChevronUp } from 'lucide-react';
-import { Card, Badge, Button } from '@/components/ui';
+import { Card, Badge } from '@/components/ui';
+import LazyLottie from '@/components/common/LazyLottie';
+import emptyAnimation from '@/assets/lottie/eco-empty.json';
 
 function RecommendationCard({ rec, isExpanded, onToggle }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden transition-all duration-200">
       {/* Header row */}
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-start gap-3 p-4 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
+        className="w-full flex items-start gap-3 p-3.5 text-left hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer"
         aria-expanded={isExpanded}
       >
         <span className="shrink-0 text-xl mt-0.5" aria-hidden="true">{rec.icon}</span>
@@ -36,16 +40,16 @@ function RecommendationCard({ rec, isExpanded, onToggle }) {
 
       {/* Expanded detail */}
       {isExpanded && (
-        <div className="px-4 pb-4 pt-0 border-t border-slate-100 dark:border-slate-800">
-          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-3">
+        <div className="px-3.5 pb-3 pt-0 border-t border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-2">
             {rec.detail}
           </p>
           <button
             type="button"
             onClick={() => navigate('/recommendations')}
-            className="mt-3 flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 hover:underline cursor-pointer"
+            className="mt-2 flex items-center gap-1 text-xs font-semibold text-green-600 dark:text-green-400 hover:underline cursor-pointer"
           >
-            Learn more <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            {t('dashboard.learnMore')} <ArrowRight className="h-3 w-3" aria-hidden="true" />
           </button>
         </div>
       )}
@@ -53,7 +57,8 @@ function RecommendationCard({ rec, isExpanded, onToggle }) {
   );
 }
 
-export default function Recommendations({ recommendations, isLoading }) {
+export default function Recommendations({ recommendations, isLoading, error }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(null);
 
   const toggle = (id) => setExpanded((prev) => (prev === id ? null : id));
@@ -79,16 +84,33 @@ export default function Recommendations({ recommendations, isLoading }) {
     );
   }
 
+  if (error) {
+    return (
+      <Card>
+        <Card.Header title="Recommendations" icon={Lightbulb} />
+        <p role="alert" className="py-6 text-center text-sm text-red-600 dark:text-red-400">
+          {error}
+        </p>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <Card.Header
-        title="Recommendations"
-        subtitle="Personalised for your habits"
+        title={t('dashboard.recommendations')}
+        subtitle={t('dashboard.personalisedForHabits')}
         icon={Lightbulb}
         iconColor="text-amber-500"
+        className="mb-3"
       />
-      <div className="space-y-2.5">
-        {recommendations.map((rec) => (
+      <div className="space-y-1.5">
+        {recommendations.length === 0 ? (
+          <div className="py-6 flex flex-col items-center justify-center text-center text-sm text-slate-400 dark:text-slate-500">
+            <LazyLottie animationData={emptyAnimation} height={80} width={80} loop={true} />
+            <p className="mt-2">{t('dashboard.noRecommendations')}</p>
+          </div>
+        ) : recommendations.map((rec) => (
           <RecommendationCard
             key={rec.id}
             rec={rec}

@@ -19,7 +19,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import Spinner     from '@/components/ui/Spinner';
 
-export default function ProtectedRoute({ children, requiredRole }) {
+export default function ProtectedRoute({ children, requiredRole, allowedRoles }) {
   const { isLoggedIn, isInitialising, user } = useAuth();
   const location = useLocation();
 
@@ -38,8 +38,11 @@ export default function ProtectedRoute({ children, requiredRole }) {
     );
   }
 
-  if (requiredRole && user?.role !== requiredRole) {
-    return <Navigate to="/dashboard" replace />;
+  if ((requiredRole && user?.role !== requiredRole) ||
+      (allowedRoles && !allowedRoles.includes(user?.role))) {
+    const home = user?.role === 'ADMIN' ? '/admin'
+      : user?.role === 'ORG_ADMIN' ? '/organisation' : '/dashboard';
+    return <Navigate to={home} replace />;
   }
 
   return children;

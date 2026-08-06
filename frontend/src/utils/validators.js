@@ -14,8 +14,7 @@ import { z } from 'zod';
 export const loginSchema = z.object({
   email: z
     .string()
-    .min(1, 'Email is required')
-    .email('Enter a valid email address'),
+    .min(1, 'Email or username is required'),
   password: z
     .string()
     .min(1, 'Password is required'),
@@ -24,6 +23,7 @@ export const loginSchema = z.object({
 
 export const registerSchema = z
   .object({
+    fullName: z.string().trim().min(1, 'Full name is required').max(100),
     username: z
       .string()
       .min(3,  'Username must be at least 3 characters')
@@ -45,12 +45,28 @@ export const registerSchema = z
     acceptTerms: z
       .boolean()
       .refine((v) => v === true, 'You must accept the terms to continue'),
-    orgId: z.number().optional().nullable(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Passwords do not match',
     path: ['confirmPassword'],
   });
+
+export const organisationRegisterSchema = z.object({
+  organisationName: z.string().trim().min(1, 'Organisation name is required'),
+  organisationCode: z.string().trim().min(1, 'Organisation code is required'),
+  organisationType: z.string().min(1, 'Organisation type is required'),
+  industry: z.string().optional(),
+  officialEmail: z.string().email('Enter a valid official email'),
+  contactNumber: z.string().optional(), address: z.string().optional(),
+  city: z.string().optional(), state: z.string().optional(), country: z.string().optional(),
+  adminFullName: z.string().trim().min(1, 'Admin full name is required'),
+  username: z.string().min(3).max(50).regex(/^[a-zA-Z0-9_.-]+$/, 'Use letters, numbers, dots, dashes or underscores'),
+  workEmail: z.string().email('Enter a valid work email'),
+  jobTitle: z.string().optional(),
+  password: z.string().min(8).regex(/[A-Z]/, 'Include an uppercase letter').regex(/[0-9]/, 'Include a number').regex(/[^A-Za-z0-9]/, 'Include a special character'),
+  confirmPassword: z.string().min(1, 'Please confirm your password'),
+  acceptTerms: z.boolean().refine(Boolean, 'You must accept the terms to continue'),
+}).refine((d) => d.password === d.confirmPassword, { message: 'Passwords do not match', path: ['confirmPassword'] });
 
 export const forgotPasswordSchema = z.object({
   email: z

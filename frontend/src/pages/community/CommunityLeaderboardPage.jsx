@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
 import { getCommunityLeaderboard, searchLeaderboard } from '@/api/leaderboardApi';
@@ -17,6 +18,7 @@ import BadgeSidebar from '@/components/badges/BadgeSidebar';
 
 export default function CommunityLeaderboardPage() {
   const { user: currentUser } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [leaderboardData, setLeaderboardData] = useState(null);
@@ -153,21 +155,21 @@ export default function CommunityLeaderboardPage() {
   const recentAchievements = leaderboardData?.recentAchievements || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
+    <div className="max-w-7xl mx-auto space-y-3">
       
       {/* Header Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-              <Trophy className="w-8 h-8" />
+          <div className="flex items-center gap-2.5">
+            <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+              <Trophy className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-slate-900 dark:text-slate-50 tracking-tight">
-                Community Leaderboard
+              <h1 className="text-xl sm:text-2xl lg:text-3xl font-black text-slate-900 dark:text-slate-50 tracking-tight">
+                {t('community.title')}
               </h1>
-              <p className="text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400">
-                Track eco-impact, compete with peers, and climb the sustainability rankings.
+              <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                {t('community.subtitle')}
               </p>
             </div>
           </div>
@@ -205,8 +207,8 @@ export default function CommunityLeaderboardPage() {
       {/* 3. Top Performers Podium Cards */}
       {!searchQuery.trim() && topThree.length > 0 && (
         <div>
-          <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-50 mb-4 flex items-center gap-2">
-            <span>🏆</span> Top Performers Podium
+          <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-50 mb-2 flex items-center gap-1.5">
+            <span>🏆</span> {t('community.topPerformers')}
           </h2>
           <LeaderboardTopThree users={topThree} />
         </div>
@@ -224,16 +226,16 @@ export default function CommunityLeaderboardPage() {
       )}
 
       {/* 5. Main Content Grid: Leaderboard Table & Sidebar Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
         
         {/* Main Table (Span 2) */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-50">
-              {searchQuery.trim() ? `🔍 Search Results (${filteredUsers.length})` : '📊 Community Rankings'}
+        <div className="lg:col-span-2 space-y-2">
+          <div className="flex items-center justify-between gap-2 py-0">
+            <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-50">
+              {searchQuery.trim() ? `🔍 ${t('community.searchResults')} (${filteredUsers.length})` : `📊 ${t('community.rankings')}`}
             </h2>
-            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-              Showing {filteredUsers.length} of {rawUsers.length} Members
+            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+              {t('community.showing')} {filteredUsers.length} {t('community.of')} {rawUsers.length} {t('community.members')}
             </span>
           </div>
 
@@ -245,7 +247,7 @@ export default function CommunityLeaderboardPage() {
         </div>
 
         {/* Sidebar Widgets (Span 1) */}
-        <div className="space-y-6">
+        <div className="space-y-3">
           <WeeklyChallengeWidget />
           <CommunityInsights totalCO2Saved={totalCO2Saved} />
           <RecentAchievementsFeed achievements={recentAchievements} />

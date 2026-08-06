@@ -12,29 +12,44 @@
  *   totalEmissions  — number  (sum of calculatedEmissions)
  */
 
-import { useState, useCallback, useMemo, useContext } from 'react';
+import { useState, useCallback, useMemo, useContext, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import { getActivityLogs, createActivityLog } from '@/api';
 import { formatError } from '@/utils/errorHandler';
 import ActivityContext from './activityContextValue';
+import { useAuth } from '@/context/AuthContext';
 
 /* ─── Provider ──────────────────────────────────────────────────── */
 export function ActivityProvider({ children }) {
   const [logs,      setLogs]      = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const requestVersion = useRef(0);
+  const { isLoggedIn, user } = useAuth();
 
   /* ── fetch ─────────────────────────────────────────────────── */
   const fetchLogs = useCallback(async () => {
+    const version = ++requestVersion.current;
     setIsLoading(true);
     try {
       const data = await getActivityLogs();
-      setLogs(data);
+      if (version === requestVersion.current) setLogs(data);
     } catch (err) {
-      toast.error(formatError(err, 'Failed to load activity logs'));
+      if (version === requestVersion.current) {
+        toast.error(formatError(err, 'Failed to load activity logs'));
+      }
     } finally {
-      setIsLoading(false);
+      if (version === requestVersion.current) setIsLoading(false);
     }
   }, []);
+
+  // Server data remains permanent; only account-specific in-memory state is
+  // cleared on logout. A login or account switch reloads that user's records.
+  useEffect(() => {
+    requestVersion.current += 1;
+    setLogs([]);
+    setIsLoading(false);
+    if (isLoggedIn && user?.userId) fetchLogs();
+  }, [fetchLogs, isLoggedIn, user?.userId]);
 
   /* ── add ───────────────────────────────────────────────────── */
   const addLog = useCallback(async (logData) => {

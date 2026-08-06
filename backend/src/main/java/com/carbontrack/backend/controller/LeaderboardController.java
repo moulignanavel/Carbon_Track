@@ -65,7 +65,13 @@ public class LeaderboardController {
 
     private LeaderboardResponse buildLeaderboardResponse(String searchQuery, int limit) {
         User currentUser = securityService.getCurrentUser();
-        List<LeaderboardUserResponse> list = calculateLeaderboard(searchQuery);
+        List<LeaderboardUserResponse> rankedUsers = calculateLeaderboard(currentUser.getId());
+        String normalisedQuery = searchQuery == null ? "" : searchQuery.trim().toLowerCase(Locale.ROOT);
+        List<LeaderboardUserResponse> list = rankedUsers.stream()
+                .filter(user -> normalisedQuery.isEmpty()
+                        || (user.getUsername() != null
+                        && user.getUsername().toLowerCase(Locale.ROOT).contains(normalisedQuery)))
+                .collect(Collectors.toList());
 
         // top three
         List<LeaderboardUserResponse> topThree = list.stream()
@@ -226,7 +232,7 @@ public class LeaderboardController {
         return trends;
     }
 
-    private List<LeaderboardUserResponse> calculateLeaderboard(String searchQuery) {
+    private List<LeaderboardUserResponse> calculateLeaderboard(Long currentUserId) {
         List<User> users = userRepository.findAll();
         List<ActivityLog> allLogs = activityLogRepository.findAll();
         List<UserBadge> allUserBadges = userBadgeRepository.findAll();
@@ -250,15 +256,6 @@ public class LeaderboardController {
                 continue;
             }
 
-            if (searchQuery != null && !searchQuery.isEmpty()) {
-                String q = searchQuery.toLowerCase();
-                boolean matchesUsername = usernameLower.contains(q);
-                boolean matchesEmail = emailLower.contains(q);
-                if (!matchesUsername && !matchesEmail) {
-                    continue;
-                }
-            }
-
             List<ActivityLog> userLogs = logsByUser.getOrDefault(user.getId(), Collections.emptyList());
             int activityCount = userLogs.size();
             double totalEmissions = userLogs.stream()
@@ -275,6 +272,9 @@ public class LeaderboardController {
                     .collect(Collectors.toList());
 
             String badge = badges.isEmpty() ? null : badges.get(0);
+            CategoryStrength strength = determineCategoryStrength(userLogs);
+            int footprintScore = Math.max(0, Math.min(100,
+                    100 - (int) Math.round(totalCO2Emitted)));
 
             responseList.add(new LeaderboardUserResponse(
                     user.getId(),
@@ -284,7 +284,11 @@ public class LeaderboardController {
                     totalCO2Emitted,
                     activityCount,
                     badges,
-                    badge
+                    badge,
+                    footprintScore,
+                    strength.label(),
+                    strength.tip(),
+                    user.getId().equals(currentUserId)
             ));
         }
 
@@ -333,6 +337,40 @@ public class LeaderboardController {
 
         return responseList;
     }
+
+    private CategoryStrength determineCategoryStrength(List<ActivityLog> logs) {
+        if (logs == null || logs.isEmpty()) {
+            return new CategoryStrength(
+                    "Strength developing",
+                    "Log activities consistently to discover a supported low-carbon strength."
+            );
+        }
+        Map<String, DoubleSummaryStatistics> categoryStats = logs.stream()
+                .filter(log -> log.getCategory() != null && log.getCalculatedEmissions() != null)
+                .collect(Collectors.groupingBy(
+                        log -> normaliseCategory(log.getCategory()),
+                        Collectors.summarizingDouble(ActivityLog::getCalculatedEmissions)
+                ));
+        String category = categoryStats.entrySet().stream()
+                .filter(entry -> entry.getValue().getCount() > 0)
+                .min(Comparator.comparingDouble(entry -> entry.getValue().getAverage()))
+                .map(Map.Entry::getKey)
+                .orElse("none");
+        return switch (category) {
+            case "transport" -> new CategoryStrength("Low-carbon traveller", "Uses lower-emission transport habits.");
+            case "electricity" -> new CategoryStrength("Energy saver", "Shows a lower average footprint in home energy.");
+            case "food" -> new CategoryStrength("Sustainable eater", "Shows a lower average footprint in food choices.");
+            case "shopping" -> new CategoryStrength("Conscious shopper", "Shows a lower average footprint in shopping.");
+            default -> new CategoryStrength("Balanced contributor", "Maintains a balanced category footprint.");
+        };
+    }
+
+    private String normaliseCategory(String category) {
+        String value = category.toLowerCase(Locale.ROOT).trim();
+        return value.equals("energy") || value.equals("home_energy") ? "electricity" : value;
+    }
+
+    private record CategoryStrength(String label, String tip) {}
 
     private void revokeLeaderboardBadge(Long userId, String badgeName) {
         badgeRepository.findAll().stream()

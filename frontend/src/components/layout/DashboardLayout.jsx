@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import Sidebar    from './Sidebar';
@@ -20,6 +20,7 @@ const PAGE_TITLES = {
 
 export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   
   const { pathname } = useLocation();
   const title = PAGE_TITLES[pathname] ?? '';
@@ -27,7 +28,7 @@ export default function DashboardLayout() {
 
 
   return (
-    <div className="flex min-h-screen bg-slate-50 dark:bg-gradient-to-br dark:from-[#020617] dark:via-[#090d16] dark:to-[#020617] relative overflow-hidden">
+    <div className="relative flex h-dvh overflow-hidden bg-slate-50 dark:bg-gradient-to-br dark:from-[#020617] dark:via-[#090d16] dark:to-[#020617]">
       {/* Subtle background nodes in dark mode */}
       <div className="absolute inset-0 pointer-events-none z-0 hidden dark:block opacity-35" aria-hidden="true">
         <DataNodeGrid />
@@ -37,10 +38,13 @@ export default function DashboardLayout() {
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main column */}
-      <div className="flex flex-1 flex-col min-w-0 overflow-hidden z-10">
-        <TopBar onMenuClick={() => setSidebarOpen(true)} title={title} />
+      <div className="z-10 flex min-w-0 flex-1 flex-col overflow-hidden">
+        <TopBar onMenuClick={() => setSidebarOpen(true)} title={title} hasScrolled={hasScrolled} />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6">
+        <main
+          className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto p-3 pb-20 md:p-4 md:pb-5"
+          onScroll={(event) => setHasScrolled(event.currentTarget.scrollTop > 10)}
+        >
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>

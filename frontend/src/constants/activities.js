@@ -1,12 +1,10 @@
 /**
  * activities.js
  * ─────────────────────────────────────────────────────────────
- * Activity categories, types, units, emission factors, and
+ * Activity categories, types, units, and
  * UI metadata used throughout the Activity Logging module.
  *
- * Emission factors are in kg CO₂e per unit.
- * Source: DEFRA / EPA estimates — replace with backend values
- * once the EmissionFactor API endpoint is ready.
+ * Numeric emission factors are loaded from the backend catalog.
  */
 
 /* ══════════════════════════════════════════════════════════════
@@ -68,7 +66,6 @@ export const CATEGORY_META = {
      label        — display name
      unit         — default unit
      unitOptions  — selectable unit alternatives
-     factor       — kg CO₂e per 1 unit (DEFRA estimates)
      description  — helper text shown in the form
      icon         — emoji
    ══════════════════════════════════════════════════════════════ */
@@ -87,7 +84,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🚗',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.18,
         description: 'Average petrol car (170 g CO₂e/km)',
       },
       {
@@ -96,7 +92,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🚙',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.165,
         description: 'Average diesel car (165 g CO₂e/km)',
       },
       {
@@ -105,7 +100,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '⚡',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.053,
         description: 'UK grid average EV (53 g CO₂e/km)',
       },
       {
@@ -114,7 +108,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🔋',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.11,
         description: 'Petrol hybrid (110 g CO₂e/km)',
       },
       {
@@ -123,7 +116,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🏍️',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.114,
         description: 'Average motorcycle (114 g CO₂e/km)',
       },
       {
@@ -132,7 +124,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🚌',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.089,
         description: 'Local bus (89 g CO₂e/km per passenger)',
       },
       {
@@ -141,7 +132,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🚆',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.041,
         description: 'National rail (41 g CO₂e/km per passenger)',
       },
       {
@@ -150,7 +140,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🚇',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.028,
         description: 'Urban metro (28 g CO₂e/km per passenger)',
       },
       {
@@ -159,7 +148,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '✈️',
         unit: 'km',
         unitOptions: ['km'],
-        factor: 0.255,
         description: '< 3,700 km (255 g CO₂e/km per passenger)',
       },
       {
@@ -168,7 +156,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🛫',
         unit: 'km',
         unitOptions: ['km'],
-        factor: 0.195,
         description: '≥ 3,700 km (195 g CO₂e/km per passenger)',
       },
       {
@@ -177,7 +164,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🚕',
         unit: 'km',
         unitOptions: ['km', 'miles'],
-        factor: 0.149,
         description: 'Taxi or app-based ride (149 g CO₂e/km)',
       },
     ],
@@ -196,7 +182,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🔌',
         unit: 'kWh',
         unitOptions: ['kWh'],
-        factor: 0.233,
         description: 'UK grid average (233 g CO₂e/kWh)',
       },
       {
@@ -205,7 +190,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '☀️',
         unit: 'kWh',
         unitOptions: ['kWh'],
-        factor: 0.041,
         description: 'Lifecycle solar emissions (41 g CO₂e/kWh)',
       },
       {
@@ -214,7 +198,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🌬️',
         unit: 'kWh',
         unitOptions: ['kWh'],
-        factor: 0.011,
         description: 'Wind-certified tariff (11 g CO₂e/kWh)',
       },
     ],
@@ -233,7 +216,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🥩',
         unit: 'kg',
         unitOptions: ['kg', 'servings'],
-        factor: 27.0,
         description: 'Beef production (27 kg CO₂e/kg)',
       },
       {
@@ -242,7 +224,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🐑',
         unit: 'kg',
         unitOptions: ['kg', 'servings'],
-        factor: 39.2,
         description: 'Lamb production (39 kg CO₂e/kg)',
       },
       {
@@ -251,7 +232,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🐷',
         unit: 'kg',
         unitOptions: ['kg', 'servings'],
-        factor: 7.6,
         description: 'Pork production (7.6 kg CO₂e/kg)',
       },
       {
@@ -260,7 +240,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🍗',
         unit: 'kg',
         unitOptions: ['kg', 'servings'],
-        factor: 6.9,
         description: 'Chicken production (6.9 kg CO₂e/kg)',
       },
       {
@@ -269,7 +248,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🐟',
         unit: 'kg',
         unitOptions: ['kg', 'servings'],
-        factor: 6.1,
         description: 'Average fish (6.1 kg CO₂e/kg)',
       },
       {
@@ -278,7 +256,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🥛',
         unit: 'kg',
         unitOptions: ['kg', 'litres'],
-        factor: 3.2,
         description: 'Dairy production (3.2 kg CO₂e/kg)',
       },
       {
@@ -287,7 +264,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🥚',
         unit: 'kg',
         unitOptions: ['kg', 'items'],
-        factor: 4.8,
         description: 'Egg production (4.8 kg CO₂e/kg)',
       },
       {
@@ -296,7 +272,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🥦',
         unit: 'kg',
         unitOptions: ['kg'],
-        factor: 2.0,
         description: 'Average vegetables (2.0 kg CO₂e/kg)',
       },
       {
@@ -305,7 +280,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🍎',
         unit: 'kg',
         unitOptions: ['kg'],
-        factor: 1.1,
         description: 'Average fruit (1.1 kg CO₂e/kg)',
       },
       {
@@ -314,7 +288,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '☕',
         unit: 'cups',
         unitOptions: ['cups', 'kg'],
-        factor: 0.28,
         description: 'Per cup brewed (280 g CO₂e)',
       },
       {
@@ -323,7 +296,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🧴',
         unit: 'items',
         unitOptions: ['items', 'litres'],
-        factor: 0.09,
         description: 'Single-use 500mL plastic water bottle (90 g CO₂e/bottle)',
       },
       {
@@ -332,7 +304,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🥤',
         unit: 'items',
         unitOptions: ['items', 'litres'],
-        factor: 0.20,
         description: 'Soft drink / canned soda (200 g CO₂e/item)',
       },
     ],
@@ -351,7 +322,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '👕',
         unit: 'items',
         unitOptions: ['items', 'kg'],
-        factor: 10.0,
         description: 'Average garment (10 kg CO₂e/item)',
       },
       {
@@ -360,7 +330,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '♻️',
         unit: 'items',
         unitOptions: ['items'],
-        factor: 0.5,
         description: 'Second-hand clothing (0.5 kg CO₂e/item)',
       },
       {
@@ -369,7 +338,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '📱',
         unit: 'items',
         unitOptions: ['items'],
-        factor: 70.0,
         description: 'New smartphone manufacture (70 kg CO₂e)',
       },
       {
@@ -378,7 +346,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '💻',
         unit: 'items',
         unitOptions: ['items'],
-        factor: 300.0,
         description: 'Laptop manufacture (300 kg CO₂e)',
       },
       {
@@ -387,7 +354,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '📺',
         unit: 'items',
         unitOptions: ['items'],
-        factor: 400.0,
         description: 'TV manufacture (400 kg CO₂e)',
       },
       {
@@ -396,7 +362,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🛋️',
         unit: 'items',
         unitOptions: ['items'],
-        factor: 50.0,
         description: 'Average furniture piece (50 kg CO₂e)',
       },
       {
@@ -405,7 +370,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '📚',
         unit: 'items',
         unitOptions: ['items', 'kg'],
-        factor: 1.0,
         description: 'Printed book (1 kg CO₂e)',
       },
     ],
@@ -424,7 +388,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🔥',
         unit: 'kWh',
         unitOptions: ['kWh', 'm³'],
-        factor: 0.203,
         description: 'Natural gas combustion (203 g CO₂e/kWh)',
       },
       {
@@ -433,7 +396,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🛢️',
         unit: 'litres',
         unitOptions: ['litres', 'kWh'],
-        factor: 2.52,
         description: 'Heating oil (2.52 kg CO₂e/litre)',
       },
       {
@@ -442,7 +404,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🏮',
         unit: 'litres',
         unitOptions: ['litres', 'kg'],
-        factor: 1.51,
         description: 'Liquefied petroleum gas (1.51 kg CO₂e/litre)',
       },
       {
@@ -451,7 +412,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '🪵',
         unit: 'kg',
         unitOptions: ['kg'],
-        factor: 0.015,
         description: 'Sustainably sourced wood (15 g CO₂e/kg)',
       },
       {
@@ -460,7 +420,6 @@ export const ACTIVITY_CATEGORIES = [
         icon: '⬛',
         unit: 'kg',
         unitOptions: ['kg'],
-        factor: 2.42,
         description: 'Coal combustion (2.42 kg CO₂e/kg)',
       },
     ],
@@ -480,21 +439,6 @@ export const TYPE_MAP = Object.fromEntries(
     c.types.map((t) => [t.value, { ...t, category: c.value }])
   )
 );
-
-/**
- * Estimate CO₂e for a given activity type and amount.
- * Falls back to 0 if the type or factor is unknown.
- *
- * @param {string} activityType
- * @param {number} amount
- * @param {string} [unit]        — future: unit conversion support
- * @returns {number}             kg CO₂e
- */
-export function estimateEmissions(activityType, amount) {
-  const type = TYPE_MAP[activityType];
-  if (!type || !amount || isNaN(amount)) return 0;
-  return +(type.factor * amount).toFixed(4);
-}
 
 /** Ordered list for category tabs */
 export const CATEGORY_TAB_ORDER = ['transport', 'electricity', 'food', 'shopping', 'energy'];

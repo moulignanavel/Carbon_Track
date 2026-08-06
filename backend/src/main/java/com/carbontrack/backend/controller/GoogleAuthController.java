@@ -12,9 +12,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
+import java.util.Locale;
+import java.util.UUID;
 
 /**
  * Google OAuth Authentication Controller
@@ -36,10 +39,13 @@ public class GoogleAuthController {
     @Autowired
     private GoogleOAuth2Service googleOAuth2Service;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     /**
      * Verify Google ID token and authenticate user
      * POST /api/auth/google/verify
-     * Request body: { "token": "google_id_token" }
+     * Request body: { "token": "google_id_token_jwt" }
      */
     @PostMapping("/verify")
     public ResponseEntity<?> verifyGoogleToken(@RequestBody GoogleTokenRequest request) {
@@ -50,46 +56,50 @@ public class GoogleAuthController {
                 );
             }
             
-            logger.info("Verifying Google token");
+            logger.info("Verifying Google ID token");
             
-            // Verify the Google token
-            Map<String, Object> userInfo = googleOAuth2Service.verifyGoogleToken(request.getToken());
+            // Decode the Google ID token (JWT)
+            Map<String, Object> claims = googleOAuth2Service.verifyGoogleToken(request.getToken());
             
-            String email = (String) userInfo.get("email");
-            String name = (String) userInfo.get("name");
-            String googleId = (String) userInfo.get("sub");
+            String email = (String) claims.get("email");
+            String name = (String) claims.get("name");
+            Object emailVerified = claims.get("email_verified");
+            String picture = (String) claims.get("picture");
+            
+            // email_verified might be a boolean or string
+            boolean isEmailVerified = Boolean.TRUE.equals(emailVerified) || 
+                                     "true".equalsIgnoreCase(String.valueOf(emailVerified));
             
             if (email == null || name == null) {
                 return ResponseEntity.badRequest().body(
-                    new AuthResponse(null, null, "Could not extract user information from token", "ERROR")
+                    new AuthResponse(null, null, "Google token missing required information", "ERROR")
                 );
             }
             
-            // Find or create user
+            // Warn if email is not verified, but still proceed
+            if (!isEmailVerified) {
+                logger.warn("Google email is not verified for user: {}", email);
+            }
+            
+            // Find existing user or create new one
             User user = userRepository.findByEmail(email)
-                .orElseGet(() -> {
-                    logger.info("Creating new user from Google OAuth: {}", email);
-                    User newUser = new User();
-                    newUser.setEmail(email);
-                    newUser.setUsername(name);
-                    newUser.setPasswordHash("GOOGLE_OAUTH_" + googleId);
-                    newUser.setRole("USER");
-                    return userRepository.save(newUser);
-                });
+                .orElseGet(() -> createIndividualGoogleUser(email, name, picture));
             
             // Generate JWT token
-            String token = jwtUtil.generateToken(user.getEmail());
+            String token = jwtUtil.generateToken(user);
             
             logger.info("Google authentication successful for user: {}", email);
             
-            return ResponseEntity.ok(new AuthResponse(
+            AuthResponse response = new AuthResponse(
                 token,
                 user.getId(),
                 user.getUsername(),
                 user.getRole(),
                 "Authentication successful",
                 "SUCCESS"
-            ));
+            );
+            response.setOrganisationId(user.getOrganisation() == null ? null : user.getOrganisation().getId());
+            return ResponseEntity.ok(response);
             
         } catch (Exception e) {
             logger.error("Google token verification failed: {}", e.getMessage(), e);
@@ -97,6 +107,29 @@ public class GoogleAuthController {
                 new AuthResponse(null, null, "Authentication failed: " + e.getMessage(), "ERROR")
             );
         }
+    }
+
+    private User createIndividualGoogleUser(String email, String name, String picture) {
+        String localPart = email.substring(0, email.indexOf('@'))
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9._-]", "");
+        if (localPart.length() < 3) localPart = "google.user";
+        String username = localPart.substring(0, Math.min(localPart.length(), 40));
+        String candidate = username;
+        int suffix = 1;
+        while (userRepository.findByUsername(candidate).isPresent()) {
+            String end = "." + suffix++;
+            candidate = username.substring(0, Math.min(username.length(), 50 - end.length())) + end;
+        }
+        User user = new User();
+        user.setUsername(candidate);
+        user.setFullName(name.trim());
+        user.setEmail(email.trim().toLowerCase(Locale.ROOT));
+        user.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        user.setRole("USER");
+        user.setStatus("ACTIVE");
+        user.setAvatarUrl(picture);
+        return userRepository.save(user);
     }
 
     /**
@@ -122,19 +155,13 @@ public class GoogleAuthController {
             );
         }
 
-        // Find or create user
+        // Organisation selection is mandatory; OAuth is login-only.
         User user = userRepository.findByEmail(email)
-            .orElseGet(() -> {
-                User newUser = new User();
-                newUser.setEmail(email);
-                newUser.setUsername(name);
-                newUser.setPasswordHash("GOOGLE_OAUTH_" + googleId);
-                newUser.setRole("USER");
-                return userRepository.save(newUser);
-            });
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Register with an organisation before using Google sign-in"));
 
         // Generate JWT token
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user);
 
         return ResponseEntity.ok(new AuthResponse(
             token,
@@ -162,7 +189,7 @@ public class GoogleAuthController {
             return ResponseEntity.notFound().build();
         }
 
-        String token = jwtUtil.generateToken(user.getEmail());
+        String token = jwtUtil.generateToken(user);
 
         return ResponseEntity.ok(new AuthResponse(
             token,

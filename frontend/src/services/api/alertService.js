@@ -15,7 +15,7 @@ class AlertService {
    * @param {number} alertId
    */
   async markAsRead(alertId) {
-    const response = await axiosInstance.put(`/alerts/${alertId}/read`);
+    const response = await axiosInstance.post(`/alerts/${alertId}/read`);
     return response.data;
   }
 
@@ -23,7 +23,7 @@ class AlertService {
    * Mark all alerts as read for current user
    */
   async markAllAsRead() {
-    const response = await axiosInstance.put('/alerts/read-all');
+    const response = await axiosInstance.post('/alerts/read-all');
     return response.data;
   }
 

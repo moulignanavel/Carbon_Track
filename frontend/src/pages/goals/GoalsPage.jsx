@@ -21,6 +21,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useForm }           from 'react-hook-form';
 import { zodResolver }       from '@hookform/resolvers/zod';
 import toast                 from 'react-hot-toast';
@@ -44,6 +45,7 @@ import {
   Alert, CircularProgress, ProgressBar,
 } from '@/components/ui';
 import GoalTimelineChart from '@/components/charts/GoalTimelineChart';
+import GoalTrackingWidget from '@/components/goals/GoalTrackingWidget';
 
 /* ══════════════════════════════════════════════════════════════
    Constants
@@ -500,25 +502,28 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, goalTitle }) {
    ══════════════════════════════════════════════════════════════ */
 export default function GoalsPage() {
   const { goals, stats, fetchGoals, addGoal: addGoalContext, updateGoal, deleteGoal: deleteGoalContext } = useGoals();
+  const location = useLocation();
 
   const [formOpen,      setFormOpen]      = useState(false);
   const [deleteOpen,    setDeleteOpen]    = useState(false);
   const [editingGoal,   setEditingGoal]   = useState(null);
   const [deleteTarget,  setDeleteTarget]  = useState(null);
 
-  // Re-fetch goals on mount and every 30 s so progress stays live
+  // GoalContext performs the initial and activity-triggered loads. This page
+  // only adds a periodic refresh, avoiding duplicate requests.
   useEffect(() => {
-    fetchGoals();
     const interval = setInterval(fetchGoals, 30000);
     return () => clearInterval(interval);
   }, [fetchGoals]);
 
-  // Also re-fetch whenever an activity is logged (delayed to give backend time)
+  // Dashboard "View all goals" links directly to the existing goal collection.
   useEffect(() => {
-    const handler = () => fetchGoals();
-    window.addEventListener('activity-logged', handler);
-    return () => window.removeEventListener('activity-logged', handler);
-  }, [fetchGoals]);
+    if (location.hash !== '#all-goals') return;
+    const frame = requestAnimationFrame(() => {
+      document.getElementById('all-goals')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [location.hash]);
 
   const handleCreate = () => {
     setEditingGoal(null);
@@ -578,8 +583,14 @@ export default function GoalsPage() {
         </Button>
       </div>
 
+      <GoalTrackingWidget
+        onCreate={handleCreate}
+        onViewAll={() => document.getElementById('all-goals')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        showLatestCompleted
+      />
+
       {/* Stats strip */}
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <div id="all-goals" className="grid scroll-mt-24 grid-cols-2 xl:grid-cols-4 gap-4">
         {statPills.map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="card p-4 flex items-center gap-3">
             <span className={`rounded-lg p-2 ${color}`}>

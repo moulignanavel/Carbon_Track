@@ -69,7 +69,7 @@ export default function AuthLayout() {
 
       {/* ── Center Content ─────────────────────────────────── */}
       <main className="relative z-10 flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-[540px]">
+        <div className="w-full max-w-[980px]">
           <Outlet />
         </div>
       </main>

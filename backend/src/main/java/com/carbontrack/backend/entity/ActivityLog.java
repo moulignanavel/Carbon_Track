@@ -3,11 +3,17 @@ package com.carbontrack.backend.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.time.LocalDate;
+import java.time.Instant;
 
 @Entity
 @Table(name = "activity_logs")
 @Data
 public class ActivityLog {
+
+    @PrePersist
+    void applyVerificationDefault() {
+        if (verificationStatus == null || verificationStatus.isBlank()) verificationStatus = "PENDING";
+    }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -36,4 +42,15 @@ public class ActivityLog {
 
     @Column(name = "notes")
     private String notes;
+
+    // Kept nullable at the ORM schema-update layer so existing development
+    // databases can add the column. V19 backfills and enforces NOT NULL.
+    @Column(name = "verification_status", length = 20)
+    private String verificationStatus = "PENDING";
+
+    @Column(name = "verified_by")
+    private Long verifiedBy;
+
+    @Column(name = "verified_at")
+    private Instant verifiedAt;
 }

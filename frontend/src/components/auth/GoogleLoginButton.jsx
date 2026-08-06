@@ -39,44 +39,30 @@ export default function GoogleLoginButton() {
       callback: async (tokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
           try {
-            // Fetch user info using the access token
-            const userInfoRes = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+            // Send to backend
+            // Keep API calls same-origin in development. Vite proxies /api to
+            // the backend, which avoids localhost/127.0.0.1 CORS mismatches.
+            const result = await fetch('/api/auth/google/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: tokenResponse.access_token }),
             });
 
-            if (!userInfoRes.ok) throw new Error('Failed to fetch user info');
-
-            const userInfo = await userInfoRes.json();
-
-            // The backend decodes the JWT without signature verification (just splits by "." and base64 decodes).
-            // We construct a mock JWT payload that satisfies the backend parser.
-            // userInfo contains: sub, name, email, picture
-            const payloadString = JSON.stringify(userInfo);
-            // btoa requires ascii, we can encodeURIComponent if there are special chars but for simple names it's fine.
-            // A safer base64 encoding for unicode:
-            const base64Payload = btoa(unescape(encodeURIComponent(payloadString)));
-            const mockJwt = `header.${base64Payload}.signature`;
-
-            // Send to backend
-            const result = await fetch(
-              `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/auth/google/verify`,
-              {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ token: mockJwt }),
-              }
-            );
-
             if (!result.ok) {
-              throw new Error('Google authentication failed on backend');
+              const problem = await result.json().catch(() => null);
+              throw new Error(problem?.message || 'Google authentication failed on backend');
             }
 
             const data = await result.json();
-            applyAuth(data, false);
-            navigate('/dashboard');
+            // Google sign-in is persistent until the user explicitly logs out.
+            applyAuth(data, true);
+            const destination = data.role === 'ORG_ADMIN'
+              ? '/organisation/dashboard'
+              : data.role === 'ADMIN' ? '/admin' : '/dashboard';
+            navigate(destination);
           } catch (error) {
             console.error('Google Sign-In Error:', error);
-            alert('Failed to sign in with Google');
+            alert(error.message || 'Failed to sign in with Google');
           }
         }
       },

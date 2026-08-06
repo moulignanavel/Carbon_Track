@@ -57,7 +57,7 @@ export default function LeaderboardTopThree({ users = [] }) {
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-2.5 lg:gap-3">
       {users.map((user, index) => {
         const cfg = medalConfig[index + 1];
         return (
@@ -65,46 +65,46 @@ export default function LeaderboardTopThree({ users = [] }) {
             key={user.userId}
             onClick={() => window.dispatchEvent(new CustomEvent('open-badge-sidebar', { detail: user }))}
             className={`
-              relative overflow-hidden rounded-2xl border bg-white dark:bg-slate-900 p-6
+              relative overflow-hidden rounded-xl border bg-white dark:bg-slate-900 p-3
               transition-all cursor-pointer
               ${cfg.border} ${cfg.shadow}
-              hover:shadow-xl hover:scale-[1.02] transform duration-200
+              hover:shadow-lg hover:scale-[1.01] transform duration-200
             `}
           >
             {/* Thin metallic top accent bar */}
-            <div className={`absolute top-0 left-0 right-0 h-1 ${cfg.accentBar} rounded-t-2xl`} />
+            <div className={`absolute top-0 left-0 right-0 h-0.5 ${cfg.accentBar} rounded-t-xl`} />
 
             {/* Rank medal — top right */}
-            <div className="absolute top-4 right-4 text-3xl leading-none">{cfg.medal}</div>
+            <div className="absolute top-3 right-3 text-xl leading-none">{cfg.medal}</div>
 
             {/* Content */}
-            <div className="relative z-10 pt-1">
+            <div className="relative z-10 pt-0.5">
               {/* Username & Rank */}
-              <div className="mb-4">
-                <h3 className="text-lg lg:text-xl font-bold text-slate-900 dark:text-slate-50 truncate pr-10">
+              <div className="mb-1.5">
+                <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-slate-50 truncate pr-8">
                   {user.username}
                 </h3>
-                <p className={`text-sm font-bold tracking-wide ${cfg.rankText}`}>
+                <p className={`text-xs font-bold tracking-wide ${cfg.rankText}`}>
                   Rank #{user.rank}
                 </p>
               </div>
 
               {/* CO₂ Emitted */}
-              <div className="flex items-center gap-2 mb-3">
-                <Leaf className="w-5 h-5 text-green-600 shrink-0" />
+              <div className="flex items-center gap-1.5 mb-1">
+                <Leaf className="w-4 h-4 text-green-600 shrink-0" />
                 <div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">CO₂ Emitted</p>
-                  <p className="text-2xl font-bold text-[#1b4332] dark:text-green-400">
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">CO₂ Emitted</p>
+                  <p className="text-lg font-bold text-[#1b4332] dark:text-green-400 leading-tight">
                     {user.totalCO2Saved.toLocaleString('en-US', { maximumFractionDigits: 1 })}
-                    <span className="text-sm font-medium"> kg</span>
+                    <span className="text-xs font-medium"> kg</span>
                   </p>
                 </div>
               </div>
 
               {/* Activity Count */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                <p className="text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
+                <p className="text-xs text-slate-600 dark:text-slate-400">
                   <span className="font-semibold text-slate-900 dark:text-slate-50">
                     {user.activityCount}
                   </span>
@@ -114,17 +114,17 @@ export default function LeaderboardTopThree({ users = [] }) {
 
               {/* Badges — high-contrast distinct pills */}
               {user.badges && user.badges.length > 0 && (
-                <div className="flex flex-wrap gap-1.5">
+                <div className="flex flex-wrap gap-1">
                   {user.badges.slice(0, 3).map((badge, idx) => (
                     <span
                       key={idx}
-                      className={`inline-flex items-center px-2 py-0.5 text-[11px] font-semibold rounded-full ${BADGE_STYLES[badge] ?? DEFAULT_BADGE_STYLE}`}
+                      className={`inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold rounded-full ${BADGE_STYLES[badge] ?? DEFAULT_BADGE_STYLE}`}
                     >
                       {badge}
                     </span>
                   ))}
                   {user.badges.length > 3 && (
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500 px-1 py-0.5">
+                    <span className="text-[10px] text-slate-400 dark:text-slate-500 px-1 py-0.5">
                       +{user.badges.length - 3} more
                     </span>
                   )}

@@ -23,8 +23,6 @@ import Alert from '@/components/ui/Alert';
  */
 
 export default function OrganisationDashboardPage() {
-  const { user: currentUser } = useAuth();
-  
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,9 +35,7 @@ export default function OrganisationDashboardPage() {
         setIsLoading(true);
         setError(null);
         
-        // For now, hardcode org ID - in production, get from user context
-        const organisationId = 1;
-        const data = await getDashboardMetrics(organisationId);
+        const data = await getDashboardMetrics();
         setDashboardData(data);
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to load dashboard');
@@ -56,8 +52,7 @@ export default function OrganisationDashboardPage() {
   const handleExportCSR = async () => {
     try {
       setIsExportingReport(true);
-      const organisationId = 1; // Same as above
-      const report = await getCSRReport(organisationId);
+      const report = await getCSRReport();
       
       // Create blob and download
       const element = document.createElement('a');
@@ -79,8 +74,7 @@ export default function OrganisationDashboardPage() {
   const handleRefresh = async () => {
     try {
       setIsLoading(true);
-      const organisationId = 1;
-      const data = await getDashboardMetrics(organisationId);
+      const data = await getDashboardMetrics();
       setDashboardData(data);
     } catch (err) {
       setError('Failed to refresh dashboard');
@@ -167,7 +161,10 @@ export default function OrganisationDashboardPage() {
 
           {/* Employee Table */}
           <div className="max-w-7xl mx-auto">
-            <EmployeeTable employees={dashboardData.topEmployees} />
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+              <EmployeeTable employees={dashboardData.topEmployees} title="Top Contributors" />
+              <EmployeeTable employees={dashboardData.lowestFootprintEmployees} title="Lowest Footprint Employees" />
+            </div>
           </div>
         </>
       )}

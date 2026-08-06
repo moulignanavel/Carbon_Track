@@ -38,6 +38,15 @@ class ActivityLoggingControllerTest {
     @MockBean
     private JwtUtil jwtUtil;
 
+    @MockBean
+    private com.carbontrack.backend.service.EmailService emailService;
+
+    @MockBean
+    private org.springframework.mail.javamail.JavaMailSender javaMailSender;
+
+    @MockBean
+    private com.carbontrack.backend.service.GeminiClientService geminiClientService;
+
     @Test
     @WithMockUser
     void whenValidTransportInput_thenReturns200() throws Exception {
@@ -57,7 +66,7 @@ class ActivityLoggingControllerTest {
     @WithMockUser
     void whenInvalidTransportMode_thenReturns400() throws Exception {
         TransportLogRequest request = new TransportLogRequest();
-        request.setTransportMode("invalid-mode");
+        request.setTransportMode("");
         request.setDistance(15.5);
         request.setLogDate(LocalDate.now());
 

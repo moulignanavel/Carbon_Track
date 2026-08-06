@@ -1,32 +1,44 @@
 import { NavLink } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Zap, Target, BarChart2,
-  Settings, Leaf, ShieldCheck, TrendingDown, Lightbulb, Trophy, Building2, Flag,
+  Settings, Leaf, ShieldCheck, TrendingDown, Lightbulb, Trophy, Building2, Flag, Users,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-const NAV_ITEMS = [
-  { to: '/dashboard',       label: 'Dashboard',       icon: LayoutDashboard },
-  { to: '/activities',      label: 'Activities',      icon: Zap             },
-  { to: '/goals',           label: 'Goals',           icon: Target          },
-  { to: '/challenges',      label: 'Challenges',      icon: Flag            },
-  { to: '/reports',         label: 'Reports',         icon: BarChart2       },
-  { to: '/badges',          label: 'My Badges',       icon: Trophy          },
-  { to: '/community',       label: 'Community',       icon: Trophy          },
-  { to: '/recommendations', label: 'Recommendations', icon: Lightbulb       },
-  { to: '/settings',        label: 'Settings',        icon: Settings        },
-];
-
-const ADMIN_NAV_ITEMS = [
-  { to: '/admin',        label: 'Admin Panel',        icon: ShieldCheck },
-  { to: '/organisation', label: 'Organization Overview', icon: Building2   },
-  { to: '/reports',      label: 'Platform Reports',   icon: BarChart2   },
-  { to: '/settings',     label: 'Admin Settings',     icon: Settings    },
-];
-
 export default function Sidebar({ isOpen, onClose }) {
+  const { t } = useTranslation();
   const { isAdmin, user } = useAuth();
-  const links = isAdmin ? ADMIN_NAV_ITEMS : NAV_ITEMS;
+
+  const NAV_ITEMS = [
+    { to: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { to: '/activities', label: t('nav.activities'), icon: Zap },
+    { to: '/goals', label: t('nav.goals'), icon: Target },
+    { to: '/challenges', label: t('nav.challenges'), icon: Flag },
+    { to: '/reports', label: t('nav.reports'), icon: BarChart2 },
+    { to: '/badges', label: t('nav.myBadges'), icon: Trophy },
+    { to: '/community', label: t('nav.community'), icon: Trophy },
+    { to: '/recommendations', label: t('nav.recommendations'), icon: Lightbulb },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
+  ];
+
+  const ADMIN_NAV_ITEMS = [
+    { to: '/admin', label: t('nav.adminDashboard'), icon: ShieldCheck },
+    { to: '/admin', label: t('nav.userManagement'), icon: Users },
+    { to: '/admin', label: t('nav.organisationManagement'), icon: Building2 },
+    { to: '/admin', label: t('nav.platformAnalytics'), icon: BarChart2 },
+    { to: '/admin', label: t('nav.emissionFactors'), icon: Leaf },
+    { to: '/admin', label: t('nav.auditLogs'), icon: Flag },
+  ];
+
+  const ORG_ADMIN_NAV_ITEMS = [
+    ...NAV_ITEMS,
+    { to: '/organisation', label: t('nav.organisationDashboard'), icon: Building2 },
+    { to: '/organisation', label: t('nav.csrReports'), icon: BarChart2 },
+    { to: '/organisation', label: t('nav.employeeAnalytics'), icon: Users },
+  ];
+
+  const links = isAdmin ? ADMIN_NAV_ITEMS : user?.role === 'ORG_ADMIN' ? ORG_ADMIN_NAV_ITEMS : NAV_ITEMS;
 
   return (
     <>
@@ -87,7 +99,7 @@ export default function Sidebar({ isOpen, onClose }) {
           </p>
           {links.map(({ to, label, icon: Icon }) => (
             <NavLink
-              key={to}
+              key={`${to}-${label}`}
               to={to}
               className={({ isActive }) => `nav-link${isActive ? ' active' : ''}`}
               onClick={onClose}

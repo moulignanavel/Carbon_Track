@@ -35,3 +35,7 @@ build/
 # Local configuration files with secrets
 application-local.properties
 .env.local
+
+# Generated local H2 databases
+*.mv.db
+*.trace.db
