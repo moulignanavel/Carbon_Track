@@ -7,7 +7,7 @@
  *
  *   GET /api/leaderboard
  *     Returns: {
- *       topThree: [{ rank, userId, username, totalCO2Saved, badges, ... }],
+ *       topThree: [{ rank, username, totalCO2Saved, badges, ... }],
  *       all: [{ ... }],  // up to 50 users
  *       currentUser: { ... },
  *       timestamp: number
@@ -23,7 +23,6 @@ import axiosInstance from './axiosInstance';
 /**
  * @typedef {{
  *   rank: number,
- *   userId: number,
  *   username: string,
  *   totalCO2Saved: number,
  *   activityCount: number,
@@ -47,21 +46,22 @@ import axiosInstance from './axiosInstance';
  *
  * @returns {Promise<LeaderboardResponse>}
  */
-export async function getCommunityLeaderboard() {
-  const { data } = await axiosInstance.get('/leaderboard');
+export async function getCommunityLeaderboard(config = {}) {
+  const { data } = await axiosInstance.get('/leaderboard', config);
   return data;
 }
 
 /* ─── Search Leaderboard ────────────────────────────────────── */
 /**
- * Search leaderboard by username or email.
+ * Search the live global leaderboard by username.
  *
- * @param {string} query - Search term (username or email)
+ * @param {string} query - Username search term
  * @param {number} [limit=50] - Maximum results to return
  * @returns {Promise<LeaderboardResponse>}
  */
-export async function searchLeaderboard(query, limit = 50) {
+export async function searchLeaderboard(query, limit = 50, config = {}) {
   const { data } = await axiosInstance.get('/leaderboard/search', {
+    ...config,
     params: { q: query, limit },
   });
   return data;

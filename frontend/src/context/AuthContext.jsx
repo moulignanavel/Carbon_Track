@@ -18,7 +18,7 @@ import {
   createContext, useContext, useState,
   useCallback, useMemo, useEffect,
 } from 'react';
-import { loginUser, registerUser } from '@/api/authApi';
+import { loginUser, registerUser, registerOrganisation } from '@/api/authApi';
 import {
   saveToken, saveUser, clearAuth,
   getToken, getUser,
@@ -44,7 +44,7 @@ export function AuthProvider({ children }) {
       import('@/api/userApi').then(({ getMyProfile }) => {
         getMyProfile().then(data => {
           setUser((prev) => {
-            const updated = { ...prev, avatarUrl: data.avatarUrl, badges: data.badges, role: data.role };
+            const updated = { ...prev, avatarUrl: data.avatarUrl, badges: data.badges, role: data.role, organisationId: data.organisationId };
             saveUser(updated);
             return updated;
           });
@@ -80,9 +80,9 @@ export function AuthProvider({ children }) {
 
   /* ── helpers ───────────────────────────────────────────────── */
   const applyAuth = useCallback((authResponse, remember = false) => {
-    const { accessToken, userId, username, role } = authResponse;
+    const { accessToken, userId, username, role, organisationId } = authResponse;
     saveToken(accessToken, remember);
-    const userInfo = { userId, username, role };
+    const userInfo = { userId, username, role, organisationId };
     saveUser(userInfo);
     setToken(accessToken);
     setUser(userInfo);
@@ -95,14 +95,12 @@ export function AuthProvider({ children }) {
 
     // Persist or clear remembered email based on checkbox
     saveRememberedEmail(rememberMe ? email : null);
+    return data;
   }, [applyAuth]);
 
   /* ── register ──────────────────────────────────────────────── */
-  const register = useCallback(async ({ username, email, password, orgId }) => {
-    const data = await registerUser({ username, email, password, orgId });
-    // New accounts always get session storage (no remember-me on signup)
-    applyAuth(data, false);
-  }, [applyAuth]);
+  const register = useCallback((payload) => registerUser(payload), []);
+  const registerOrganisationAccount = useCallback((payload) => registerOrganisation(payload), []);
 
   /* ── logout ────────────────────────────────────────────────── */
   const logout = useCallback(() => {
@@ -126,13 +124,15 @@ export function AuthProvider({ children }) {
     token,
     isLoggedIn:     !!token,
     isAdmin:        user?.role === 'ADMIN',
+    isOrgAdmin:     user?.role === 'ORG_ADMIN',
     isInitialising,
     login,
     register,
+    registerOrganisation: registerOrganisationAccount,
     logout,
     updateUser,
     applyAuth,
-  }), [user, token, isInitialising, login, register, logout, updateUser, applyAuth]);
+  }), [user, token, isInitialising, login, register, registerOrganisationAccount, logout, updateUser, applyAuth]);
 
   return (
     <AuthContext.Provider value={value}>

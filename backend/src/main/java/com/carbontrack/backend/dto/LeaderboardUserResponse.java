@@ -1,5 +1,6 @@
 package com.carbontrack.backend.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 public class LeaderboardUserResponse {
@@ -11,10 +12,17 @@ public class LeaderboardUserResponse {
     private Integer activityCount;
     private List<String> badges;
     private String badge;
+    private Integer footprintScore;
+    private String categoryStrength;
+    private String habitTip;
+    private Boolean currentUser;
 
     public LeaderboardUserResponse() {}
 
-    public LeaderboardUserResponse(Long userId, String username, Integer rank, Double totalCO2Saved, Double totalEmissionsSaved, Integer activityCount, List<String> badges, String badge) {
+    public LeaderboardUserResponse(Long userId, String username, Integer rank, Double totalCO2Saved,
+                                   Double totalEmissionsSaved, Integer activityCount, List<String> badges,
+                                   String badge, Integer footprintScore, String categoryStrength,
+                                   String habitTip, Boolean currentUser) {
         this.userId = userId;
         this.username = username;
         this.rank = rank;
@@ -23,8 +31,13 @@ public class LeaderboardUserResponse {
         this.activityCount = activityCount;
         this.badges = badges;
         this.badge = badge;
+        this.footprintScore = footprintScore;
+        this.categoryStrength = categoryStrength;
+        this.habitTip = habitTip;
+        this.currentUser = currentUser;
     }
 
+    @JsonIgnore
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
 
@@ -48,4 +61,16 @@ public class LeaderboardUserResponse {
 
     public String getBadge() { return badge; }
     public void setBadge(String badge) { this.badge = badge; }
+
+    public Integer getFootprintScore() { return footprintScore; }
+    public void setFootprintScore(Integer footprintScore) { this.footprintScore = footprintScore; }
+
+    public String getCategoryStrength() { return categoryStrength; }
+    public void setCategoryStrength(String categoryStrength) { this.categoryStrength = categoryStrength; }
+
+    public String getHabitTip() { return habitTip; }
+    public void setHabitTip(String habitTip) { this.habitTip = habitTip; }
+
+    public Boolean getCurrentUser() { return currentUser; }
+    public void setCurrentUser(Boolean currentUser) { this.currentUser = currentUser; }
 }

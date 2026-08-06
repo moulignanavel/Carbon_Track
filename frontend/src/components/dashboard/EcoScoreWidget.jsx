@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ShieldCheck, Sparkles, CheckCircle2, Award } from 'lucide-react';
 import ecoScoreService from '@/services/api/ecoScoreService';
+import LazyLottie from '@/components/common/LazyLottie';
+import plantAnimation from '@/assets/lottie/eco-plant.json';
 
 export default function EcoScoreWidget() {
   const [data, setData] = useState(null);
@@ -154,7 +156,12 @@ export default function EcoScoreWidget() {
 
             <div className="p-3.5 bg-slate-50 dark:bg-slate-800/70 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 shadow-xs">
               <div className="flex justify-between text-xs font-bold text-slate-700 dark:text-slate-200 mb-1.5">
-                <span>Streak Bonus</span>
+                <span className="flex items-center gap-1">
+                  <span>Streak Bonus</span>
+                  <div className="w-4 h-4 shrink-0 inline-flex items-center justify-center">
+                    <LazyLottie animationData={plantAnimation} height={16} width={16} loop={true} />
+                  </div>
+                </span>
                 <span className="text-teal-600 dark:text-teal-400 font-extrabold">{breakdown.streakScore}/250</span>
               </div>
               <div className="w-full bg-slate-200/80 dark:bg-slate-700/80 h-2 rounded-full overflow-hidden">

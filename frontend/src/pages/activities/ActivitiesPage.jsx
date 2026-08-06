@@ -28,13 +28,13 @@ import {
 } from 'lucide-react';
 
 import { useActivity } from '@/context/ActivityContext';
-import { useAuth }     from '@/context/AuthContext';
+import { getEmissionFactors } from '@/api/emissionFactorApi';
 import activityService from '@/services/api/activityService';
 import { activityLogSchema } from '@/utils/validators';
 import { formatEmission, formatDate, capitalize } from '@/utils/formatters';
 import {
   ACTIVITY_CATEGORIES, CATEGORY_META,
-  CATEGORY_TAB_ORDER, TYPE_MAP, estimateEmissions,
+  CATEGORY_TAB_ORDER, TYPE_MAP,
 } from '@/constants/activities';
 import {
   Button, Card, Badge, Table, Input,
@@ -132,12 +132,11 @@ const COLUMNS = [
 /* ═══════════════════════════════════════════════════════════════
    CO₂ Preview Panel
    ═══════════════════════════════════════════════════════════════ */
-function Co2Preview({ activityType, amount, category }) {
+function Co2Preview({ activityType, amount, unit, factor, isFactorLoading }) {
   const type   = TYPE_MAP[activityType];
-  const kg     = estimateEmissions(activityType, Number(amount));
-  const hasVal = activityType && amount > 0;
+  const kg     = factor == null ? 0 : Number(amount) * factor;
+  const hasVal = activityType && amount > 0 && factor != null;
 
-  const meta     = CATEGORY_META[category] ?? {};
   const equiv    = kg > 0 ? [
     { label: 'km driven (petrol)',    val: (kg / 0.18).toFixed(0)  },
     { label: 'smartphone charges',    val: Math.round(kg / 0.008)  },
@@ -173,7 +172,15 @@ function Co2Preview({ activityType, amount, category }) {
         </p>
       </div>
 
-      {!hasVal ? (
+      {isFactorLoading ? (
+        <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-3">
+          Loading the current backend emission factor…
+        </p>
+      ) : factor == null && activityType ? (
+        <p className="text-sm text-amber-600 dark:text-amber-400 text-center py-3">
+          No backend emission factor is configured for this activity and unit.
+        </p>
+      ) : !hasVal ? (
         <p className="text-sm text-slate-400 dark:text-slate-500 text-center py-3">
           Enter an amount to see the estimated CO₂ impact
         </p>
@@ -213,7 +220,7 @@ function Co2Preview({ activityType, amount, category }) {
           {/* Factor info */}
           {type && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3 leading-relaxed">
-              {type.factor} kg CO₂e per {type.unit} · {type.description}
+              {factor} kg CO₂e per {unit} · {type.description}
             </p>
           )}
 
@@ -375,9 +382,7 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
                 {/* Multi-item breakdown list */}
                 {scanResult.items && scanResult.items.length > 0 ? (
                   <div className="space-y-2 border-t border-green-200/60 dark:border-green-800/40 pt-2">
-                    {scanResult.items.map((item, idx) => {
-                      const co2 = estimateEmissions(item.activityType, item.amount);
-                      return (
+                    {scanResult.items.map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-green-100 dark:border-green-900/40 text-xs">
                           <div>
                             <p className="font-semibold text-slate-800 dark:text-slate-100">{item.notes || item.activityType}</p>
@@ -385,19 +390,18 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
                           </div>
                           <div className="text-right">
                             <span className="font-bold text-slate-700 dark:text-slate-200 block">{item.amount} {item.unit}</span>
-                            <span className="text-[10px] text-green-600 dark:text-green-400 font-semibold">{formatEmission(co2)}</span>
+                            <span className="text-[10px] text-green-600 dark:text-green-400 font-semibold">
+                              Calculated when logged
+                            </span>
                           </div>
                         </div>
-                      );
-                    })}
+                    ))}
 
-                    {/* Total receipt emissions summary */}
+                    {/* Authoritative total is calculated by the backend on logging. */}
                     <div className="flex items-center justify-between pt-2 border-t border-dashed border-green-300 dark:border-green-700 text-xs font-bold">
                       <span className="text-slate-700 dark:text-slate-200">Total Receipt Footprint:</span>
                       <span className="text-green-700 dark:text-green-400 text-sm">
-                        {formatEmission(
-                          scanResult.items.reduce((sum, item) => sum + estimateEmissions(item.activityType, item.amount), 0)
-                        )}
+                        Calculated when logged
                       </span>
                     </div>
                   </div>
@@ -460,8 +464,9 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
    Log Activity Form
    ═══════════════════════════════════════════════════════════════ */
 function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scannedData = null }) {
-  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState(defaultCategory ?? CAT_TABS[0].key);
+  const [emissionFactors, setEmissionFactors] = useState([]);
+  const [isFactorLoading, setIsFactorLoading] = useState(true);
 
   const {
     register,
@@ -482,10 +487,31 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
     },
   });
 
-  const category     = watch('category');
   const activityType = watch('activityType');
   const amount       = watch('amount');
   const unit         = watch('unit');
+
+  useEffect(() => {
+    let active = true;
+    setIsFactorLoading(true);
+    getEmissionFactors()
+      .then((data) => {
+        if (active) setEmissionFactors(data);
+      })
+      .catch((error) => {
+        console.error('Failed to load emission-factor catalog', error);
+        if (active) {
+          setEmissionFactors([]);
+          toast.error('Could not load emission factors. Activity preview is unavailable.');
+        }
+      })
+      .finally(() => {
+        if (active) setIsFactorLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   /* Handle pre-filling form from OCR scan result */
   useEffect(() => {
@@ -513,25 +539,38 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
   /* auto-set unit when type changes */
   useEffect(() => {
     const typeObj = TYPE_MAP[activityType];
-    if (typeObj?.unit) setValue('unit', typeObj.unit, { shouldValidate: false });
-  }, [activityType, setValue]);
+    const backendUnits = emissionFactors
+      .filter((item) => item.activityType === activityType)
+      .map((item) => item.unit);
+    const preferredUnit = backendUnits.includes(typeObj?.unit)
+      ? typeObj.unit
+      : backendUnits[0] ?? typeObj?.unit;
+    if (preferredUnit) setValue('unit', preferredUnit, { shouldValidate: false });
+  }, [activityType, emissionFactors, setValue]);
 
   const catDef     = ACTIVITY_CATEGORIES.find((c) => c.value === activeTab);
   const typeOptions = (catDef?.types ?? []).map((t) => ({ value: t.value, label: `${t.icon}  ${t.label}` }));
   const typeObj    = TYPE_MAP[activityType];
-  const unitOptions = (typeObj?.unitOptions ?? (unit ? [unit] : [])).map((u) => ({ value: u, label: u }));
-  const meta       = CATEGORY_META[activeTab] ?? {};
-
+  const backendUnits = emissionFactors
+    .filter((item) => item.activityType === activityType)
+    .map((item) => item.unit);
+  const availableUnits = [...new Set(
+    backendUnits.length > 0
+      ? backendUnits
+      : (typeObj?.unitOptions ?? (unit ? [unit] : []))
+  )];
+  const unitOptions = availableUnits.map((value) => ({ value, label: value }));
+  const selectedFactor = emissionFactors
+    .filter((item) => item.activityType === activityType && item.unit === unit)
+    .sort((a, b) => String(b.effectiveDate).localeCompare(String(a.effectiveDate)))[0]
+    ?.kgCo2ePerUnit;
   const onSubmit = async (data) => {
     const typeObj2 = TYPE_MAP[data.activityType];
-    const emissions = estimateEmissions(data.activityType, Number(data.amount));
     await onSaved({
       ...data,
       category: activeTab,
       amount: Number(data.amount),
       activityLabel: typeObj2?.label ?? data.activityType,
-      calculatedEmissions: emissions,
-      userId: user?.userId,
     });
     reset({ category: activeTab, activityType: '', amount: '', unit: '', logDate: today, notes: '' });
   };
@@ -597,7 +636,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
                 placeholder="0"
                 required
                 error={errors.amount?.message}
-                hint={typeObj ? `per ${typeObj.unit}` : undefined}
+                hint={unit ? `Measured in ${unit}` : undefined}
                 {...register('amount')}
               />
               <div>
@@ -732,14 +771,22 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
             <Co2Preview
               activityType={activityType}
               amount={amount}
-              category={activeTab}
+              unit={unit}
+              factor={selectedFactor}
+              isFactorLoading={isFactorLoading}
             />
           </div>
         </div>
 
         {/* Mobile CO₂ preview (below form) */}
         <div className="lg:hidden mt-4">
-          <Co2Preview activityType={activityType} amount={amount} category={activeTab} />
+          <Co2Preview
+            activityType={activityType}
+            amount={amount}
+            unit={unit}
+            factor={selectedFactor}
+            isFactorLoading={isFactorLoading}
+          />
         </div>
       </form>
     </div>
@@ -801,17 +848,15 @@ export default function ActivitiesPage() {
     if (isBatchMode && data.items && data.items.length > 0) {
       let totalAdded = 0;
       for (const item of data.items) {
-        const emissions = estimateEmissions(item.activityType, Number(item.amount));
-        await addLog({
+        const savedLog = await addLog({
           category: item.category,
           activityType: item.activityType,
           amount: Number(item.amount),
           unit: item.unit,
           logDate: todayStr, // Always set logDate to current date so it instantly reflects on Dashboard & KPIs!
           notes: `${data.merchant ? data.merchant + ' - ' : ''}${item.notes || item.activityType}`,
-          calculatedEmissions: emissions,
         });
-        totalAdded += emissions;
+        totalAdded += Number(savedLog.calculatedEmissions ?? 0);
       }
       toast.success(`Successfully logged ${data.items.length} items (${formatEmission(totalAdded)} CO₂e total)!`);
     } else {

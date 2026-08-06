@@ -97,6 +97,7 @@ public class UserServiceImpl implements UserService {
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
+                user.getOrganisation() != null ? user.getOrganisation().getId() : null,
                 prefs,
                 user.getAvatarUrl(),
                 userBadges

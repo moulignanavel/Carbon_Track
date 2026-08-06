@@ -1,284 +1,132 @@
-/**
- * RegisterPage.jsx
- * ─────────────────────────────────────────────────────────────
- * Features:
- *  • React Hook Form + Zod (registerSchema)
- *  • Password strength meter (4-segment, live feedback)
- *  • Password requirements checklist (live)
- *  • Custom "accept terms" checkbox
- *  • Field-level + root-level error display
- *  • Loading state on submit button
- *  • Accessible labels, ARIA
- */
-
-import { useForm } from 'react-hook-form'; import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { Mail, Lock, User, UserPlus, Check, X } from 'lucide-react';
-
+import { Building2, UserRound, Lock, Mail, BadgeCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { registerSchema } from '@/utils/validators';
+import { registerSchema, organisationRegisterSchema } from '@/utils/validators';
 import { extractErrorMessage } from '@/utils/errorHandler';
 import { Button, Input, Alert } from '@/components/ui';
 
-/* ── Password strength helpers ───────────────────────────────── */
-const REQUIREMENTS = [
-  { id: 'length', label: 'At least 8 characters', test: (p) => p.length >= 8 },
-  { id: 'upper', label: 'One uppercase letter', test: (p) => /[A-Z]/.test(p) },
-  { id: 'number', label: 'One number', test: (p) => /[0-9]/.test(p) },
-  { id: 'special', label: 'One special character (!@#…)', test: (p) => /[^A-Za-z0-9]/.test(p) },
-];
+const inputClass = '!bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 !rounded-xl shadow-sm';
+const passwordTests = [(v) => v.length >= 8, (v) => /[A-Z]/.test(v), (v) => /\d/.test(v), (v) => /[^A-Za-z0-9]/.test(v)];
 
-function getStrength(password) {
-  if (!password) return 0;
-  return REQUIREMENTS.filter((r) => r.test(password)).length;
+function PasswordStrength({ value = '' }) {
+  const score = passwordTests.filter((test) => test(value)).length;
+  if (!value) return null;
+  return <div className="mt-2" aria-live="polite">
+    <div className="flex gap-1">{[1,2,3,4].map((n) => <span key={n} className={`h-1.5 flex-1 rounded ${n <= score ? 'bg-[#7FBF8C]' : 'bg-slate-700'}`} />)}</div>
+    <p className="mt-1 text-xs text-[#9FAFA5]">Password strength: {['Weak','Weak','Fair','Good','Strong'][score]}</p>
+  </div>;
 }
 
-const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Good', 'Strong'];
-const STRENGTH_COLORS = {
-  bar: ['', 'bg-red-400', 'bg-amber-400', 'bg-teal-400', 'bg-green-500'],
-  text: ['', 'text-red-500', 'text-amber-500', 'text-teal-500', 'text-green-600'],
-};
-
-function PasswordStrength({ password }) {
-  const strength = getStrength(password);
-  if (!password) return null;
-
-  return (
-    <div className="mt-2.5 space-y-2">
-      {/* Bars */}
-      <div className="flex gap-1" aria-hidden="true">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= strength ? STRENGTH_COLORS.bar[strength] : 'bg-slate-200 dark:bg-slate-700'
-              }`}
-          />
-        ))}
-      </div>
-      <p className={`text-xs font-semibold ${STRENGTH_COLORS.text[strength]}`}
-        aria-live="polite">
-        Password strength: {STRENGTH_LABELS[strength]}
-      </p>
-
-      {/* Requirements checklist */}
-      <ul className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1">
-        {REQUIREMENTS.map((req) => {
-          const met = req.test(password);
-          return (
-            <li key={req.id} className={`flex items-center gap-1.5 text-[11px] ${met ? 'text-green-600 dark:text-green-400' : 'text-slate-400 dark:text-slate-600'}`}>
-              {met
-                ? <Check className="h-3 w-3 shrink-0" aria-hidden="true" />
-                : <X className="h-3 w-3 shrink-0" aria-hidden="true" />}
-              {req.label}
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
+function Terms({ register, error }) {
+  return <div><label className="flex gap-3 text-sm text-[#C8D3CB]">
+    <input type="checkbox" className="mt-1" {...register('acceptTerms')} />
+    <span>I accept the <Link className="text-[#7FBF8C]" to="#">Terms</Link> and <Link className="text-[#7FBF8C]" to="#">Privacy Policy</Link>.</span>
+  </label>{error && <p className="form-error mt-1">{error.message}</p>}</div>;
 }
 
-/* ── Page ────────────────────────────────────────────────────── */
-export default function RegisterPage() {
-  const { register: registerUserAccount } = useAuth();
+function IndividualForm() {
+  const { register: createAccount } = useAuth();
   const navigate = useNavigate();
-
-  const {
-    register,
-    handleSubmit,
-    setError,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      acceptTerms: false,
-    },
-  });
-
-  const password = watch('password', '');
-
-  const onSubmit = async (data) => {
+  const form = useForm({ resolver: zodResolver(registerSchema), defaultValues:{ fullName:'', username:'', email:'', password:'', confirmPassword:'', acceptTerms:false } });
+  const { register, handleSubmit, watch, setError, formState:{ errors, isSubmitting } } = form;
+  const submit = async (data) => {
     try {
-      await registerUserAccount({
-        username: data.username,
-        email: data.email,
-        password: data.password,
-      });
-      toast.success('Account created! Welcome aboard 🌱', { id: 'register-success' });
-      navigate('/dashboard', { replace: true });
-    } catch (err) {
-      setError('root', { message: extractErrorMessage(err) });
-    }
+      await createAccount({ fullName:data.fullName, username:data.username, email:data.email, password:data.password });
+      toast.success('Your individual account has been created successfully.');
+      navigate('/', { replace:true });
+    } catch (error) { setError('root', { message:extractErrorMessage(error) }); }
   };
-
-  return (
-    <div className="slide-up relative">
-      <div className="bg-[#0F2E22]/40 backdrop-blur-3xl border border-[#1E4432] rounded-3xl p-8 sm:p-12 shadow-[0_8px_40px_-12px_rgba(0,0,0,0.5)] text-[#F3EFE4] relative overflow-hidden group">
-        
-        {/* Ambient Top Glow */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-[#7FBF8C]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-
-        {/* Header */}
-        <div className="mb-10 text-center">
-
-          <h1 className="text-3xl font-black text-[#F3EFE4] tracking-tight">Create your account</h1>
-          <p className="mt-2 text-sm text-[#9FAFA5] font-medium">
-            Join thousands tracking their carbon footprint
-          </p>
-        </div>
-
-        {/* Server error */}
-        {errors.root && (
-          <Alert variant="error" className="mb-6 border-red-500/30 bg-red-500/10 text-red-200" dismissible>
-            {errors.root.message}
-          </Alert>
-        )}
-
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          aria-label="Create account form"
-          className="space-y-6"
-        >
-          {/* Username */}
-          <div className="space-y-1.5">
-            <Input
-              label="Username"
-              id="reg-username"
-              type="text"
-              placeholder="johndoe"
-              autoComplete="username"
-              autoFocus
-              required
-              leftIcon={<User className="h-4.5 w-4.5 text-emerald-600" />}
-              hint="3–50 chars. Letters, numbers, dots, dashes, underscores."
-              error={errors.username?.message}
-              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
-              {...register('username')}
-            />
-          </div>
-
-          {/* Email */}
-          <div className="space-y-1.5">
-            <Input
-              label="Email address"
-              id="reg-email"
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="email"
-              required
-              leftIcon={<Mail className="h-4.5 w-4.5 text-emerald-600" />}
-              error={errors.email?.message}
-              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
-              {...register('email')}
-            />
-          </div>
-
-          {/* Password + strength */}
-          <div className="space-y-1.5">
-            <Input
-              label="Password"
-              id="reg-password"
-              type="password"
-              placeholder="Min. 8 characters"
-              autoComplete="new-password"
-              required
-              leftIcon={<Lock className="h-4.5 w-4.5 text-emerald-600" />}
-              error={errors.password?.message}
-              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
-              {...register('password')}
-            />
-            <PasswordStrength password={password} />
-          </div>
-
-          {/* Confirm password */}
-          <div className="space-y-1.5">
-            <Input
-              label="Confirm password"
-              id="reg-confirm"
-              type="password"
-              placeholder="Re-enter your password"
-              autoComplete="new-password"
-              required
-              leftIcon={<Lock className="h-4.5 w-4.5 text-emerald-600" />}
-              error={errors.confirmPassword?.message}
-              className="!bg-white border-slate-200 focus:border-green-600 focus:ring-2 focus:ring-green-500/20 text-slate-900 placeholder-slate-400 !rounded-xl font-medium shadow-sm"
-              {...register('confirmPassword')}
-            />
-          </div>
-
-          {/* Terms checkbox */}
-          <div>
-            <label className="flex items-start gap-3 cursor-pointer group select-none">
-              <input
-                type="checkbox"
-                id="acceptTerms"
-                className="mt-0.5 h-4 w-4 rounded border-[#1E4432] bg-[#06140F]/50 text-[#7FBF8C] focus:ring-[#7FBF8C] cursor-pointer shrink-0"
-                {...register('acceptTerms')}
-              />
-              <span className="text-sm text-[#9FAFA5] leading-snug">
-                I agree to the{' '}
-                <Link
-                  to="#"
-                  className="font-semibold text-[#7FBF8C] hover:text-[#94D1A0] hover:underline transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Terms of Service
-                </Link>
-                {' '}and{' '}
-                <Link
-                  to="#"
-                  className="font-semibold text-[#7FBF8C] hover:text-[#94D1A0] hover:underline transition-colors"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  Privacy Policy
-                </Link>
-              </span>
-            </label>
-            {errors.acceptTerms && (
-              <p role="alert" className="form-error mt-1.5">
-                {errors.acceptTerms.message}
-              </p>
-            )}
-          </div>
-
-          {/* Submit */}
-          <Button
-            type="submit"
-            variant="primary"
-            size="lg"
-            fullWidth
-            isLoading={isSubmitting}
-            className="mt-2 bg-[#7FBF8C] hover:bg-[#94D1A0] text-[#06140F] shadow-[0_0_20px_rgba(127,191,140,0.3)] hover:shadow-[0_0_25px_rgba(127,191,140,0.5)] font-bold transition-all duration-300"
-          >
-            {isSubmitting ? 'Creating account…' : 'Create free account'}
-          </Button>
-        </form>
-
-        {/* Divider */}
-        <div className="my-7 flex items-center gap-3" aria-hidden="true">
-          <div className="flex-1 h-px bg-[#1E4432]" />
-          <span className="text-xs text-[#5B7A67] font-medium uppercase tracking-wider">OR</span>
-          <div className="flex-1 h-px bg-[#1E4432]" />
-        </div>
-
-        {/* Login link */}
-        <p className="text-center text-sm text-[#9FAFA5]">
-          Already have an account?{' '}
-          <Link
-            to="/"
-            className="font-semibold text-[#7FBF8C] hover:text-[#94D1A0] hover:underline transition-colors"
-          >
-            Sign in
-          </Link>
-        </p>
-      </div>
+  return <form onSubmit={handleSubmit(submit)} className="space-y-5" noValidate>
+    <div>
+      <h2 className="text-xl font-bold">Individual User Details</h2>
+      <p className="mt-1 text-sm text-[#9FAFA5]">Enter your details using the example format shown in each field.</p>
     </div>
-  );
+    {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
+    <div className="grid sm:grid-cols-2 gap-4">
+      <Input label="Full name" placeholder="e.g. Priya Sharma" autoComplete="name" required error={errors.fullName?.message} className={inputClass} {...register('fullName')} />
+      <Input label="Username" placeholder="e.g. priya_sharma" autoComplete="username" hint="3–50 characters; letters, numbers, dots, dashes or underscores." required error={errors.username?.message} className={inputClass} {...register('username')} />
+    </div>
+    <Input label="Email" type="email" placeholder="e.g. priya@example.com" autoComplete="email" required leftIcon={<Mail />} error={errors.email?.message} className={inputClass} {...register('email')} />
+    <div className="grid sm:grid-cols-2 gap-4">
+      <div><Input label="Password" type="password" placeholder="Enter your password" autoComplete="new-password" required leftIcon={<Lock />} error={errors.password?.message} className={inputClass} {...register('password')} /><PasswordStrength value={watch('password')} /></div>
+      <Input label="Confirm password" type="password" placeholder="Re-enter the same password" autoComplete="new-password" required error={errors.confirmPassword?.message} className={inputClass} {...register('confirmPassword')} />
+    </div>
+    <Terms register={register} error={errors.acceptTerms} />
+    <Button type="submit" fullWidth size="lg" isLoading={isSubmitting} disabled={isSubmitting}>Create individual account</Button>
+  </form>;
+}
+
+function OrganisationForm() {
+  const { registerOrganisation } = useAuth();
+  const navigate = useNavigate();
+  const { register, handleSubmit, watch, setError, formState:{ errors, isSubmitting } } = useForm({
+    resolver:zodResolver(organisationRegisterSchema), defaultValues:{ acceptTerms:false, organisationType:'' },
+  });
+  const submit = async (data) => {
+    try {
+      const { confirmPassword: _confirmPassword, acceptTerms: _acceptTerms, ...payload } = data;
+      await registerOrganisation(payload);
+      toast.success('Your organisation account has been created successfully.');
+      navigate('/', { replace:true });
+    } catch(error) { setError('root', { message:extractErrorMessage(error) }); }
+  };
+  const field = (name,label,required=false,type='text',placeholder='',hint='') =>
+    <Input label={label} type={type} placeholder={placeholder} hint={hint} required={required} error={errors[name]?.message} className={inputClass} {...register(name)} />;
+  return <form onSubmit={handleSubmit(submit)} className="space-y-6" noValidate>
+    {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
+    <section>
+      <h2 className="text-xl font-bold">1. Organisation Details</h2>
+      <p className="mt-1 mb-4 text-sm text-[#9FAFA5]">Tell us about the organisation using its official information.</p>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {field('organisationName','Organisation name',true,'text','e.g. Greenfield Technologies Pvt Ltd')}
+        {field('organisationCode','Organisation code',true,'text','e.g. GFT-2026','Use your company or institution code.')}
+        <div><label className="form-label">Organisation type *</label><select className={`form-input ${inputClass}`} {...register('organisationType')}><option value="">Choose organisation type</option><option>Company</option><option>Institution</option><option>Non-profit</option><option>Government</option><option>Team</option></select>{errors.organisationType && <p className="form-error">{errors.organisationType.message}</p>}</div>
+        {field('industry','Industry',false,'text','e.g. Information Technology')}
+        {field('officialEmail','Official organisation email',true,'email','e.g. contact@greenfield.com')}
+        {field('contactNumber','Contact number',false,'tel','e.g. +91 98765 43210')}
+        <div className="sm:col-span-2">{field('address','Address',false,'text','e.g. 12, Anna Salai, Guindy')}</div>
+        {field('city','City',false,'text','e.g. Chennai')}
+        {field('state','State',false,'text','e.g. Tamil Nadu')}
+        {field('country','Country',false,'text','e.g. India')}
+      </div>
+    </section>
+    <section>
+      <h2 className="text-xl font-bold">2. Organisation Administrator Details</h2>
+      <p className="mt-1 mb-4 text-sm text-[#9FAFA5]">This person will manage the organisation dashboard and members.</p>
+      <div className="grid sm:grid-cols-2 gap-4">
+        {field('adminFullName','Admin full name',true,'text','e.g. Priya Sharma')}
+        {field('username','Username',true,'text','e.g. priya.admin','3–50 characters; letters, numbers, dots, dashes or underscores.')}
+        {field('workEmail','Work email',true,'email','e.g. priya@greenfield.com')}
+        {field('jobTitle','Job title',false,'text','e.g. Sustainability Manager')}
+        <div>{field('password','Password',true,'password','Enter your password')}<PasswordStrength value={watch('password')} /></div>
+        {field('confirmPassword','Confirm password',true,'password','Re-enter the same password')}
+      </div>
+    </section>
+    <Terms register={register} error={errors.acceptTerms} />
+    <Button type="submit" fullWidth size="lg" isLoading={isSubmitting} disabled={isSubmitting}>Create organisation account</Button>
+  </form>;
+}
+
+export default function RegisterPage() {
+  const [accountType,setAccountType] = useState('INDIVIDUAL');
+  const options = [
+    { id:'INDIVIDUAL', title:'Individual User', icon:UserRound, text:'Track your personal carbon footprint, log activities, set sustainability goals, earn badges and receive personalised recommendations.', action:'Continue as Individual' },
+    { id:'ORGANISATION', title:'Organisation', icon:Building2, text:'Register your company, institution or team to monitor organisation emissions, compare employee performance and generate CSR reports.', action:'Continue as Organisation' },
+  ];
+  return <div className="slide-up rounded-3xl border border-[#1E4432] bg-[#0F2E22]/70 p-5 sm:p-9 text-[#F3EFE4] backdrop-blur-3xl">
+    <header className="text-center mb-7"><h1 className="text-3xl font-black">Create your CarbonTrack account</h1><p className="mt-2 text-[#9FAFA5]">Choose how you want to use CarbonTrack.</p></header>
+    <div className="grid md:grid-cols-2 gap-4 mb-8" role="radiogroup" aria-label="Account type">
+      {options.map(({id,title,icon:Icon,text,action}) => <button key={id} type="button" role="radio" aria-checked={accountType===id} onClick={()=>setAccountType(id)}
+        className={`text-left rounded-2xl border p-5 transition ${accountType===id ? 'border-[#7FBF8C] bg-[#7FBF8C]/10 ring-2 ring-[#7FBF8C]/20' : 'border-[#315744] bg-[#06140F]/35 hover:border-[#7FBF8C]/60'}`}>
+        <span className="flex justify-between"><Icon className="h-7 w-7 text-[#7FBF8C]" />{accountType===id && <BadgeCheck className="text-[#7FBF8C]" />}</span>
+        <strong className="block text-lg mt-3">{title}</strong><span className="block text-sm text-[#9FAFA5] mt-2">{text}</span><span className="block text-sm font-bold text-[#7FBF8C] mt-4">{action}</span>
+      </button>)}
+    </div>
+    {accountType === 'INDIVIDUAL' ? <IndividualForm key="individual" /> : <OrganisationForm key="organisation" />}
+    <p className="text-center mt-7 text-sm"><Link to="/" className="font-bold text-[#7FBF8C]">Back to Login</Link></p>
+  </div>;
 }

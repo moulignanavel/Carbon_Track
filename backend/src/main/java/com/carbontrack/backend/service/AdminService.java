@@ -13,4 +13,5 @@ public interface AdminService {
     List<EmissionFactor> getEmissionFactors();
     EmissionFactor updateEmissionFactor(Long id, Double newFactor);
     List<com.carbontrack.backend.entity.ActivityLog> getUserLogsForAdmin(Long userId);
+    List<com.carbontrack.backend.entity.RoleAuditLog> getRoleAuditLogs();
 }

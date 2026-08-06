@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -22,7 +21,7 @@ export default function AdminLoginPage() {
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@carbontrack.com',
+      email: '',
       password: '',
       rememberMe: true,
     },
@@ -79,7 +78,7 @@ export default function AdminLoginPage() {
                 <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-purple-400" />
                 <Input
                   type="email"
-                  placeholder="admin@carbontrack.com"
+                  placeholder="admin@example.com"
                   error={errors.email?.message}
                   className="pl-10 bg-slate-950/60 border-purple-500/30 text-white placeholder-slate-500 focus:border-purple-400 focus:ring-purple-400 text-sm py-2.5"
                   {...register('email')}

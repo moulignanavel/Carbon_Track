@@ -135,24 +135,24 @@ function getElaboration(activityType) {
 function renderRecIcon(category, activityType) {
   const type = (activityType || '').toLowerCase();
   if (type.includes('flight')) {
-    return <Plane className="w-7 h-7 text-sky-600 dark:text-sky-400" />;
+    return <Plane className="w-5 h-5 text-sky-600 dark:text-sky-400" />;
   }
   if (type.includes('car') || type.includes('transport') || type.includes('transit') || category === 'transport') {
-    return <Car className="w-7 h-7 text-red-600 dark:text-red-500" />;
+    return <Car className="w-5 h-5 text-red-600 dark:text-red-500" />;
   }
   if (type.includes('beef') || type.includes('meat') || type.includes('food') || category === 'food') {
-    return <Utensils className="w-7 h-7 text-emerald-600 dark:text-emerald-400" />;
+    return <Utensils className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />;
   }
   if (type.includes('energy') || type.includes('electricity') || category === 'energy') {
-    return <Zap className="w-7 h-7 text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" />;
+    return <Zap className="w-5 h-5 text-amber-500 dark:text-amber-400 fill-amber-500 dark:fill-amber-400" />;
   }
   if (type.includes('furniture')) {
-    return <Home className="w-7 h-7 text-indigo-600 dark:text-indigo-400" />;
+    return <Home className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />;
   }
   if (type.includes('clothing') || type.includes('shopping') || category === 'shopping') {
-    return <ShoppingBag className="w-7 h-7 text-purple-600 dark:text-purple-400" />;
+    return <ShoppingBag className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
   }
-  return <Lightbulb className="w-7 h-7 text-yellow-600 dark:text-yellow-400" />;
+  return <Lightbulb className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />;
 }
 
 export default function RecommendationsPage() {

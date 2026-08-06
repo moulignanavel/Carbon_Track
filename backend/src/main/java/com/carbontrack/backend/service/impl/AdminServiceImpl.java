@@ -8,6 +8,9 @@ import com.carbontrack.backend.entity.User;
 import com.carbontrack.backend.repository.ActivityLogRepository;
 import com.carbontrack.backend.repository.EmissionFactorRepository;
 import com.carbontrack.backend.repository.UserRepository;
+import com.carbontrack.backend.repository.RoleAuditLogRepository;
+import com.carbontrack.backend.entity.RoleAuditLog;
+import com.carbontrack.backend.service.SecurityService;
 import com.carbontrack.backend.service.AdminService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,13 +29,19 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final ActivityLogRepository activityLogRepository;
     private final EmissionFactorRepository emissionFactorRepository;
+    private final RoleAuditLogRepository roleAuditLogRepository;
+    private final SecurityService securityService;
 
     public AdminServiceImpl(UserRepository userRepository,
                             ActivityLogRepository activityLogRepository,
-                            EmissionFactorRepository emissionFactorRepository) {
+                            EmissionFactorRepository emissionFactorRepository,
+                            RoleAuditLogRepository roleAuditLogRepository,
+                            SecurityService securityService) {
         this.userRepository = userRepository;
         this.activityLogRepository = activityLogRepository;
         this.emissionFactorRepository = emissionFactorRepository;
+        this.roleAuditLogRepository = roleAuditLogRepository;
+        this.securityService = securityService;
     }
 
     @Override
@@ -101,30 +110,37 @@ public class AdminServiceImpl implements AdminService {
 
     @Override
     public AdminUserDto updateUserRole(Long userId, String newRole) {
+        String normalizedRole = newRole == null ? "" : newRole.trim().toUpperCase();
+        if (!List.of("USER", "ORG_ADMIN", "ADMIN").contains(normalizedRole)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported role");
+        }
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        if ("ADMIN".equalsIgnoreCase(newRole)) {
-            // Strictly enforce single-admin limit across system
-            List<User> otherAdmins = userRepository.findAll().stream()
-                    .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole()) && !u.getId().equals(userId))
-                    .collect(Collectors.toList());
-            for (User otherAdmin : otherAdmins) {
-                otherAdmin.setRole("USER");
-                userRepository.save(otherAdmin);
-            }
-            user.setRole("ADMIN");
-        } else {
-            // Do not allow demoting if this is the sole admin
-            long adminCount = userRepository.findAll().stream()
-                    .filter(u -> "ADMIN".equalsIgnoreCase(u.getRole()))
-                    .count();
-            if (adminCount <= 1 && "ADMIN".equalsIgnoreCase(user.getRole())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "The platform requires exactly 1 Administrator. Transfer the Admin role to another user first.");
-            }
-            user.setRole("USER");
+        String oldRole = user.getRole();
+        if (oldRole.equalsIgnoreCase(normalizedRole)) {
+            return toAdminUserDto(user);
         }
+        if ("ORG_ADMIN".equals(normalizedRole) && user.getOrganisation() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ORG_ADMIN must belong to an organisation");
+        }
+
+        User changedBy = securityService.getCurrentUser();
+        if (changedBy.getId().equals(userId) && "ADMIN".equalsIgnoreCase(oldRole)
+                && !"ADMIN".equals(normalizedRole)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Administrators cannot remove their own platform access");
+        }
+        user.setRole(normalizedRole);
         User updated = userRepository.save(user);
+
+        RoleAuditLog audit = new RoleAuditLog();
+        audit.setChangedUserId(updated.getId());
+        audit.setOldRole(oldRole);
+        audit.setNewRole(updated.getRole());
+        audit.setChangedByUserId(changedBy.getId());
+        audit.setOrganisationId(updated.getOrganisation() != null ? updated.getOrganisation().getId() : null);
+        audit.setChangedAt(java.time.LocalDateTime.now());
+        roleAuditLogRepository.save(audit);
 
         List<ActivityLog> userLogs = activityLogRepository.findByUserIdOrderByIdDesc(updated.getId());
         double emissions = userLogs.stream()
@@ -140,6 +156,12 @@ public class AdminServiceImpl implements AdminService {
                 emissions,
                 "2026-07-01"
         );
+    }
+
+    private AdminUserDto toAdminUserDto(User user) {
+        List<ActivityLog> logs = activityLogRepository.findByUserIdOrderByIdDesc(user.getId());
+        double emissions = logs.stream().mapToDouble(l -> l.getCalculatedEmissions() != null ? l.getCalculatedEmissions() : 0.0).sum();
+        return new AdminUserDto(user.getId(), user.getUsername(), user.getEmail(), user.getRole(), logs.size(), emissions, "2026-07-01");
     }
 
     @Override
@@ -161,5 +183,12 @@ public class AdminServiceImpl implements AdminService {
     @Transactional(readOnly = true)
     public List<ActivityLog> getUserLogsForAdmin(Long userId) {
         return activityLogRepository.findByUserIdOrderByIdDesc(userId);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RoleAuditLog> getRoleAuditLogs() {
+        return roleAuditLogRepository.findAll(org.springframework.data.domain.Sort.by(
+                org.springframework.data.domain.Sort.Direction.DESC, "changedAt"));
     }
 }

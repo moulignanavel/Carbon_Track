@@ -52,54 +52,54 @@ export default function LeaderboardRow({
       `}
     >
       {/* Rank */}
-      <td className={`px-4 py-4 text-center font-bold ${getRankColor(user.rank)} ${getRankBgColor(user.rank)}`}>
-        <div className="flex items-center justify-center gap-2">
-          {getMedalIcon(user.rank) && <span className="text-lg">{getMedalIcon(user.rank)}</span>}
-          <span className="text-sm lg:text-base">#{user.rank}</span>
+      <td className={`px-3 py-2 text-center font-bold ${getRankColor(user.rank)} ${getRankBgColor(user.rank)}`}>
+        <div className="flex items-center justify-center gap-1.5">
+          {getMedalIcon(user.rank) && <span className="text-base">{getMedalIcon(user.rank)}</span>}
+          <span className="text-xs lg:text-sm">#{user.rank}</span>
         </div>
       </td>
 
       {/* Username */}
-      <td className="px-4 py-4">
+      <td className="px-3 py-2">
         <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-900 dark:text-slate-50 truncate text-sm lg:text-base">
+            <p className="font-semibold text-slate-900 dark:text-slate-50 truncate text-xs lg:text-sm">
               {user.username}
             </p>
             {isCurrentUser && (
-              <p className="text-xs text-green-600 dark:text-green-400 font-medium">You</p>
+              <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">You</p>
             )}
           </div>
         </div>
       </td>
 
       {/* CO₂ Saved (hidden on mobile) */}
-      <td className="px-4 py-4 text-center hidden md:table-cell">
-        <div className="flex items-center justify-center gap-2">
-          <Leaf className="w-4 h-4 text-green-600 flex-shrink-0" />
+      <td className="px-3 py-2 text-center hidden md:table-cell">
+        <div className="flex items-center justify-center gap-1.5">
+          <Leaf className="w-3.5 h-3.5 text-green-600 flex-shrink-0" />
           <div className="text-right">
-            <p className="font-bold text-slate-900 dark:text-slate-50">
+            <p className="font-bold text-xs lg:text-sm text-slate-900 dark:text-slate-50">
               {user.totalCO2Saved.toLocaleString('en-US', {
                 maximumFractionDigits: 1
               })}
             </p>
-            <p className="text-xs text-slate-500 dark:text-slate-400">kg</p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400">kg</p>
           </div>
         </div>
       </td>
 
       {/* Activity Count (hidden on small mobile) */}
-      <td className="px-4 py-4 text-center hidden sm:table-cell">
-        <div className="flex items-center justify-center gap-2">
-          <Zap className="w-4 h-4 text-blue-600 flex-shrink-0" />
-          <p className="font-semibold text-slate-900 dark:text-slate-50">
+      <td className="px-3 py-2 text-center hidden sm:table-cell">
+        <div className="flex items-center justify-center gap-1.5">
+          <Zap className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" />
+          <p className="font-semibold text-xs lg:text-sm text-slate-900 dark:text-slate-50">
             {user.activityCount}
           </p>
         </div>
       </td>
 
       {/* Badges (hidden on mobile) */}
-      <td className="px-4 py-4 text-right hidden lg:table-cell">
+      <td className="px-3 py-2 text-right hidden lg:table-cell">
         {user.badges && user.badges.length > 0 ? (
           <div className="flex items-center justify-end gap-1 flex-wrap">
             {user.badges.slice(0, 2).map((badge, idx) => (

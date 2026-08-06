@@ -3,6 +3,7 @@ package com.carbontrack.backend.service.impl;
 import com.carbontrack.backend.dto.AuthResponse;
 import com.carbontrack.backend.dto.LoginRequest;
 import com.carbontrack.backend.dto.RegisterRequest;
+import com.carbontrack.backend.dto.OrganisationRegistrationRequest;
 import com.carbontrack.backend.entity.User;
 import com.carbontrack.backend.entity.Organisation;
 import com.carbontrack.backend.exception.DuplicateResourceException;
@@ -52,22 +53,8 @@ public class AuthServiceImpl implements AuthService {
         this.emailService = emailService;
     }
 
-    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
-    @Transactional
-    public void seedDefaultAdminAccount() {
-        if (userRepository.findAll().stream().noneMatch(u -> "ADMIN".equalsIgnoreCase(u.getRole()))) {
-            if (userRepository.findByEmail("admin@carbontrack.com").isEmpty()) {
-                User admin = new User();
-                admin.setUsername("admin");
-                admin.setEmail("admin@carbontrack.com");
-                admin.setPasswordHash(passwordEncoder.encode("admin123"));
-                admin.setRole("ADMIN");
-                userRepository.save(admin);
-            }
-        }
-    }
-
     @Override
+    @Transactional
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new DuplicateResourceException("Email already registered: " + request.getEmail());
@@ -77,46 +64,68 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = new User();
+        user.setFullName(request.getFullName());
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         
-        // Assign ADMIN if username/email starts with admin and no admin exists
-        boolean hasAdmin = userRepository.findAll().stream().anyMatch(u -> "ADMIN".equalsIgnoreCase(u.getRole()));
-        if (!hasAdmin && (request.getUsername().equalsIgnoreCase("admin") || request.getEmail().toLowerCase().startsWith("admin"))) {
-            user.setRole("ADMIN");
-        } else {
-            user.setRole("USER");
-        }
-
-        // Fixed to use our proper entity relationship instead of raw IDs
-        if (request.getOrgId() != null) {
-            Organisation org = organisationRepository.findById(request.getOrgId())
-                .orElseThrow(() -> new IllegalArgumentException("Organisation not found"));
-            user.setOrganisation(org);
-        }
+        // Registration is never a role-assignment workflow.
+        user.setRole("USER");
+        user.setStatus("ACTIVE");
 
         User savedUser = userRepository.save(user);
-        String token = jwtUtil.generateToken(savedUser.getEmail());
+        return new AuthResponse(null, savedUser.getId(), savedUser.getUsername(), savedUser.getRole());
+    }
 
-        return new AuthResponse(token, savedUser.getId(), savedUser.getUsername(), savedUser.getRole());
+    @Override
+    @Transactional
+    public AuthResponse registerOrganisation(OrganisationRegistrationRequest request) {
+        if (organisationRepository.findByNameIgnoreCase(request.getOrganisationName()).isPresent())
+            throw new DuplicateResourceException("Organisation name is already registered");
+        if (organisationRepository.existsByCodeIgnoreCase(request.getOrganisationCode()))
+            throw new DuplicateResourceException("Organisation code is already registered");
+        if (organisationRepository.existsByOfficialEmailIgnoreCase(request.getOfficialEmail()))
+            throw new DuplicateResourceException("Official organisation email is already registered");
+        if (userRepository.findByUsername(request.getUsername()).isPresent())
+            throw new DuplicateResourceException("Username already taken: " + request.getUsername());
+        if (userRepository.findByEmail(request.getWorkEmail()).isPresent())
+            throw new DuplicateResourceException("Email already registered: " + request.getWorkEmail());
+
+        Organisation organisation = new Organisation();
+        organisation.setName(request.getOrganisationName());
+        organisation.setCode(request.getOrganisationCode());
+        organisation.setOrganisationType(request.getOrganisationType());
+        organisation.setIndustry(request.getIndustry());
+        organisation.setOfficialEmail(request.getOfficialEmail());
+        organisation.setContactNumber(request.getContactNumber());
+        organisation.setAddress(request.getAddress());
+        organisation.setCity(request.getCity());
+        organisation.setState(request.getState());
+        organisation.setCountry(request.getCountry());
+        organisation.setActive(true);
+        organisation = organisationRepository.save(organisation);
+
+        User admin = new User();
+        admin.setFullName(request.getAdminFullName());
+        admin.setUsername(request.getUsername());
+        admin.setEmail(request.getWorkEmail());
+        admin.setJobTitle(request.getJobTitle());
+        admin.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        admin.setRole("ORG_ADMIN");
+        admin.setStatus("ACTIVE");
+        admin.setOrganisation(organisation);
+        admin = userRepository.save(admin);
+        organisation.setAdminUserId(admin.getId());
+        organisationRepository.save(organisation);
+
+        AuthResponse response = new AuthResponse(null, admin.getId(), admin.getUsername(), admin.getRole());
+        response.setOrganisationId(organisation.getId());
+        return response;
     }
 
     @Override
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        if ("admin@carbontrack.com".equalsIgnoreCase(request.getEmail()) && "admin123".equals(request.getPassword())) {
-            User admin = userRepository.findByEmail("admin@carbontrack.com").orElseGet(() -> {
-                User u = new User();
-                u.setUsername("admin");
-                u.setEmail("admin@carbontrack.com");
-                return u;
-            });
-            admin.setPasswordHash(passwordEncoder.encode("admin123"));
-            admin.setRole("ADMIN");
-            userRepository.save(admin);
-        }
-
         try {
             authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
@@ -125,12 +134,13 @@ public class AuthServiceImpl implements AuthService {
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        User user = userRepository.findByEmail(request.getEmail())
+        User user = userRepository.findByEmailIgnoreCaseOrUsernameIgnoreCase(request.getEmail(), request.getEmail())
                 .orElseThrow(() -> new BadCredentialsException("Invalid email or password"));
 
-        String token = jwtUtil.generateToken(user.getEmail());
-
-        return new AuthResponse(token, user.getId(), user.getUsername(), user.getRole());
+        String token = jwtUtil.generateToken(user);
+        AuthResponse response = new AuthResponse(token, user.getId(), user.getUsername(), user.getRole());
+        response.setOrganisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null);
+        return response;
     }
 
     @Override
@@ -156,19 +166,16 @@ public class AuthServiceImpl implements AuthService {
                 throw new BadCredentialsException("Email not provided by Google");
             }
             
-            // Find or create user
-            User user = userRepository.findByEmail(email).orElseGet(() -> {
-                User newUser = new User();
-                newUser.setEmail(email);
-                String fallbackUsername = name != null ? name.replaceAll("\\s+", "").toLowerCase() + "_" + (System.currentTimeMillis() % 1000) : email.split("@")[0];
-                newUser.setUsername(fallbackUsername);
-                newUser.setPasswordHash(passwordEncoder.encode(UUID.randomUUID().toString()));
-                newUser.setRole("USER");
-                return userRepository.save(newUser);
-            });
+            // Organisation selection is mandatory, so OAuth only logs in an
+            // account that completed the standard registration workflow.
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new BadCredentialsException(
+                            "Register with an organisation before using Google sign-in"));
             
-            String token = jwtUtil.generateToken(user.getEmail());
-            return new AuthResponse(token, user.getId(), user.getUsername(), user.getRole());
+            String token = jwtUtil.generateToken(user);
+            AuthResponse authResponse = new AuthResponse(token, user.getId(), user.getUsername(), user.getRole());
+            authResponse.setOrganisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null);
+            return authResponse;
         } catch (Exception e) {
             throw new BadCredentialsException("Google authentication failed: " + e.getMessage());
         }

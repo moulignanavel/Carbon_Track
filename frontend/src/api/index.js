@@ -7,4 +7,5 @@ export * from './activityApi';
 export * from './userApi';
 export * from './goalsApi';
 export * from './alertApi';
+export * from './emissionFactorApi';
 export { default as axiosInstance } from './axiosInstance';

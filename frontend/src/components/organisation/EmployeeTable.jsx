@@ -9,7 +9,7 @@ import Table from '@/components/ui/Table';
  * Displays: Rank, Name, Department, CO₂ Saved, Activities
  */
 
-export default function EmployeeTable({ employees = [] }) {
+export default function EmployeeTable({ employees = [], title = 'Top Contributors' }) {
   // Define table columns
   const columns = [
     { 
@@ -79,12 +79,12 @@ export default function EmployeeTable({ employees = [] }) {
 
   // Map employees to row data with styling
   const rowData = employees.map((employee) => ({
-    id: employee.userId,
-    rank: employee.rank,
-    username: employee.username,
+    id: employee.userId ?? employee.id,
+    rank: employee.rank ?? 0,
+    username: employee.username ?? employee.name,
     email: employee.email,
     department: employee.department,
-    totalEmissionsSaved: employee.totalEmissionsSaved,
+    totalEmissionsSaved: employee.totalEmissionsSaved ?? employee.emissions,
     activityCount: employee.activityCount,
     isTopThree: employee.rank <= 3,
     __original: employee,
@@ -96,7 +96,7 @@ export default function EmployeeTable({ employees = [] }) {
       <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
         <h2 className="text-lg font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
           <Trophy className="w-5 h-5 text-amber-600" />
-          Top Employees
+          {title}
         </h2>
       </div>
 

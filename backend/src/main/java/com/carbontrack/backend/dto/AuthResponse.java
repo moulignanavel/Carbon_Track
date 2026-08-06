@@ -11,6 +11,7 @@ public class AuthResponse {
     private Long userId;
     private String username;
     private String role;
+    private Long organisationId;
     private String message;
     private String status;
 
@@ -52,6 +53,8 @@ public class AuthResponse {
 
     public String getRole() { return role; }
     public void setRole(String role) { this.role = role; }
+    public Long getOrganisationId() { return organisationId; }
+    public void setOrganisationId(Long organisationId) { this.organisationId = organisationId; }
 
     public String getMessage() { return message; }
     public void setMessage(String message) { this.message = message; }

@@ -17,18 +17,18 @@ export default function LeaderboardToolbar({
   onSortChange
 }) {
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-      <form onSubmit={onSearchSubmit} className="flex flex-col lg:flex-row gap-3 items-stretch lg:items-center">
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 shadow-sm">
+      <form onSubmit={onSearchSubmit} className="flex flex-col lg:flex-row gap-2 items-stretch lg:items-center">
         {/* Instant Live Search Input */}
         <div className="flex-1 relative">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Search member by username, email, or badge…"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="
-              w-full pl-10 pr-10 py-2.5 rounded-xl text-sm 
+              w-full pl-9 pr-9 py-1.5 rounded-lg text-xs 
               bg-slate-50 dark:bg-slate-800 
               border border-slate-200 dark:border-slate-700 
               text-slate-900 dark:text-slate-100 

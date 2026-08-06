@@ -1,4 +1,4 @@
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 /**
  * DepartmentComparison
@@ -23,10 +23,19 @@ export default function DepartmentComparison({ departments = [] }) {
     );
   }
 
-  // Prepare data for pie chart
+  const totalEmissions = departments.reduce(
+    (total, department) => total + (Number(department.emissions) || 0),
+    0,
+  );
+
+  // Support both the existing percentage contract and emission totals.
   const chartData = departments.map(dept => ({
-    name: dept.department,
-    value: dept.percentageOfTotal || 0
+    name: dept.department || 'Unassigned',
+    value: Number.isFinite(Number(dept.percentageOfTotal))
+      ? Number(dept.percentageOfTotal)
+      : totalEmissions > 0
+        ? ((Number(dept.emissions) || 0) / totalEmissions) * 100
+        : 0,
   }));
 
   return (
@@ -42,7 +51,7 @@ export default function DepartmentComparison({ departments = [] }) {
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={({ name, value }) => `${name}: ${value.toFixed(1)}%`}
+            label={({ name, value }) => `${name}: ${(Number(value) || 0).toFixed(1)}%`}
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
@@ -51,7 +60,7 @@ export default function DepartmentComparison({ departments = [] }) {
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>
-          <Tooltip formatter={(value) => `${value.toFixed(1)}%`} />
+          <Tooltip formatter={(value) => `${(Number(value) || 0).toFixed(1)}%`} />
         </PieChart>
       </ResponsiveContainer>
 
@@ -70,7 +79,7 @@ export default function DepartmentComparison({ departments = [] }) {
               <span className="text-slate-700 dark:text-slate-300">{dept.department}</span>
             </div>
             <span className="font-semibold text-slate-900 dark:text-slate-50">
-              {dept.percentageOfTotal.toFixed(1)}%
+              {(chartData[idx]?.value || 0).toFixed(1)}%
             </span>
           </div>
         ))}

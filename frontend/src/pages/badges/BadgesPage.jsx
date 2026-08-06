@@ -3,6 +3,7 @@ import { ChevronLeft, Lock, Trophy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { useActivity } from '@/context/ActivityContext';
+import { useGoals } from '@/context/GoalContext';
 import { useCelebration } from '@/context/CelebrationContext';
 
 /* ─── Badge data ─────────────────────────────────────────────────────────── */
@@ -10,6 +11,7 @@ export const BADGES = [
   {
     name: 'Eco Pioneer',
     emoji: '🌿',
+    iconUrl: '/badges/eco-pioneer.png',
     description: 'Log your first environmental activity.',
     outerRing: 'from-[#a78bfa] via-[#818cf8] to-[#312e81]',
     outerRingLocked: 'from-[#c4b5fd]/40 via-[#a78bfa]/25 to-[#4c1d95]/30',
@@ -26,6 +28,7 @@ export const BADGES = [
   {
     name: 'Goal Crusher',
     emoji: '🎯',
+    iconUrl: '/badges/goal-crusher.png',
     description: 'Complete a carbon goal under your emission budget.',
     outerRing: 'from-[#fb923c] via-[#ea580c] to-[#7c2d12]',
     outerRingLocked: 'from-[#fed7aa]/40 via-[#fb923c]/25 to-[#7c2d12]/30',
@@ -42,6 +45,7 @@ export const BADGES = [
   {
     name: '7-Day Streak',
     emoji: '🔥',
+    iconUrl: '/badges/streak-7day.png',
     description: 'Log activities for 7 consecutive days.',
     outerRing: 'from-[#f87171] via-[#ef4444] to-[#7f1d1d]',
     outerRingLocked: 'from-[#fecaca]/40 via-[#f87171]/25 to-[#7f1d1d]/30',
@@ -59,6 +63,7 @@ export const BADGES = [
   {
     name: '10 kg Reduction',
     emoji: '🍃',
+    iconUrl: '/badges/reduction-10kg.png',
     description: 'Cut your carbon footprint by 10 kg through goals.',
     outerRing: 'from-[#6ee7b7] via-[#10b981] to-[#064e3b]',
     outerRingLocked: 'from-[#a7f3d0]/40 via-[#6ee7b7]/25 to-[#064e3b]/30',
@@ -75,6 +80,7 @@ export const BADGES = [
   {
     name: 'Eco Warrior',
     emoji: '⚔️',
+    iconUrl: '/badges/eco-warrior.png',
     description: 'Awarded to the #3 user on the global leaderboard.',
     outerRing: 'from-[#fcd34d] via-[#d97706] to-[#78350f]',
     outerRingLocked: 'from-[#fde68a]/40 via-[#fcd34d]/25 to-[#78350f]/30',
@@ -91,6 +97,7 @@ export const BADGES = [
   {
     name: '25 kg Reduction',
     emoji: '🌱',
+    iconUrl: '/badges/reduction-25kg.png',
     description: 'Cut your carbon footprint by 25 kg through goals.',
     outerRing: 'from-[#5eead4] via-[#0d9488] to-[#134e4a]',
     outerRingLocked: 'from-[#99f6e4]/40 via-[#5eead4]/25 to-[#134e4a]/30',
@@ -107,6 +114,7 @@ export const BADGES = [
   {
     name: 'Emission Target Master',
     emoji: '🛡️',
+    iconUrl: '/badges/emission-master.png',
     description: 'Log activities on 5 or more days in a single calendar week.',
     outerRing: 'from-[#93c5fd] via-[#3b82f6] to-[#1e3a8a]',
     outerRingLocked: 'from-[#bfdbfe]/40 via-[#93c5fd]/25 to-[#1e3a8a]/30',
@@ -123,6 +131,7 @@ export const BADGES = [
   {
     name: '50 kg Reduction',
     emoji: '🏅',
+    iconUrl: '/badges/reduction-50kg.png',
     description: 'Cut your carbon footprint by 50 kg through goals.',
     outerRing: 'from-[#fde68a] via-[#f59e0b] to-[#92400e]',
     outerRingLocked: 'from-[#fef3c7]/40 via-[#fde68a]/25 to-[#92400e]/30',
@@ -139,6 +148,7 @@ export const BADGES = [
   {
     name: 'Top Saver',
     emoji: '⚡',
+    iconUrl: '/badges/top-saver.png',
     description: 'Awarded to the #2 user on the global leaderboard.',
     outerRing: 'from-[#fef08a] via-[#eab308] to-[#713f12]',
     outerRingLocked: 'from-[#fef9c3]/40 via-[#fef08a]/25 to-[#713f12]/30',
@@ -155,6 +165,7 @@ export const BADGES = [
   {
     name: 'Eco Champion',
     emoji: '🏆',
+    iconUrl: '/badges/eco-champion.png',
     description: 'Achieve 3 or more completed eco-reduction goals.',
     outerRing: 'from-[#bef264] via-[#84cc16] to-[#365314]',
     outerRingLocked: 'from-[#d9f99d]/40 via-[#bef264]/25 to-[#365314]/30',
@@ -171,6 +182,7 @@ export const BADGES = [
   {
     name: 'Earth Savior',
     emoji: '🌍',
+    iconUrl: '/badges/earth-savior.png',
     description: 'Awarded to the #1 user on the global leaderboard.',
     outerRing: 'from-[#818cf8] via-[#6366f1] to-[#3730a3]',
     outerRingLocked: 'from-[#c7d2fe]/40 via-[#818cf8]/25 to-[#3730a3]/30',
@@ -187,6 +199,7 @@ export const BADGES = [
   {
     name: 'Forest Guardian',
     emoji: '🌲',
+    iconUrl: '/badges/forest-guardian.png',
     description: 'Prevent a cumulative 100 kg of CO₂e through completed goals.',
     outerRing: 'from-[#86efac] via-[#22c55e] to-[#14532d]',
     outerRingLocked: 'from-[#bbf7d0]/40 via-[#86efac]/25 to-[#14532d]/30',
@@ -203,6 +216,7 @@ export const BADGES = [
   {
     name: 'Community Leader',
     emoji: '👑',
+    iconUrl: '/badges/community-leader.png',
     description: 'Rank #1 on the leaderboard with 3 or more goals achieved.',
     outerRing: 'from-[#f9a8d4] via-[#ec4899] to-[#831843]',
     outerRingLocked: 'from-[#fbcfe8]/40 via-[#f9a8d4]/25 to-[#831843]/30',
@@ -265,10 +279,29 @@ export function BadgeCoin({ badge, isUnlocked, size = 'md', isDark, streak = 0 }
             )}
           </div>
         ) : !isUnlocked ? (
-          /* Locked: faint emoji behind lock */
-          <div className="relative flex items-center justify-center">
-            <span className={`${emojiSz} leading-none select-none opacity-15 absolute`}>{badge.emoji}</span>
-            <Lock className={`${isLg ? 'w-16 h-16' : 'w-7 h-7'} relative z-10 ${isDark ? badge.lockedTextDark : badge.lockedTextLight} drop-shadow-sm`} />
+          /* Locked badge display */
+          <div className="relative flex items-center justify-center w-full h-full overflow-hidden rounded-full">
+            {badge.iconUrl ? (
+              <img
+                src={badge.iconUrl}
+                alt={badge.name}
+                className="w-full h-full object-cover grayscale opacity-25"
+              />
+            ) : (
+              <span className={`${emojiSz} leading-none select-none opacity-15 absolute`}>{badge.emoji}</span>
+            )}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Lock className={`${isLg ? 'w-14 h-14' : 'w-7 h-7'} relative z-10 ${isDark ? badge.lockedTextDark : badge.lockedTextLight} drop-shadow-sm`} />
+            </div>
+          </div>
+        ) : badge.iconUrl ? (
+          /* Unlocked 3D Icon badge display */
+          <div className="relative flex items-center justify-center w-full h-full overflow-hidden rounded-full">
+            <img
+              src={badge.iconUrl}
+              alt={badge.name}
+              className="w-full h-full object-cover transition-all"
+            />
           </div>
         ) : (
           <span className={`${emojiSz} leading-none select-none`} style={{ filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.45))' }}>
@@ -286,6 +319,7 @@ export default function BadgesPage() {
   const { triggerCelebration } = useCelebration();
   const [selected, setSelected] = useState(null);
   const { logs, fetchLogs } = useActivity();
+  const { goals, fetchGoals } = useGoals();
   const [isDark, setIsDark] = useState(() => document.documentElement.classList.contains('dark'));
 
   useEffect(() => {
@@ -294,7 +328,10 @@ export default function BadgesPage() {
     return () => obs.disconnect();
   }, []);
 
-  useEffect(() => { fetchLogs(); }, [fetchLogs]);
+  useEffect(() => {
+    fetchLogs();
+    if (fetchGoals) fetchGoals();
+  }, [fetchLogs, fetchGoals]);
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('leaderboard-viewed'));
@@ -302,23 +339,45 @@ export default function BadgesPage() {
 
   const streak = useMemo(() => {
     if (!logs?.length) return 0;
-    const dates = Array.from(new Set(
-      logs.map((l) => {
-        const d = l.logDate ?? l.date;
-        if (!d) return null;
-        if (Array.isArray(d)) return `${d[0]}-${String(d[1]).padStart(2,'0')}-${String(d[2]).padStart(2,'0')}`;
-        return d.split('T')[0];
-      }).filter(Boolean)
-    )).sort((a, b) => b.localeCompare(a));
 
-    const today = new Date().toISOString().split('T')[0];
-    const yest = new Date(); yest.setDate(yest.getDate() - 1);
-    let cur = dates.includes(today) ? new Date() : dates.includes(yest.toISOString().split('T')[0]) ? yest : null;
-    if (!cur) return 0;
+    const formatLocal = (val) => {
+      if (!val) return null;
+      if (Array.isArray(val)) {
+        return `${val[0]}-${String(val[1]).padStart(2, '0')}-${String(val[2]).padStart(2, '0')}`;
+      }
+      const s = String(val);
+      return s.includes('T') ? s.split('T')[0] : s;
+    };
+
+    const logDates = new Set(logs.map((l) => formatLocal(l.logDate ?? l.date)).filter(Boolean));
+    if (logDates.size === 0) return 0;
+
+    const toDateKey = (d) => {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    };
+
+    const todayDate = new Date();
+    const todayStr = toDateKey(todayDate);
+
+    const yestDate = new Date();
+    yestDate.setDate(yestDate.getDate() - 1);
+    const yestStr = toDateKey(yestDate);
+
+    let curDate = logDates.has(todayStr) ? todayDate : logDates.has(yestStr) ? yestDate : null;
+    if (!curDate) return 0;
+
     let count = 0;
     while (true) {
-      const s = cur.toISOString().split('T')[0];
-      if (dates.includes(s)) { count++; cur.setDate(cur.getDate() - 1); } else break;
+      const k = toDateKey(curDate);
+      if (logDates.has(k)) {
+        count++;
+        curDate.setDate(curDate.getDate() - 1);
+      } else {
+        break;
+      }
     }
     return count;
   }, [logs]);
@@ -336,12 +395,59 @@ export default function BadgesPage() {
       set.add('7-Day Streak');
     }
 
-    // 3. Goal Crusher: Unlocked after 10 activities or completed goal
-    if (logs && logs.length >= 10) {
+    // 3. Goal Crusher: Completed a carbon goal or logged 10+ activities
+    const achievedGoals = (goals || []).filter((g) => g.status === 'ACHIEVED');
+    if ((logs && logs.length >= 10) || achievedGoals.length > 0) {
       set.add('Goal Crusher');
     }
 
-    // 4. Include badges stored in user's celebration history
+    // 4. Emission Target Master: Logged activities on 5+ days in a calendar week
+    if (logs && logs.length > 0) {
+      const dates = Array.from(new Set(
+        logs.map((l) => {
+          const d = l.logDate ?? l.date;
+          if (!d) return null;
+          return Array.isArray(d)
+            ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`
+            : String(d).split('T')[0];
+        }).filter(Boolean)
+      ));
+
+      const weekCounts = {};
+      dates.forEach((dStr) => {
+        const parts = dStr.split('-');
+        if (parts.length === 3) {
+          const dt = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+          const day = dt.getDay();
+          const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+          const monday = new Date(dt.setDate(diff));
+          const wKey = `${monday.getFullYear()}-${monday.getMonth() + 1}-${monday.getDate()}`;
+          weekCounts[wKey] = (weekCounts[wKey] || 0) + 1;
+        }
+      });
+      if (Object.values(weekCounts).some((c) => c >= 5)) {
+        set.add('Emission Target Master');
+      }
+    }
+
+    // 5. Goal-based CO2 reduction badges & Eco Champion
+    if (achievedGoals.length > 0) {
+      let totalSaved = 0;
+      achievedGoals.forEach((g) => {
+        const target = g.target || 0;
+        const current = g.current || 0;
+        const saved = target - current;
+        if (saved > 0) totalSaved += saved;
+      });
+
+      if (totalSaved >= 10) set.add('10 kg Reduction');
+      if (totalSaved >= 25) set.add('25 kg Reduction');
+      if (totalSaved >= 50) set.add('50 kg Reduction');
+      if (totalSaved >= 100) set.add('Forest Guardian');
+      if (achievedGoals.length >= 3) set.add('Eco Champion');
+    }
+
+    // 6. Include badges stored in user's celebration history
     try {
       const userId = user?.id || user?.username || 'guest';
       const stored = localStorage.getItem(`carbontrack_unlocked_badges_${userId}`);
@@ -356,7 +462,7 @@ export default function BadgesPage() {
     }
 
     return Array.from(set);
-  }, [user, logs, streak]);
+  }, [user, logs, goals, streak]);
   const selectedBadge = BADGES.find(b => b.name === selected);
   const isUnlocked = (name) => unlockedBadges.includes(name);
 

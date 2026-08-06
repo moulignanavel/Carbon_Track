@@ -60,7 +60,7 @@ class LeaderboardService {
    * @param {number} limit - Number of top users to return
    * @returns {Promise<Array<LeaderboardUser>>}
    */
-  async getTopUsers(limit = 10) {
+  async getTopUsers(limit = 50) {
     const { data } = await axiosInstance.get(API_ENDPOINTS.LEADERBOARD_COMMUNITY, {
       params: { limit },
     });

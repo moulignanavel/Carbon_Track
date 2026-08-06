@@ -1,4 +1,6 @@
 import { Loader2 } from 'lucide-react';
+import LazyLottie from '@/components/common/LazyLottie';
+import loaderAnimation from '@/assets/lottie/eco-loader.json';
 
 /**
  * Spinner — CarbonTrack Design System
@@ -47,10 +49,14 @@ function BarsSpinner({ size }) {
 }
 
 function DefaultSpinner({ size }) {
+  const pixelSizes = { xs: 20, sm: 28, md: 40, lg: 56, xl: 80 };
+  const px = pixelSizes[size] || 40;
   return (
-    <Loader2
-      className={`${SIZES[size].icon} animate-spin text-green-600 dark:text-green-400`}
-      aria-hidden="true"
+    <LazyLottie
+      animationData={loaderAnimation}
+      height={px}
+      width={px}
+      loop={true}
     />
   );
 }
@@ -86,8 +92,13 @@ export default function Spinner({
   if (fullPage) {
     return (
       <div className="fixed inset-0 flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 gap-4">
-        <DefaultSpinner size="xl" />
-        <p className="text-sm text-slate-500 dark:text-slate-400 animate-pulse">{label}</p>
+        <LazyLottie
+          animationData={loaderAnimation}
+          height={120}
+          width={120}
+          loop={true}
+        />
+        <p className="text-sm font-semibold text-green-700 dark:text-green-400 animate-pulse">{label}</p>
       </div>
     );
   }

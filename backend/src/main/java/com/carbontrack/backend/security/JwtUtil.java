@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.function.Function;
+import com.carbontrack.backend.entity.User;
 
 @Component
 public class JwtUtil {
@@ -23,12 +24,15 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    public String generateToken(String email) {
+    public String generateToken(User user) {
         Date now = new Date();
         Date expiry = new Date(now.getTime() + expiration);
 
         return Jwts.builder()
-                .subject(email)
+                .subject(user.getEmail())
+                .claim("userId", user.getId())
+                .claim("role", user.getRole())
+                .claim("organisationId", user.getOrganisation() != null ? user.getOrganisation().getId() : null)
                 .issuedAt(now)
                 .expiration(expiry)
                 .signWith(getSigningKey())

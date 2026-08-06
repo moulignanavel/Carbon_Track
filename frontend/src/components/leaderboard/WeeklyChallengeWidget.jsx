@@ -87,15 +87,15 @@ export default function WeeklyChallengeWidget({ challenge: initialChallenge }) {
   const xpReward = activeChallenge.xpReward || 150;
 
   return (
-    <div className="bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-950 text-white rounded-3xl p-5 border border-emerald-700/40 shadow-lg relative overflow-hidden">
+    <div className="bg-gradient-to-br from-emerald-900 via-slate-900 to-emerald-950 text-white rounded-2xl p-3.5 border border-emerald-700/40 shadow-md relative overflow-hidden">
       {/* Top Bar */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-1.5">
+          <span className="px-2 py-0.2 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1">
             <Trophy className="w-3 h-3 text-amber-400" />
             {activeChallenge.period ? `${activeChallenge.period.toUpperCase()} CHALLENGE` : 'WEEKLY CHALLENGE'}
           </span>
-          <span className="text-[11px] text-slate-300 flex items-center gap-1">
+          <span className="text-[10px] text-slate-300 flex items-center gap-1">
             <Clock className="w-3 h-3 text-slate-400" />
             Active
           </span>
@@ -104,22 +104,22 @@ export default function WeeklyChallengeWidget({ challenge: initialChallenge }) {
       </div>
 
       {/* Challenge Info */}
-      <h4 className="text-base font-extrabold text-white mb-1 tracking-tight">
+      <h4 className="text-sm font-extrabold text-white mb-0.5 tracking-tight">
         {title}
       </h4>
-      <p className="text-xs text-slate-300 mb-3 line-clamp-2">
+      <p className="text-[11px] text-slate-300 mb-2 line-clamp-2">
         {objective}
       </p>
 
       {/* Progress Bar */}
-      <div className="mb-3">
-        <div className="flex justify-between text-xs font-semibold text-slate-300 mb-1.5">
+      <div className="mb-2">
+        <div className="flex justify-between text-[11px] font-semibold text-slate-300 mb-1">
           <span>Progress</span>
           <span className="text-emerald-300 font-bold">
             {currentProgress.toFixed(1)} / {targetProgress} {activeChallenge.metricType === 'REDUCE_EMISSIONS' ? 'kg CO₂' : 'units'}
           </span>
         </div>
-        <div className="w-full h-3 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
+        <div className="w-full h-2 rounded-full bg-slate-800 border border-slate-700 overflow-hidden">
           <div
             className="h-full bg-gradient-to-r from-emerald-400 to-teal-300 rounded-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]"
             style={{ width: `${pct}%` }}
@@ -128,12 +128,12 @@ export default function WeeklyChallengeWidget({ challenge: initialChallenge }) {
       </div>
 
       {/* Footer / Actions */}
-      <div className="flex items-center justify-between pt-3 border-t border-emerald-800/60">
-        <div className="flex items-center gap-2">
-          <span className="text-base">🏆</span>
+      <div className="flex items-center justify-between pt-2 border-t border-emerald-800/60">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm">🏆</span>
           <div>
-            <p className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Reward</p>
-            <p className="text-xs font-bold text-emerald-300">+{xpReward} XP Reward</p>
+            <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Reward</p>
+            <p className="text-[11px] font-bold text-emerald-300">+{xpReward} XP Reward</p>
           </div>
         </div>
 

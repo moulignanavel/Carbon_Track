@@ -4,6 +4,10 @@
 import { Target, Calendar, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { Card, Badge, CircularProgress, ProgressBar } from '@/components/ui';
 import { formatEmission } from '@/utils/formatters';
+import LazyLottie from '@/components/common/LazyLottie';
+import plantAnimation from '@/assets/lottie/eco-plant.json';
+import successAnimation from '@/assets/lottie/eco-success.json';
+import emptyAnimation from '@/assets/lottie/eco-empty.json';
 
 function GoalItem({ goal }) {
   const pct     = Math.min(100, (goal.current / goal.target) * 100);
@@ -14,15 +18,23 @@ function GoalItem({ goal }) {
   const daysLeft = goal.endDate
     ? Math.ceil((new Date(goal.endDate) - new Date()) / 86_400_000)
     : null;
+  const isCompleted = daysLeft !== null && daysLeft <= 0;
+  const isAchieved = isCompleted && !isOver;
 
   return (
     <div className="flex items-start gap-4 py-3 border-b border-slate-100 dark:border-slate-800 last:border-0">
-      {/* Circular meter */}
-      <CircularProgress value={pct} size={56} strokeWidth={5} color={color}>
-        <span className="text-[10px] font-bold text-slate-700 dark:text-slate-200">
-          {Math.round(pct)}%
-        </span>
-      </CircularProgress>
+      {/* Circular meter or Growing Tree Lottie animation once for achieved goals */}
+      {isAchieved ? (
+        <div className="w-14 h-14 shrink-0 flex items-center justify-center bg-green-50 dark:bg-green-950/30 rounded-xl overflow-hidden" title="Goal Achieved!">
+          <LazyLottie animationData={successAnimation} loop={false} autoplay={true} height={54} width={54} />
+        </div>
+      ) : (
+        <CircularProgress value={pct} size={56} strokeWidth={5} color={color}>
+          <span className="text-[10px] font-bold text-slate-700 dark:text-slate-200">
+            {Math.round(pct)}%
+          </span>
+        </CircularProgress>
+      )}
 
       {/* Detail */}
       <div className="flex-1 min-w-0">
@@ -83,14 +95,20 @@ export default function GoalProgress({ goals, isLoading }) {
     ? Math.max(0, primaryGoal.target - primaryGoal.current)
     : 0;
 
+  const primaryDaysLeft = primaryGoal?.endDate
+    ? Math.ceil((new Date(primaryGoal.endDate) - new Date()) / 86_400_000)
+    : null;
+  const isPrimaryCompleted = primaryDaysLeft !== null && primaryDaysLeft <= 0;
+  const isPrimaryAchieved = isPrimaryCompleted && primaryGoal?.current <= primaryGoal?.target;
+
   if (!goals || goals.length === 0) {
     return (
       <Card>
         <Card.Header title="Goal Progress" icon={Target} />
-        <div className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">
-          <Target className="h-8 w-8 mx-auto mb-2 opacity-30" />
-          <p>No goals yet.</p>
-          <p className="text-xs mt-1">Create a goal on the Goals page to start tracking.</p>
+        <div className="py-6 flex flex-col items-center justify-center text-center text-sm text-slate-400 dark:text-slate-500">
+          <LazyLottie animationData={emptyAnimation} height={80} width={80} loop={true} />
+          <p className="mt-2">No goals yet.</p>
+          <p className="text-xs mt-1 text-slate-500">Create a goal on the Goals page to start tracking.</p>
         </div>
       </Card>
     );
@@ -120,16 +138,22 @@ export default function GoalProgress({ goals, isLoading }) {
                 {formatEmission(remaining)}
               </p>
             </div>
-            <CircularProgress
-              value={(primaryGoal.current / primaryGoal.target) * 100}
-              size={72}
-              strokeWidth={7}
-              color={primaryGoal.current >= primaryGoal.target ? 'red' : 'green'}
-            >
-              <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                {Math.round((primaryGoal.current / primaryGoal.target) * 100)}%
-              </span>
-            </CircularProgress>
+            {isPrimaryAchieved ? (
+              <div className="w-[72px] h-[72px] shrink-0 flex items-center justify-center bg-green-100/50 dark:bg-green-950/50 rounded-full overflow-hidden" title="Goal Achieved!">
+                <LazyLottie animationData={successAnimation} loop={false} autoplay={true} height={68} width={68} />
+              </div>
+            ) : (
+              <CircularProgress
+                value={(primaryGoal.current / primaryGoal.target) * 100}
+                size={72}
+                strokeWidth={7}
+                color={primaryGoal.current >= primaryGoal.target ? 'red' : 'green'}
+              >
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {Math.round((primaryGoal.current / primaryGoal.target) * 100)}%
+                </span>
+              </CircularProgress>
+            )}
           </div>
           <ProgressBar
             value={primaryGoal.current}

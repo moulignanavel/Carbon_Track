@@ -1,0 +1,14 @@
+ALTER TABLE organisations ADD COLUMN code VARCHAR(50);
+ALTER TABLE organisations ADD COLUMN organisation_type VARCHAR(50);
+ALTER TABLE organisations ADD COLUMN industry VARCHAR(100);
+ALTER TABLE organisations ADD COLUMN official_email VARCHAR(100);
+ALTER TABLE organisations ADD COLUMN contact_number VARCHAR(50);
+ALTER TABLE organisations ADD COLUMN address VARCHAR(255);
+ALTER TABLE organisations ADD COLUMN city VARCHAR(100);
+ALTER TABLE organisations ADD COLUMN state VARCHAR(100);
+ALTER TABLE organisations ADD COLUMN country VARCHAR(100);
+CREATE UNIQUE INDEX uk_organisations_code ON organisations(code);
+CREATE UNIQUE INDEX uk_organisations_official_email ON organisations(official_email);
+ALTER TABLE users ADD COLUMN full_name VARCHAR(100) NOT NULL DEFAULT 'CarbonTrack User';
+ALTER TABLE users ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE';
+ALTER TABLE users ADD COLUMN job_title VARCHAR(100);

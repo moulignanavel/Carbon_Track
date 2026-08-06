@@ -67,12 +67,17 @@ export async function loginUser(credentials) {
  * @returns {Promise<AuthResponse>}
  */
 export async function registerUser(payload) {
-  const { data } = await axiosInstance.post('/auth/register', {
+  const { data } = await axiosInstance.post('/auth/register/user', {
+    fullName: payload.fullName,
     username: payload.username,
     email:    payload.email,
     password: payload.password,
-    ...(payload.orgId != null ? { orgId: payload.orgId } : {}),
   });
+  return data;
+}
+
+export async function registerOrganisation(payload) {
+  const { data } = await axiosInstance.post('/auth/register/organisation', payload);
   return data;
 }
 

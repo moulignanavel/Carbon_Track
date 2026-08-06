@@ -1,19 +1,21 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Zap, Target, BarChart2, Trophy, Settings } from 'lucide-react';
-
-const ITEMS = [
-  { to: '/dashboard',  label: 'Home',       icon: LayoutDashboard },
-  { to: '/activities', label: 'Log',        icon: Zap },
-  { to: '/goals',      label: 'Goals',      icon: Target },
-  { to: '/community',  label: 'Community',  icon: Trophy },
-  { to: '/settings',   label: 'Settings',   icon: Settings },
-];
+import { useTranslation } from 'react-i18next';
+import { LayoutDashboard, Zap, Target, Trophy, Settings } from 'lucide-react';
 
 /**
  * BottomNav — mobile-only tab bar (hidden on md+)
  * Sticky at the bottom of the viewport.
  */
 export default function BottomNav() {
+  const { t } = useTranslation();
+  const ITEMS = [
+    { to: '/dashboard', label: t('nav.home'), icon: LayoutDashboard },
+    { to: '/activities', label: t('nav.log'), icon: Zap },
+    { to: '/goals', label: t('nav.goals'), icon: Target },
+    { to: '/community', label: t('nav.community'), icon: Trophy },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
+  ];
+
   return (
     <nav
       className="md:hidden fixed bottom-0 inset-x-0 z-30 flex items-center justify-around bg-[#eaf0e6]/95 dark:bg-slate-900/90 backdrop-blur-md border-t border-[#cdd8c9] dark:border-slate-800 safe-area-inset-bottom px-1"

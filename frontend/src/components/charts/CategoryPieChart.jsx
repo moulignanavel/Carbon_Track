@@ -68,6 +68,7 @@ export default function CategoryPieChart({
           dataKey="value"
           nameKey="name"
           stroke="none"
+          aria-label="Monthly carbon emissions by category"
         >
           {enriched.map((entry, i) => (
             <Cell key={i} fill={entry.fill} />

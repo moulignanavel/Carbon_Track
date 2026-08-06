@@ -61,6 +61,10 @@ public class GoalEvaluationService {
         LocalDate today = LocalDate.now();
 
         for (Goal g : allGoals) {
+            // Organisation goals are manually maintained by ORG_ADMIN users and
+            // aggregate organisation performance. Do not overwrite their saved
+            // progress with the administrator's personal activity total.
+            if (isOrganisationGoal(g)) continue;
             double currentKg = computeCurrentKg(g);
             g.setCurrentKg(currentKg);
 
@@ -176,6 +180,7 @@ public class GoalEvaluationService {
         LocalDate today = LocalDate.now();
         for (Goal g : goals) {
             try {
+                if (isOrganisationGoal(g)) continue;
                 double currentKg = computeCurrentKg(g);
                 g.setCurrentKg(currentKg);
 
@@ -222,5 +227,12 @@ public class GoalEvaluationService {
                 log.error("Error evaluating goal id {}: {}", g.getId(), e.getMessage());
             }
         }
+    }
+
+    private boolean isOrganisationGoal(Goal goal) {
+        if (Boolean.TRUE.equals(goal.getOrganisationManaged())) return true;
+        return userRepository.findById(goal.getUserId())
+                .map(user -> "ORG_ADMIN".equalsIgnoreCase(user.getRole()))
+                .orElse(false);
     }
 }

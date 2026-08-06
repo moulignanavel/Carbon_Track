@@ -48,6 +48,31 @@ class AdminService {
     const response = await axiosInstance.put(`/admin/emission-factors/${id}`, { kgCo2ePerUnit });
     return response.data;
   }
+
+  async getOrganisations(search = '') {
+    const response = await axiosInstance.get('/admin/organisations', { params: { search } });
+    return response.data;
+  }
+
+  async createOrganisation(name) {
+    const response = await axiosInstance.post('/admin/organisations', { name });
+    return response.data;
+  }
+
+  async updateOrganisation(id, name) {
+    const response = await axiosInstance.put(`/admin/organisations/${id}`, { name });
+    return response.data;
+  }
+
+  async setOrganisationActive(id, active) {
+    const response = await axiosInstance.patch(`/admin/organisations/${id}/status`, { active });
+    return response.data;
+  }
+
+  async getOrganisationMembers(id) {
+    const response = await axiosInstance.get(`/admin/organisations/${id}/members`);
+    return response.data;
+  }
 }
 
 export default new AdminService();

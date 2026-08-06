@@ -5,7 +5,7 @@
  */
 
 .recommendations-page {
-  padding: 2.5rem 1.5rem;
+  padding: 1.25rem 1.5rem;
   background-color: transparent;
   min-height: calc(100vh - 64px);
   color: #0f172a;
@@ -17,17 +17,17 @@
 
 .recommendations-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 1.25rem;
 }
 
 .recommendations-header h1 {
-  font-size: 2.75rem;
+  font-size: 2.1rem;
   font-weight: 800;
   color: #1b4332;
   background: linear-gradient(135deg, #1b4332 0%, #00bc7d 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
   letter-spacing: -0.02em;
 }
 
@@ -39,7 +39,7 @@
 }
 
 .recommendations-header p {
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   color: #64748b;
   max-width: 600px;
   margin: 0 auto;
@@ -84,8 +84,8 @@
 
 .recommendations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
   max-width: 1240px;
   margin: 0 auto;
 }
@@ -94,20 +94,20 @@
 .recommendation-card {
   background: #ffffff;
   border: 1px solid #d8e5d4;
-  border-radius: 20px;
-  padding: 2.25rem 2rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-radius: 16px;
+  padding: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.6rem;
   position: relative;
   overflow: hidden;
 }
 
 .recommendation-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.09);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
   border-color: #5a9d68;
 }
 
@@ -116,7 +116,7 @@
   background: rgba(15, 23, 42, 0.65);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
 }
 
 .dark .recommendation-card:hover {
@@ -126,15 +126,15 @@
 
 /* ── Icon Box ────────────────────────────────────────────────── */
 .rec-icon-box {
-  width: 60px;
-  height: 60px;
+  width: 44px;
+  height: 44px;
   background: #eef6ec;
-  border-radius: 16px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid #d8e5d4;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.25rem;
 }
 
 .dark .rec-icon-box {
@@ -143,7 +143,7 @@
 }
 
 .recommendation-card h3 {
-  font-size: 1.4rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -155,10 +155,10 @@
 }
 
 .recommendation-card p {
-  font-size: 0.95rem;
+  font-size: 0.875rem;
   color: #475569;
   margin: 0;
-  line-height: 1.65;
+  line-height: 1.5;
   flex: 1;
 }
 
@@ -168,20 +168,20 @@
 
 .rec-meta {
   display: flex;
-  gap: 0.75rem;
+  gap: 0.5rem;
   align-items: center;
-  margin-top: 0.75rem;
+  margin-top: 0.35rem;
 }
 
 .impact {
-  padding: 0.45rem 1rem;
+  padding: 0.3rem 0.7rem;
   background: #e3f0e8;
   color: #1E4432;
   border: 1px solid #c5dfcd;
-  border-radius: 8px;
-  font-size: 0.775rem;
+  border-radius: 6px;
+  font-size: 0.725rem;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
 }
 
@@ -192,11 +192,11 @@
 }
 
 .difficulty {
-  padding: 0.45rem 1rem;
+  padding: 0.3rem 0.7rem;
   background: #f1f5f9;
   color: #475569;
-  border-radius: 8px;
-  font-size: 0.775rem;
+  border-radius: 6px;
+  font-size: 0.725rem;
   font-weight: 500;
   border: 1px solid #e2e8f0;
 }
@@ -208,25 +208,25 @@
 }
 
 .rec-action-btn {
-  margin-top: 1rem;
-  padding: 0.875rem 1.5rem;
+  margin-top: 0.5rem;
+  padding: 0.55rem 1rem;
   background: #00bc7d;
   color: #ffffff;
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   cursor: pointer;
   width: 100%;
   text-align: center;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 15px rgba(0, 188, 125, 0.25);
+  box-shadow: 0 3px 12px rgba(0, 188, 125, 0.2);
 }
 
 .rec-action-btn:hover {
   background: #00a86e;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 22px rgba(0, 188, 125, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 188, 125, 0.3);
 }
 
 .rec-action-btn:active {
@@ -234,9 +234,9 @@
 }
 
 @media (max-width: 768px) {
-  .recommendations-page { padding: 2rem 1rem; }
-  .recommendations-header h1 { font-size: 2.2rem; }
-  .recommendations-grid { gap: 1.5rem; }
+  .recommendations-page { padding: 1rem 0.75rem; }
+  .recommendations-header h1 { font-size: 1.75rem; }
+  .recommendations-grid { gap: 0.75rem; }
 }
 
 /* ── Modal Overlay & Dialog ─────────────────────────────────── */

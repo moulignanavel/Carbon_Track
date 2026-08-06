@@ -27,7 +27,6 @@ import NotFound        from '@/components/errors/NotFound';
 import LandingPage     from '@/pages/landing/LandingPage';
 
 /* ── Lazy page bundles ───────────────────────────────────────── */
-const LoginPage          = lazy(() => import('@/pages/auth/LoginPage'));
 const RegisterPage       = lazy(() => import('@/pages/auth/RegisterPage'));
 const ForgotPasswordPage = lazy(() => import('@/pages/auth/ForgotPasswordPage'));
 const ResetPasswordPage  = lazy(() => import('@/pages/auth/ResetPasswordPage'));
@@ -39,10 +38,10 @@ const BadgesPage         = lazy(() => import('@/pages/badges/BadgesPage'));
 const ReportsPage        = lazy(() => import('@/pages/reports/ReportsPage'));
 const RecommendationsPage = lazy(() => import('@/pages/recommendations/RecommendationsPage'));
 const CommunityLeaderboardPage = lazy(() => import('@/pages/community/CommunityLeaderboardPage'));
-const OrganisationDashboardPage = lazy(() => import('@/pages/admin/OrganisationDashboardPage'));
+const OrganisationLayout = lazy(() => import('@/components/organisation/OrganisationLayout'));
+const OrganisationPortalPage = lazy(() => import('@/pages/organisation/OrganisationPortalPage'));
 const SettingsPage       = lazy(() => import('@/pages/settings/SettingsPage'));
 const AdminPage          = lazy(() => import('@/pages/admin/AdminPage'));
-const AdminLoginPage     = lazy(() => import('@/pages/auth/AdminLoginPage'));
 
 function PageFallback() {
   return <Spinner fullPage label="Loading page…" />;
@@ -55,9 +54,8 @@ export default function AppRouter() {
         {/* Root */}
         <Route path="/" element={<LandingPage />} />
 
-        {/* Dedicated Admin Login Routes */}
-        <Route path="/admin-login" element={<AdminLoginPage />} />
-        <Route path="/admin/login" element={<AdminLoginPage />} />
+        <Route path="/admin-login" element={<Navigate to="/login" replace />} />
+        <Route path="/admin/login" element={<Navigate to="/login" replace />} />
 
         {/* ── Public-only auth routes ───────────────────────── */}
         <Route
@@ -81,15 +79,15 @@ export default function AppRouter() {
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard"       element={<DashboardPage />} />
-          <Route path="/activities"      element={<ActivitiesPage />} />
-          <Route path="/goals"           element={<GoalsPage />} />
-          <Route path="/challenges"      element={<ChallengesPage />} />
-          <Route path="/badges"          element={<BadgesPage />} />
-          <Route path="/reports"         element={<ReportsPage />} />
-          <Route path="/recommendations" element={<RecommendationsPage />} />
-          <Route path="/community"       element={<CommunityLeaderboardPage />} />
-          <Route path="/settings"        element={<SettingsPage />} />
+          <Route path="/dashboard" element={<ProtectedRoute requiredRole="USER"><DashboardPage /></ProtectedRoute>} />
+          <Route path="/activities" element={<ProtectedRoute requiredRole="USER"><ActivitiesPage /></ProtectedRoute>} />
+          <Route path="/goals" element={<ProtectedRoute requiredRole="USER"><GoalsPage /></ProtectedRoute>} />
+          <Route path="/challenges" element={<ProtectedRoute requiredRole="USER"><ChallengesPage /></ProtectedRoute>} />
+          <Route path="/badges" element={<ProtectedRoute requiredRole="USER"><BadgesPage /></ProtectedRoute>} />
+          <Route path="/reports" element={<ProtectedRoute requiredRole="USER"><ReportsPage /></ProtectedRoute>} />
+          <Route path="/recommendations" element={<ProtectedRoute requiredRole="USER"><RecommendationsPage /></ProtectedRoute>} />
+          <Route path="/community" element={<ProtectedRoute requiredRole="USER"><CommunityLeaderboardPage /></ProtectedRoute>} />
+          <Route path="/settings" element={<SettingsPage />} />
 
           <Route
             path="/admin"
@@ -100,14 +98,26 @@ export default function AppRouter() {
             }
           />
 
-          <Route
-            path="/organisation"
-            element={
-              <ProtectedRoute requiredRole="ADMIN">
-                <OrganisationDashboardPage />
-              </ProtectedRoute>
-            }
-          />
+        </Route>
+
+        <Route
+          path="/organisation"
+          element={<ProtectedRoute requiredRole="ORG_ADMIN"><OrganisationLayout /></ProtectedRoute>}
+        >
+          <Route index element={<OrganisationPortalPage />} />
+          <Route path="dashboard" element={<OrganisationPortalPage />} />
+          <Route path="analytics" element={<OrganisationPortalPage />} />
+          <Route path="employees" element={<OrganisationPortalPage />} />
+          <Route path="monthly-trends" element={<OrganisationPortalPage />} />
+          <Route path="departments" element={<OrganisationPortalPage />} />
+          <Route path="goals" element={<OrganisationPortalPage />} />
+          <Route path="top-contributors" element={<OrganisationPortalPage />} />
+          <Route path="lowest-footprint" element={<OrganisationPortalPage />} />
+          <Route path="reports" element={<OrganisationPortalPage />} />
+          <Route path="activity-logs" element={<OrganisationPortalPage />} />
+          <Route path="profile" element={<OrganisationPortalPage />} />
+          <Route path="my-profile" element={<OrganisationPortalPage />} />
+          <Route path="change-password" element={<Navigate to="/organisation/my-profile" replace />} />
         </Route>
 
         {/* 404 */}
