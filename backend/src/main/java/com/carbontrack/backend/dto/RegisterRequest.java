@@ -21,6 +21,8 @@ public class RegisterRequest {
     @Size(min = 8, message = "Password must be at least 8 characters")
     private String password;
 
+    private Long organisationId;
+
     public String getFullName() { return fullName; }
     public void setFullName(String fullName) { this.fullName = fullName; }
     public String getUsername() { return username; }
@@ -32,4 +34,6 @@ public class RegisterRequest {
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
 
+    public Long getOrganisationId() { return organisationId; }
+    public void setOrganisationId(Long organisationId) { this.organisationId = organisationId; }
 }

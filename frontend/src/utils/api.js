@@ -1,3 +1,5 @@
+import { getToken, saveToken, clearAuth } from '@/utils/storage';
+
 const BASE_URL = 'http://localhost:8080';
 
 // Helper to get headers with Bearer Token if it exists
@@ -5,7 +7,7 @@ const getHeaders = () => {
   const headers = {
     'Content-Type': 'application/json',
   };
-  const token = localStorage.getItem('token');
+  const token = getToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -70,7 +72,7 @@ export const api = {
     });
     // The response returned has accessToken
     if (data && data.accessToken) {
-      localStorage.setItem('token', data.accessToken);
+      saveToken(data.accessToken, true);
     }
     return data;
   },
@@ -81,17 +83,17 @@ export const api = {
       body: JSON.stringify({ email, password }),
     });
     if (data && data.accessToken) {
-      localStorage.setItem('token', data.accessToken);
+      saveToken(data.accessToken, true);
     }
     return data;
   },
 
   logout: () => {
-    localStorage.removeItem('token');
+    clearAuth();
   },
 
   isAuthenticated: () => {
-    return !!localStorage.getItem('token');
+    return !!getToken();
   },
 
   // User Profile
@@ -101,12 +103,14 @@ export const api = {
     });
   },
 
-  updateProfile: async (username, email, preferredUnit, goalVisibility) => {
+  updateProfile: async (username, email, preferredUnit, goalVisibility, isAnonymous, anonymousName) => {
     return await request('/api/users/profile', {
       method: 'PUT',
       body: JSON.stringify({
         username,
         email,
+        isAnonymous,
+        anonymousName,
         sustainabilityPreferences: {
           preferredUnit,
           goalVisibility,

@@ -1,10 +1,35 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, Lock, Trophy } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { DotLottieReact } from '@lottiefiles/dotlottie-react';
 import { useActivity } from '@/context/ActivityContext';
 import { useGoals } from '@/context/GoalContext';
 import { useCelebration } from '@/context/CelebrationContext';
+
+const BADGE_TRANSLATION_MAP = {
+  'Eco Pioneer':            { nameKey: 'badgesPage.items.ecoPioneer.name',     descKey: 'badgesPage.items.ecoPioneer.desc' },
+  'Goal Crusher':           { nameKey: 'badgesPage.items.goalCrusher.name',    descKey: 'badgesPage.items.goalCrusher.desc' },
+  '7-Day Streak':           { nameKey: 'badgesPage.items.streak7Day.name',     descKey: 'badgesPage.items.streak7Day.desc' },
+  '10 kg Reduction':        { nameKey: 'badgesPage.items.reduction10kg.name',  descKey: 'badgesPage.items.reduction10kg.desc' },
+  'Eco Warrior':            { nameKey: 'badgesPage.items.ecoWarrior.name',     descKey: 'badgesPage.items.ecoWarrior.desc' },
+  '25 kg Reduction':        { nameKey: 'badgesPage.items.reduction25kg.name',  descKey: 'badgesPage.items.reduction25kg.desc' },
+  'Emission Target Master': { nameKey: 'badgesPage.items.emissionMaster.name', descKey: 'badgesPage.items.emissionMaster.desc' },
+  '50 kg Reduction':        { nameKey: 'badgesPage.items.reduction50kg.name',  descKey: 'badgesPage.items.reduction50kg.desc' },
+  'Top Saver':              { nameKey: 'badgesPage.items.topSaver.name',       descKey: 'badgesPage.items.topSaver.desc' },
+  'Eco Champion':           { nameKey: 'badgesPage.items.ecoChampion.name',    descKey: 'badgesPage.items.ecoChampion.desc' },
+  'Earth Savior':           { nameKey: 'badgesPage.items.earthSavior.name',    descKey: 'badgesPage.items.earthSavior.desc' },
+  'Forest Guardian':        { nameKey: 'badgesPage.items.forestGuardian.name', descKey: 'badgesPage.items.forestGuardian.desc' },
+  'Community Leader':       { nameKey: 'badgesPage.items.communityLeader.name', descKey: 'badgesPage.items.communityLeader.desc' },
+};
+
+function getBadgeDetails(badge, t) {
+  const map = BADGE_TRANSLATION_MAP[badge.name];
+  return {
+    name: map && t ? t(map.nameKey) : badge.name,
+    description: map && t ? t(map.descKey) : badge.description,
+  };
+}
 
 /* ─── Badge data ─────────────────────────────────────────────────────────── */
 export const BADGES = [
@@ -315,6 +340,7 @@ export function BadgeCoin({ badge, isUnlocked, size = 'md', isDark, streak = 0 }
 
 /* ─── Page ───────────────────────────────────────────────────────────────── */
 export default function BadgesPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { triggerCelebration } = useCelebration();
   const [selected, setSelected] = useState(null);
@@ -383,36 +409,21 @@ export default function BadgesPage() {
   }, [logs]);
 
   const unlockedBadges = useMemo(() => {
-    const set = new Set(user?.badges || []);
-
-    // 1. Eco Pioneer: Unlocked when user logs their 1st activity
-    if (logs && logs.length > 0) {
-      set.add('Eco Pioneer');
-    }
-
-    // 2. 7-Day Streak: Unlocked when logging streak reaches 7 days
-    if (streak >= 7) {
-      set.add('7-Day Streak');
-    }
-
-    // 3. Goal Crusher: Completed a carbon goal or logged 10+ activities
-    const achievedGoals = (goals || []).filter((g) => g.status === 'ACHIEVED');
-    if ((logs && logs.length >= 10) || achievedGoals.length > 0) {
-      set.add('Goal Crusher');
-    }
-
-    // 4. Emission Target Master: Logged activities on 5+ days in a calendar week
+    const set = new Set();
+    if (logs && logs.length > 0) set.add('Eco Pioneer');
+    if (streak >= 7) set.add('7-Day Streak');
+    const achievedGoals = (goals || []).filter(
+      (g) => String(g.status ?? '').toUpperCase() === 'ACHIEVED' || (g.target > 0 && g.current <= g.target && new Date(g.endDate) < new Date())
+    );
+    if ((logs && logs.length >= 10) || achievedGoals.length > 0) set.add('Goal Crusher');
     if (logs && logs.length > 0) {
       const dates = Array.from(new Set(
         logs.map((l) => {
           const d = l.logDate ?? l.date;
           if (!d) return null;
-          return Array.isArray(d)
-            ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`
-            : String(d).split('T')[0];
+          return Array.isArray(d) ? `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}` : String(d).split('T')[0];
         }).filter(Boolean)
       ));
-
       const weekCounts = {};
       dates.forEach((dStr) => {
         const parts = dStr.split('-');
@@ -425,12 +436,8 @@ export default function BadgesPage() {
           weekCounts[wKey] = (weekCounts[wKey] || 0) + 1;
         }
       });
-      if (Object.values(weekCounts).some((c) => c >= 5)) {
-        set.add('Emission Target Master');
-      }
+      if (Object.values(weekCounts).some((c) => c >= 5)) set.add('Emission Target Master');
     }
-
-    // 5. Goal-based CO2 reduction badges & Eco Champion
     if (achievedGoals.length > 0) {
       let totalSaved = 0;
       achievedGoals.forEach((g) => {
@@ -439,162 +446,120 @@ export default function BadgesPage() {
         const saved = target - current;
         if (saved > 0) totalSaved += saved;
       });
-
       if (totalSaved >= 10) set.add('10 kg Reduction');
       if (totalSaved >= 25) set.add('25 kg Reduction');
       if (totalSaved >= 50) set.add('50 kg Reduction');
       if (totalSaved >= 100) set.add('Forest Guardian');
       if (achievedGoals.length >= 3) set.add('Eco Champion');
     }
-
-    // 6. Include badges stored in user's celebration history
     try {
       const userId = user?.id || user?.username || 'guest';
       const stored = localStorage.getItem(`carbontrack_unlocked_badges_${userId}`);
       if (stored) {
         const list = JSON.parse(stored);
-        if (Array.isArray(list)) {
-          list.forEach((b) => set.add(b));
-        }
+        if (Array.isArray(list)) list.forEach((b) => set.add(b));
       }
-    } catch (e) {
-      /* ignore storage errors */
-    }
-
+    } catch (e) {}
     return Array.from(set);
   }, [user, logs, goals, streak]);
+
   const selectedBadge = BADGES.find(b => b.name === selected);
   const isUnlocked = (name) => unlockedBadges.includes(name);
+  const selectedDetails = selectedBadge ? getBadgeDetails(selectedBadge, t) : null;
 
   return (
     <div className="h-full w-full flex flex-col overflow-y-auto px-4 sm:px-8 pt-6 pb-16 animate-in fade-in duration-300">
-      {selected && selectedBadge ? (
-        /* ── SHOWCASE ── */
+      {selected && selectedBadge && selectedDetails ? (
         <div className="flex flex-col items-center animate-in zoom-in-95 duration-400">
           <div className="self-start mb-8">
             <button
               onClick={() => setSelected(null)}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-full
-                bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10
-                border border-slate-200 dark:border-white/8
-                text-slate-700 dark:text-white font-semibold text-sm transition-all cursor-pointer"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-200 dark:border-white/8 text-slate-700 dark:text-white font-semibold text-sm transition-all cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" /> Back to Collection
+              <ChevronLeft className="w-4 h-4" /> {t('badgesPage.backToCollection')}
             </button>
           </div>
-
           <div className="relative flex items-center justify-center mb-10 mt-4">
             <div className="absolute w-[340px] h-[340px] rounded-full border border-dashed border-slate-300 dark:border-white/10 animate-[spin_30s_linear_infinite]" />
             <div className="absolute w-[288px] h-[288px] rounded-full border border-dashed border-slate-200 dark:border-white/5 animate-[spin_20s_linear_infinite_reverse]" />
             <BadgeCoin badge={selectedBadge} isUnlocked={isUnlocked(selectedBadge.name)} size="lg" isDark={isDark} streak={streak} />
           </div>
-
           {isUnlocked(selectedBadge.name) ? (
             <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/25 dark:text-emerald-400 text-xs uppercase tracking-widest font-extrabold mb-4">
               <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping" />
-              Unlocked
+              {t('badgesPage.unlocked')}
             </div>
           ) : (
             <div className="flex items-center gap-2 px-5 py-2 rounded-full bg-slate-100 border border-slate-300 text-slate-500 dark:bg-slate-800/60 dark:border-white/6 dark:text-slate-400 text-xs uppercase tracking-widest font-bold mb-4">
-              <Lock className="w-3 h-3" /> Locked
+              <Lock className="w-3 h-3" /> {t('badgesPage.locked')}
             </div>
           )}
-
-          <h2 className="text-4xl sm:text-5xl font-black text-slate-800 dark:text-white tracking-tight mb-3">{selectedBadge.name}</h2>
+          <h2 className="text-4xl sm:text-5xl font-black text-slate-800 dark:text-white tracking-tight mb-3">{selectedDetails.name}</h2>
           <p className="text-slate-500 dark:text-slate-400 text-base max-w-md text-center leading-relaxed mb-10">
-            {isUnlocked(selectedBadge.name) ? selectedBadge.description : 'Keep logging activities and slashing emissions to unlock this rare trophy.'}
+            {isUnlocked(selectedBadge.name) ? selectedDetails.description : t('badgesPage.keepLoggingText')}
           </p>
-
           {selectedBadge.name === '7-Day Streak' && (
-            <div className="text-sm font-bold text-orange-500 dark:text-orange-400 mb-6">Streak Progress: {streak} / 7 days</div>
+            <div className="text-sm font-bold text-orange-500 dark:text-orange-400 mb-6">{t('badgesPage.streakProgress', { streak })}</div>
           )}
-
           {isUnlocked(selectedBadge.name) && (
             <button
               onClick={() => triggerCelebration({
                 title: '🎉 Trophy Showcase',
-                badgeName: selectedBadge.name,
+                badgeName: selectedDetails.name,
                 emoji: selectedBadge.emoji || '🏆',
-                description: selectedBadge.description,
+                description: selectedDetails.description,
                 subtitle: 'Celebrated sustainability milestone on CarbonTrack!',
                 force: true
               })}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-xl shadow-emerald-600/25 transition-all cursor-pointer hover:scale-105 active:scale-95 mb-6"
             >
-              Celebrate Achievement
+              {t('badgesPage.celebrateAchievement')}
             </button>
           )}
         </div>
       ) : (
-        /* ── GALLERY ── */
         <div className="w-full max-w-7xl mx-auto">
-          {/* Header */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight flex items-center gap-2.5">
                 <Trophy className="w-6 h-6 text-emerald-500 dark:text-emerald-400" />
-                {user?.username ? `${user.username}'s` : 'Your'} Trophy Room
+                {user?.username ? t('badgesPage.trophyRoom', { user: user.username }) : t('badgesPage.yourTrophyRoom')}
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-xl">
-                Complete eco-friendly actions and climb the leaderboard to unlock these achievements.
-              </p>
+              <p className="text-slate-500 dark:text-slate-400 text-sm mt-1 max-w-xl">{t('badgesPage.trophySubtitle')}</p>
             </div>
             <div className="flex-shrink-0 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-white/6 rounded-2xl px-5 py-3 text-right shadow-sm">
               <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
                 {unlockedBadges.length}
                 <span className="text-slate-400 dark:text-slate-600 font-medium text-lg"> / {BADGES.length}</span>
               </div>
-              <div className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold mt-0.5">Unlocked</div>
+              <div className="text-[10px] uppercase tracking-widest text-slate-400 dark:text-slate-500 font-bold mt-0.5">{t('badgesPage.unlocked')}</div>
             </div>
           </div>
-
-          {/* Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {BADGES.map((badge) => {
               const unlocked = isUnlocked(badge.name);
+              const details = getBadgeDetails(badge, t);
               return (
                 <button
                   key={badge.name}
                   onClick={() => setSelected(badge.name)}
-                  className={`group relative flex flex-col items-center pt-6 pb-5 px-3 rounded-2xl border transition-all duration-300 text-left overflow-hidden cursor-pointer
-                    ${unlocked
-                      ? 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-white/8 hover:border-slate-300 dark:hover:border-white/18 hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-xl shadow-sm'
-                      : 'bg-slate-50/80 dark:bg-slate-950/50 border-slate-200/70 dark:border-white/4 hover:bg-slate-50 dark:hover:bg-slate-900/50'
-                    }`}
+                  className={`group relative flex flex-col items-center pt-6 pb-5 px-3 rounded-2xl border transition-all duration-300 text-left overflow-hidden cursor-pointer ${unlocked ? 'bg-white dark:bg-slate-900/70 border-slate-200 dark:border-white/8 hover:border-slate-300 dark:hover:border-white/18 hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-xl shadow-sm' : 'bg-slate-50/80 dark:bg-slate-950/50 border-slate-200/70 dark:border-white/4 hover:bg-slate-50 dark:hover:bg-slate-900/50'}`}
                 >
-                  {/* Shine sweep on unlocked */}
-                  {unlocked && (
-                    <div className="absolute inset-0 before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 dark:before:via-white/8 before:to-transparent before:-translate-x-full group-hover:before:translate-x-full before:transition-transform before:duration-[800ms] pointer-events-none" />
-                  )}
-
-                  {/* Coin */}
-                  <div className="mb-4">
-                    <BadgeCoin badge={badge} isUnlocked={unlocked} size="md" isDark={isDark} />
-                  </div>
-
-                  {/* Name */}
-                  <h3 className={`font-bold text-sm text-center leading-snug mb-1.5 transition-colors
-                    ${unlocked
-                      ? 'text-slate-800 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300'
-                      : 'text-slate-500 dark:text-slate-500'
-                    }`}>
-                    {badge.name}
+                  {unlocked && <div className="absolute inset-0 before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-white/25 dark:before:via-white/8 before:to-transparent before:-translate-x-full group-hover:before:translate-x-full before:transition-transform before:duration-[800ms] pointer-events-none" />}
+                  <div className="mb-4"><BadgeCoin badge={badge} isUnlocked={unlocked} size="md" isDark={isDark} /></div>
+                  <h3 className={`font-bold text-sm text-center leading-snug mb-1.5 transition-colors ${unlocked ? 'text-slate-800 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-300' : 'text-slate-500 dark:text-slate-500'}`}>
+                    {details.name}
                   </h3>
-
-                  {/* Description — always visible, smaller */}
-                  <p className={`text-[11px] text-center leading-snug mb-4 px-1 line-clamp-2 min-h-[2.5rem]
-                    ${unlocked ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-600'}`}>
-                    {badge.description}
+                  <p className={`text-[11px] text-center leading-snug mb-4 px-1 line-clamp-2 min-h-[2.5rem] ${unlocked ? 'text-slate-500 dark:text-slate-400' : 'text-slate-400 dark:text-slate-600'}`}>
+                    {details.description}
                   </p>
-
-                  {/* Status pill */}
                   {unlocked ? (
                     <span className={`px-3 py-1 rounded-full border text-[10px] uppercase tracking-widest font-black ${isDark ? badge.pillDark : badge.pillLight}`}>
-                      UNLOCKED
+                      {t('badgesPage.unlocked')}
                     </span>
                   ) : (
                     <span className="px-3 py-1 rounded-full border border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-600 text-[10px] uppercase tracking-widest font-black">
-                      LOCKED
+                      {t('badgesPage.locked')}
                     </span>
                   )}
                 </button>

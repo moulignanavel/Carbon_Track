@@ -26,4 +26,5 @@ public class GoalResponse {
     private LocalDate endDate;
     private String    status;      // ACTIVE | ACHIEVED | MISSED
     private String    createdAt;   // ISO date string
+    private Boolean   organisationManaged;
 }

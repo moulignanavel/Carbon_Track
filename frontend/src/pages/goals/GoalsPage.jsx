@@ -21,6 +21,7 @@
  */
 
 import { useState, useMemo, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import { useForm }           from 'react-hook-form';
 import { zodResolver }       from '@hookform/resolvers/zod';
@@ -36,7 +37,6 @@ import { useGoals }      from '@/context/GoalContext';
 import { goalSchema }    from '@/utils/validators';
 import { formatEmission, formatDate, capitalize } from '@/utils/formatters';
 import { CATEGORY_META } from '@/constants/activities';
-// MOCK_GOAL_HISTORY removed — goals are now per-user from the backend
 import { COLORS }        from '@/constants/theme';
 
 import {
@@ -73,9 +73,9 @@ const today = new Date().toISOString().split('T')[0];
 /* ── derive goal status ──────────────────────────────────────── */
 function getGoalStatus(goal) {
   const pct = goal.target > 0 ? (goal.current / goal.target) * 100 : 0;
-  if (pct >= 100) return { key: 'exceeded', label: 'Over budget', variant: 'red',    icon: XCircle,      barColor: 'red'    };
-  if (pct >= 85)  return { key: 'warning',  label: 'Watch out',   variant: 'yellow', icon: AlertTriangle, barColor: 'yellow' };
-  return             { key: 'on-track',  label: 'On track',    variant: 'green',  icon: CheckCircle2, barColor: 'green'  };
+  if (pct >= 100) return { key: 'exceeded', labelKey: 'goals.overBudget', variant: 'red',    icon: XCircle,      barColor: 'red'    };
+  if (pct >= 85)  return { key: 'warning',  labelKey: 'goals.watchOut',   variant: 'yellow', icon: AlertTriangle, barColor: 'yellow' };
+  return             { key: 'on-track',  labelKey: 'goals.onTrack',    variant: 'green',  icon: CheckCircle2, barColor: 'green'  };
 }
 
 /* ── category accent colour ──────────────────────────────────── */
@@ -91,10 +91,47 @@ function daysLeft(endDate) {
   return diff;
 }
 
+const CAT_KEY_MAP = {
+  transport:   'activitiesPage.catTransport',
+  electricity: 'activitiesPage.catElectricity',
+  food:        'activitiesPage.catFood',
+  shopping:    'activitiesPage.catShopping',
+  energy:      'activitiesPage.catEnergy',
+};
+
+function formatGoalTitle(title, category, t) {
+  const catKey = (category || '').toLowerCase();
+  const titleKey = (title || '').toLowerCase();
+
+  if (CAT_KEY_MAP[titleKey]) return t(CAT_KEY_MAP[titleKey]);
+  if (CAT_KEY_MAP[catKey]) return t(CAT_KEY_MAP[catKey]);
+  return title;
+}
+
+function formatCategoryLabel(category, catMeta, t) {
+  const key = (category || '').toLowerCase();
+  if (key === 'all') return t('goals.allCategories', { defaultValue: 'All Categories' });
+  if (CAT_KEY_MAP[key]) return t(CAT_KEY_MAP[key]);
+  return catMeta?.label || category;
+}
+
+function formatPeriodLabel(period, t) {
+  const p = (period || '').toLowerCase();
+  const map = {
+    daily: t('goals.periodDaily', { defaultValue: 'Daily' }),
+    weekly: t('goals.periodWeekly', { defaultValue: 'Weekly' }),
+    monthly: t('goals.periodMonthly', { defaultValue: 'Monthly' }),
+    quarterly: t('goals.periodQuarterly', { defaultValue: 'Quarterly' }),
+    annual: t('goals.periodAnnual', { defaultValue: 'Annual' }),
+  };
+  return map[p] || capitalize(period);
+}
+
 /* ══════════════════════════════════════════════════════════════
    Goal Card — displays one goal with progress, controls, timeline
    ══════════════════════════════════════════════════════════════ */
 function GoalCard({ goal, onEdit, onDelete, history }) {
+  const { t } = useTranslation();
   const status       = getGoalStatus(goal);
   const pct          = goal.target > 0 ? (goal.current / goal.target) * 100 : 0;
   const remaining    = Math.max(0, goal.target - goal.current);
@@ -103,19 +140,25 @@ function GoalCard({ goal, onEdit, onDelete, history }) {
   const [expanded, setExpanded] = useState(false);
 
   const StatusIcon = status.icon;
+  const displayTitle = formatGoalTitle(goal.title, goal.category, t);
 
   return (
     <Card hover className="flex flex-col gap-4">
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 truncate">
-              {goal.title}
+              {displayTitle}
             </h3>
             <Badge variant={status.variant} size="xs" dot>
-              {status.label}
+              {t(status.labelKey)}
             </Badge>
+            {goal.organisationManaged && (
+              <Badge variant="purple" size="xs">
+                🏢 Organisation Goal
+              </Badge>
+            )}
           </div>
           {goal.description && (
             <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">
@@ -143,14 +186,14 @@ function GoalCard({ goal, onEdit, onDelete, history }) {
       <div className="flex flex-wrap gap-2">
         {catMeta && (
           <Badge variant="slate" size="sm">
-            {catMeta.emoji}  {catMeta.label}
+            {catMeta.emoji}  {formatCategoryLabel(goal.category, catMeta, t)}
           </Badge>
         )}
         {goal.category === 'all' && (
-          <Badge variant="green" size="sm">🌍  All Categories</Badge>
+          <Badge variant="green" size="sm">🌍  {t('goals.allCategories', { defaultValue: 'All Categories' })}</Badge>
         )}
         <Badge variant="slate" size="sm">
-          {capitalize(goal.period)}
+          {formatPeriodLabel(goal.period, t)}
         </Badge>
       </div>
 
@@ -163,11 +206,11 @@ function GoalCard({ goal, onEdit, onDelete, history }) {
           color={status.barColor}
           variant="gradient"
           showValue
-          label={`${formatEmission(goal.current)} of ${formatEmission(goal.target)}`}
+          label={`${formatEmission(goal.current)} ${t('goals.of')} ${formatEmission(goal.target)}`}
         />
         <div className="grid grid-cols-3 gap-2 text-xs">
           <div>
-            <p className="text-slate-400">Remaining</p>
+            <p className="text-slate-400">{t('goals.remaining')}</p>
             <p className={`font-bold ${
               remaining > 0 ? 'text-green-700 dark:text-green-400' : 'text-red-600 dark:text-red-400'
             }`}>
@@ -175,13 +218,13 @@ function GoalCard({ goal, onEdit, onDelete, history }) {
             </p>
           </div>
           <div className="text-right">
-            <p className="text-slate-400">Days Left</p>
+            <p className="text-slate-400">{t('goals.daysLeft')}</p>
             <p className="font-bold text-slate-800 dark:text-slate-200">
-              {daysLeftVal != null ? `${daysLeftVal}d` : '—'}
+              {daysLeftVal != null ? (daysLeftVal < 0 ? t('dashboard.ended') : `${daysLeftVal}d`) : '—'}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-slate-400">Period</p>
+            <p className="text-slate-400">{t('goals.period')}</p>
             <p className="font-bold text-slate-800 dark:text-slate-200">
               {formatDate(goal.startDate)} – {formatDate(goal.endDate)}
             </p>
@@ -197,7 +240,7 @@ function GoalCard({ goal, onEdit, onDelete, history }) {
             onClick={() => setExpanded((o) => !o)}
             className="flex items-center justify-between w-full text-xs font-semibold text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors cursor-pointer"
           >
-            <span>Progress Timeline</span>
+            <span>{t('goals.progressTimeline', { defaultValue: 'Progress Timeline' })}</span>
             {expanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
           </button>
           {expanded && (
@@ -222,7 +265,7 @@ function GoalCard({ goal, onEdit, onDelete, history }) {
           onClick={() => onEdit(goal)}
           className="flex-1"
         >
-          Edit
+          {t('goals.edit', { defaultValue: 'Edit' })}
         </Button>
         <Button
           variant="ghost"
@@ -501,6 +544,7 @@ function DeleteConfirmModal({ isOpen, onClose, onConfirm, goalTitle }) {
    Main Page
    ══════════════════════════════════════════════════════════════ */
 export default function GoalsPage() {
+  const { t } = useTranslation();
   const { goals, stats, fetchGoals, addGoal: addGoalContext, updateGoal, deleteGoal: deleteGoalContext } = useGoals();
   const location = useLocation();
 
@@ -556,10 +600,10 @@ export default function GoalsPage() {
 
   /* Statistics display */
   const statPills = [
-    { label: 'Total Goals',     value: stats.total,    icon: Flag,         color: 'text-blue-600'   },
-    { label: 'On Track',        value: stats.onTrack,  icon: CheckCircle2, color: 'text-green-600' },
-    { label: 'Warning',         value: stats.warning,  icon: AlertTriangle,color: 'text-amber-600' },
-    { label: 'Over Budget',     value: stats.exceeded, icon: XCircle,      color: 'text-red-600'   },
+    { label: t('goals.totalGoals'),  value: stats.total,    icon: Flag,         color: 'text-blue-600'   },
+    { label: t('goals.onTrack'),     value: stats.onTrack,  icon: CheckCircle2, color: 'text-green-600' },
+    { label: t('goals.warning'),      value: stats.warning,  icon: AlertTriangle,color: 'text-amber-600' },
+    { label: t('goals.overBudget'),  value: stats.exceeded, icon: XCircle,      color: 'text-red-600'   },
   ];
 
   return (
@@ -567,11 +611,13 @@ export default function GoalsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Goals</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('goals.goals')}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
             {goals.length === 0
-              ? 'Set your first carbon reduction target'
-              : `${goals.length} active goal${goals.length !== 1 ? 's' : ''}`}
+              ? t('goals.setFirstTarget')
+              : goals.length === 1
+              ? t('goals.activeGoalsCount', { count: 1 })
+              : t('goals.activeGoalsCountPlural', { count: goals.length })}
           </p>
         </div>
         <Button
@@ -579,7 +625,7 @@ export default function GoalsPage() {
           leftIcon={<Plus className="h-4 w-4" />}
           onClick={handleCreate}
         >
-          New Goal
+          {t('goals.newGoal')}
         </Button>
       </div>
 
@@ -608,8 +654,8 @@ export default function GoalsPage() {
       {goals.length === 0 ? (
         <EmptyState
           icon={Target}
-          title="No goals yet"
-          description="Set a carbon reduction target to start tracking your progress toward sustainability."
+          title={t('goals.noGoalsYet')}
+          description={t('goals.emptyStateSubtitle')}
           variant="ghost"
           action={
             <Button
@@ -617,7 +663,7 @@ export default function GoalsPage() {
               leftIcon={<Plus className="h-4 w-4" />}
               onClick={handleCreate}
             >
-              Create Your First Goal
+              {t('goals.createFirstGoal')}
             </Button>
           }
         />

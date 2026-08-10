@@ -122,10 +122,19 @@ public class ActivityLoggingServiceImpl implements ActivityLoggingService {
             case "lamb":
             case "mutton":
                 return 39.2;
-            case "pork":
-                return 7.6;
+            case "mutton_biryani":
+            case "biryani":
+            case "biriyani":
+            case "prepared_mutton":
+                return 6.8;
             case "chicken":
                 return 6.9;
+            case "kadai_chicken":
+            case "chicken_curry":
+            case "prepared_chicken":
+                return 4.0;
+            case "pork":
+                return 7.6;
             case "fish":
                 return 6.1;
             case "dairy":
@@ -134,6 +143,11 @@ public class ActivityLoggingServiceImpl implements ActivityLoggingService {
                 return 4.8;
             case "vegetables":
                 return 2.0;
+            case "pulao":
+            case "kashmiri_pulao":
+                return 1.8;
+            case "baby_corn":
+                return 1.9;
             case "fruit":
                 return 1.1;
             case "water_bottle":

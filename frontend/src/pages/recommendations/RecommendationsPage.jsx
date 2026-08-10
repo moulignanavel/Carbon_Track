@@ -7,6 +7,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { X, Calculator, Leaf, Sparkles, Zap, Car, Utensils, Plane, ShoppingBag, Home, Lightbulb } from 'lucide-react';
 import recommendationsService from '@/services/api/recommendationsService';
 import './recommendations.css';
@@ -115,21 +116,31 @@ const DEFAULT_RECOMMENDATIONS = [
   }
 ];
 
-function getElaboration(activityType) {
+function getElaboration(activityType, t) {
   const type = (activityType || '').toLowerCase();
+  let cat = 'default';
   if (type.includes('car') || type.includes('flight') || type.includes('transit') || type.includes('transport') || type.includes('bus') || type.includes('train') || type.includes('subway') || type.includes('taxi') || type.includes('motorcycle')) {
-    return ELABORATION_MAP.transport;
+    cat = 'transport';
+  } else if (type.includes('electricity') || type.includes('grid') || type.includes('solar') || type.includes('wind') || type.includes('natural_gas') || type.includes('gas') || type.includes('heating') || type.includes('lpg') || type.includes('coal') || type.includes('wood') || type.includes('energy')) {
+    cat = 'energy';
+  } else if (type.includes('beef') || type.includes('lamb') || type.includes('pork') || type.includes('chicken') || type.includes('meat') || type.includes('poultry') || type.includes('food') || type.includes('dairy') || type.includes('eggs') || type.includes('fruit') || type.includes('vegetables') || type.includes('coffee')) {
+    cat = 'food';
+  } else if (type.includes('clothing') || type.includes('clothes') || type.includes('shopping') || type.includes('smartphone') || type.includes('laptop') || type.includes('tv') || type.includes('electronics') || type.includes('furniture') || type.includes('books')) {
+    cat = 'shopping';
   }
-  if (type.includes('electricity') || type.includes('grid') || type.includes('solar') || type.includes('wind') || type.includes('natural_gas') || type.includes('gas') || type.includes('heating') || type.includes('lpg') || type.includes('coal') || type.includes('wood') || type.includes('energy')) {
-    return ELABORATION_MAP.energy;
+
+  const elObj = t(`recommendationsPage.elaboration.${cat}`, { returnObjects: true });
+  if (elObj && typeof elObj === 'object' && elObj.formula) {
+    return elObj;
   }
-  if (type.includes('beef') || type.includes('lamb') || type.includes('pork') || type.includes('chicken') || type.includes('meat') || type.includes('poultry') || type.includes('food') || type.includes('dairy') || type.includes('eggs') || type.includes('fruit') || type.includes('vegetables') || type.includes('coffee')) {
-    return ELABORATION_MAP.food;
-  }
-  if (type.includes('clothing') || type.includes('clothes') || type.includes('shopping') || type.includes('smartphone') || type.includes('laptop') || type.includes('tv') || type.includes('electronics') || type.includes('furniture') || type.includes('books')) {
-    return ELABORATION_MAP.shopping;
-  }
-  return ELABORATION_MAP.default;
+  return ELABORATION_MAP[cat] || ELABORATION_MAP.default;
+}
+
+function getDifficultyLabel(diff, t) {
+  const d = String(diff || '').toLowerCase();
+  if (d.includes('easy')) return t('recommendationsPage.difficulty.easy');
+  if (d.includes('hard')) return t('recommendationsPage.difficulty.hard');
+  return t('recommendationsPage.difficulty.moderate');
 }
 
 function renderRecIcon(category, activityType) {
@@ -156,55 +167,94 @@ function renderRecIcon(category, activityType) {
 }
 
 export default function RecommendationsPage() {
-  const [recommendations, setRecommendations] = useState(DEFAULT_RECOMMENDATIONS);
+  const { t } = useTranslation();
+  const [recommendations, setRecommendations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedRec, setSelectedRec] = useState(null);
 
   useEffect(() => {
-    loadRecommendations();
+    fetchRecommendations();
 
-    const handleActivityLogged = () => loadRecommendations();
+    const handleActivityLogged = () => fetchRecommendations();
     window.addEventListener('activity-logged', handleActivityLogged);
 
     return () => window.removeEventListener('activity-logged', handleActivityLogged);
-  }, []);
+  }, [t]);
 
-  const loadRecommendations = async () => {
+  const getDefaultRecs = () => [
+    {
+      id: 'default-1',
+      category: 'energy',
+      title: t('recommendationsPage.titles.energy'),
+      description: t('recommendationsPage.defaultRecs.rec1'),
+      emissions: 13.28,
+      difficulty: 'Moderate',
+      activityType: 'electricity'
+    },
+    {
+      id: 'default-2',
+      category: 'transport',
+      title: t('recommendationsPage.titles.transport'),
+      description: t('recommendationsPage.defaultRecs.rec2'),
+      emissions: 12.60,
+      difficulty: 'Moderate',
+      activityType: 'car_petrol'
+    },
+    {
+      id: 'default-3',
+      category: 'transport',
+      title: t('recommendationsPage.titles.publicTransit'),
+      description: t('recommendationsPage.defaultRecs.rec3'),
+      emissions: 7.35,
+      difficulty: 'Moderate',
+      activityType: 'transit'
+    }
+  ];
+
+function getLocalizedTip(item, t) {
+  const type = (item.activityType || '').toLowerCase();
+  let tipKey = 'general';
+  if (type.includes('petrol')) tipKey = 'petrol';
+  else if (type.includes('diesel')) tipKey = 'diesel';
+  else if (type.includes('transit') || type.includes('bus') || type.includes('train')) tipKey = 'transit';
+  else if (type.includes('electricity') || type.includes('energy') || type.includes('grid')) tipKey = 'energy';
+  else if (type.includes('meat') || type.includes('beef') || type.includes('food') || type.includes('diet') || type.includes('lamb') || type.includes('chicken') || type.includes('dairy')) tipKey = 'food';
+  else if (type.includes('shopping') || type.includes('clothing') || type.includes('furniture')) tipKey = 'shopping';
+
+  const localized = t(`recommendationsPage.activityTips.${tipKey}`);
+  return localized || item.tip;
+}
+
+  const fetchRecommendations = async () => {
     try {
       setIsLoading(true);
       const data = await recommendationsService.getRecommendations();
       
       if (Array.isArray(data) && data.length > 0) {
         const formatted = data.map((item, index) => {
-          let title = "Tip";
+          let title = t('recommendationsPage.titles.eco');
           let category = "default";
           const type = (item.activityType || '').toLowerCase();
           
-          if (type.includes('flight')) {
-            title = "Flight Tip"; category = "transport";
-          } else if (type.includes('petrol')) {
-            title = "Petrol Vehicle Tip"; category = "transport";
-          } else if (type.includes('diesel')) {
-            title = "Diesel Vehicle Tip"; category = "transport";
-          } else if (type.includes('bus') || type.includes('train') || type.includes('transit') || type.includes('subway')) {
-            title = "Public Transit Tip"; category = "transport";
-          } else if (type.includes('car') || type.includes('transport') || type.includes('taxi') || type.includes('motorcycle')) {
-            title = "Transport Tip"; category = "transport";
+          if (type.includes('bus') || type.includes('train') || type.includes('transit') || type.includes('subway')) {
+            title = t('recommendationsPage.titles.publicTransit'); category = "transport";
+          } else if (type.includes('car') || type.includes('transport') || type.includes('taxi') || type.includes('motorcycle') || type.includes('flight') || type.includes('petrol') || type.includes('diesel')) {
+            title = t('recommendationsPage.titles.transport'); category = "transport";
           } else if (type.includes('beef') || type.includes('meat') || type.includes('food') || type.includes('lamb') || type.includes('chicken') || type.includes('dairy')) {
-            title = "Diet Tip"; category = "food";
+            title = t('recommendationsPage.titles.diet'); category = "food";
           } else if (type.includes('energy') || type.includes('electricity') || type.includes('grid')) {
-            title = "Energy Tip"; category = "energy";
+            title = t('recommendationsPage.titles.energy'); category = "energy";
           } else if (type.includes('furniture')) {
-            title = "Home Tip"; category = "home";
+            title = t('recommendationsPage.titles.home'); category = "home";
           } else if (type.includes('clothing') || type.includes('shopping')) {
-            title = "Shopping Tip"; category = "shopping";
+            title = t('recommendationsPage.titles.shopping'); category = "shopping";
           }
 
           return {
             id: index,
             category,
             title,
-            description: item.tip,
+            description: getLocalizedTip(item, t),
             emissions: item.emissions ?? 10.0,
             difficulty: "Moderate",
             activityType: item.activityType
@@ -212,29 +262,29 @@ export default function RecommendationsPage() {
         });
         setRecommendations(formatted);
       } else {
-        setRecommendations(DEFAULT_RECOMMENDATIONS);
+        setRecommendations(getDefaultRecs());
       }
     } catch (error) {
       console.error('Failed to load recommendations, displaying default recommendations:', error);
-      setRecommendations(DEFAULT_RECOMMENDATIONS);
+      setRecommendations(getDefaultRecs());
     } finally {
       setIsLoading(false);
     }
   };
 
-  const activeElaboration = selectedRec ? getElaboration(selectedRec.activityType) : null;
+  const activeElaboration = selectedRec ? getElaboration(selectedRec.activityType, t) : null;
 
   return (
     <div className="recommendations-page">
       <div className="recommendations-header">
-        <h1>Personalized Recommendations</h1>
-        <p>Tailored suggestions to reduce your carbon footprint</p>
+        <h1>{t('recommendationsPage.title')}</h1>
+        <p>{t('recommendationsPage.subtitle')}</p>
       </div>
 
       {isLoading ? (
         <div className="recommendations-loading">
           <div className="spinner"></div>
-          <p>Loading recommendations...</p>
+          <p>{t('recommendationsPage.loading')}</p>
         </div>
       ) : (
         <div className="recommendations-grid">
@@ -259,7 +309,7 @@ export default function RecommendationsPage() {
                   {rec.emissions ? `${rec.emissions.toFixed(2)} KG CO₂E` : '13.28 KG CO₂E'}
                 </span>
                 <span className="difficulty">
-                  {rec.difficulty || 'Moderate'}
+                  {getDifficultyLabel(rec.difficulty, t)}
                 </span>
               </div>
               <button 
@@ -270,7 +320,7 @@ export default function RecommendationsPage() {
                   setSelectedRec(rec);
                 }}
               >
-                Elaborate & Learn More
+                {t('recommendationsPage.elaborate')}
               </button>
             </div>
           ))}
@@ -293,8 +343,8 @@ export default function RecommendationsPage() {
                   {renderRecIcon(selectedRec.category, selectedRec.activityType)}
                 </div>
                 <div className="rec-modal-header-info">
-                  <h2>{selectedRec.title} Details</h2>
-                  <p className="rec-subtitle">Personalized analysis of your carbon footprint</p>
+                  <h2>{selectedRec.title} {t('recommendationsPage.details')}</h2>
+                  <p className="rec-subtitle">{t('recommendationsPage.personalizedAnalysis')}</p>
                 </div>
               </div>
               <button 
@@ -312,7 +362,7 @@ export default function RecommendationsPage() {
               <div className="rec-modal-section">
                 <h4>
                   <Calculator className="w-5 h-5" />
-                  How Carbon is Calculated
+                  {t('recommendationsPage.howCalculated')}
                 </h4>
                 <div className="rec-math-card">
                   <span className="rec-math-formula">{activeElaboration.formula}</span>
@@ -324,7 +374,7 @@ export default function RecommendationsPage() {
               <div className="rec-modal-section">
                 <h4>
                   <Leaf className="w-5 h-5" />
-                  How to Reduce Emissions
+                  {t('recommendationsPage.howToReduce')}
                 </h4>
                 <ul className="rec-bullet-list">
                   {activeElaboration.strategies.map((strategy, i) => (
@@ -337,7 +387,7 @@ export default function RecommendationsPage() {
               <div className="rec-modal-section">
                 <h4>
                   <Sparkles className="w-5 h-5" />
-                  Everyday Eco Tips
+                  {t('recommendationsPage.everydayTips')}
                 </h4>
                 <ul className="rec-bullet-list">
                   {activeElaboration.tips.map((tip, i) => (
@@ -354,7 +404,7 @@ export default function RecommendationsPage() {
                 onClick={() => setSelectedRec(null)}
                 style={{ margin: 0, width: 'auto', padding: '0.75rem 1.5rem' }}
               >
-                Close Details
+                {t('recommendationsPage.closeDetails')}
               </button>
             </div>
           </div>

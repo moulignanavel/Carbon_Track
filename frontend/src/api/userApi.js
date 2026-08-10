@@ -54,6 +54,16 @@ export async function uploadAvatar(file) {
 }
 
 /**
+ * Change the user's password.
+ * @param {{ currentPassword: string, newPassword: string }} data
+ * @returns {Promise<void>}
+ */
+export async function changeUserPassword(data) {
+  const response = await axiosInstance.post('/users/change-password', data);
+  return response.data;
+}
+
+/**
  * @typedef {{
  *   id: number,
  *   username: string,

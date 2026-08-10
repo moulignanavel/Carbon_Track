@@ -19,7 +19,6 @@ import {
   useCallback, useMemo, useEffect,
 } from 'react';
 import { loginUser, registerUser, registerOrganisation } from '@/api/authApi';
-import { getCommunityLeaderboard } from '@/api/leaderboardApi';
 import {
   saveToken, saveUser, clearAuth,
   getToken, getUser,
@@ -45,7 +44,7 @@ export function AuthProvider({ children }) {
       import('@/api/userApi').then(({ getMyProfile }) => {
         getMyProfile().then(data => {
           setUser((prev) => {
-            const updated = { ...prev, avatarUrl: data.avatarUrl, badges: data.badges, role: data.role, organisationId: data.organisationId };
+            const updated = { ...prev, avatarUrl: data.avatarUrl, badges: data.badges, role: data.role, organisationId: data.organisationId, status: data.status };
             saveUser(updated);
             return updated;
           });
@@ -68,9 +67,11 @@ export function AuthProvider({ children }) {
       fetchProfile();
     };
     const handleLeaderboardViewed = () => {
-      getCommunityLeaderboard()
-        .then(() => fetchProfile())
-        .catch(() => fetchProfile());
+      // Re-fetch the current user's profile (badges, rank) after viewing the leaderboard.
+      // Do NOT call getCommunityLeaderboard() here — CommunityLeaderboardPage already
+      // fetches it directly, and doing so here creates a circular dispatch loop:
+      // loadLeaderboardData → 'leaderboard-viewed' → getCommunityLeaderboard() → ...
+      fetchProfile();
     };
 
     window.addEventListener('activity-logged', handleActivityLogged);

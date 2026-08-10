@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { motion, useReducedMotion } from "framer-motion";
 import {
   AlertCircle,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { updateOrganisationActivityVerification } from "@/api/organisationApi";
+import { formatUserName, formatActivityName } from "@/utils/formatters";
 
 const EMPTY_DATA = {};
 const FILTER_KEY = "carbontrack.organisation.activity-logs.filters";
@@ -41,30 +43,33 @@ function Loading() {
   );
 }
 function Empty() {
+  const { t } = useTranslation();
   return (
     <div className="grid min-h-72 place-items-center text-center">
       <div>
         <Leaf className="mx-auto h-9 w-9 text-emerald-500" />
         <h2 className="mt-4 font-semibold text-slate-900 dark:text-white">
-          No activity logs match these filters
+          {t("orgPortal.noActivityLogsMatch", { defaultValue: "No activity logs match these filters" })}
         </h2>
         <p className="mt-1 text-sm text-slate-500">
-          Change the date range, department, category, or search text.
+          {t("orgPortal.changeFiltersHint", { defaultValue: "Change the date range, department, category, or search text." })}
         </p>
       </div>
     </div>
   );
 }
 function Status({ value }) {
+  const { t } = useTranslation();
   return value ? (
     <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
       {value}
     </span>
   ) : (
-    <span className="text-xs font-medium text-slate-400">Not available</span>
+    <span className="text-xs font-medium text-slate-400">{t("common.notAvailable", { defaultValue: "Not available" })}</span>
   );
 }
 function VerificationControl({ row, busy, onChange }) {
+  const { t } = useTranslation();
   const value = row.verificationStatus || "PENDING";
   return (
     <select
@@ -74,13 +79,14 @@ function VerificationControl({ row, busy, onChange }) {
       onChange={(event) => onChange(row, event.target.value)}
       className={`h-9 rounded-lg border px-2 text-xs font-semibold outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-50 ${value === "VERIFIED" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : value === "REJECTED" ? "border-rose-200 bg-rose-50 text-rose-700" : "border-amber-200 bg-amber-50 text-amber-700"}`}
     >
-      <option value="PENDING">Pending</option>
-      <option value="VERIFIED">Verified</option>
-      <option value="REJECTED">Rejected</option>
+      <option value="PENDING">{t("orgPortal.pending", { defaultValue: "Pending" })}</option>
+      <option value="VERIFIED">{t("orgPortal.verified", { defaultValue: "Verified" })}</option>
+      <option value="REJECTED">{t("orgPortal.rejected", { defaultValue: "Rejected" })}</option>
     </select>
   );
 }
 function ActivityDrawer({ row, onClose }) {
+  const { t, i18n } = useTranslation();
   const reduceMotion = useReducedMotion(),
     closeRef = useRef(null),
     returnFocus = useRef(document.activeElement);
@@ -115,13 +121,13 @@ function ActivityDrawer({ row, onClose }) {
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-emerald-700">
-              Activity details
+              {t("orgPortal.activityDetails", { defaultValue: "Activity details" })}
             </p>
             <h2
               id="activity-details-title"
               className="mt-1 text-xl font-bold text-slate-950 dark:text-white"
             >
-              {row.activity || "Activity"}
+              {formatActivityName(row.activity, i18n.language) || t("orgNav.activity", { defaultValue: "Activity" })}
             </h2>
           </div>
           <button
@@ -136,21 +142,36 @@ function ActivityDrawer({ row, onClose }) {
         </div>
         <dl className="mt-6 grid grid-cols-2 gap-3">
           {[
-            ["Date", row.date],
-            ["Employee", row.employee],
-            ["Department", row.department],
-            ["Category", row.category],
+            [t("orgNav.date", { defaultValue: "Date" }), row.date],
+            [t("orgNav.colEmployee", { defaultValue: "Employee" }), formatUserName(row.employee, i18n.language)],
             [
-              "Quantity",
+              t("orgPortal.colDepartment", { defaultValue: "Department" }),
+              row.department
+                ? t(`departments.${row.department}`, { defaultValue: row.department })
+                : t("departments.Unassigned", { defaultValue: "Unassigned" }),
+            ],
+            [
+              t("activitiesPage.category", { defaultValue: "Category" }),
+              row.category
+                ? t(`categories.${row.category}`, { defaultValue: row.category })
+                : t("common.notAvailable", { defaultValue: "Not available" }),
+            ],
+            [
+              t("activitiesPage.quantity", { defaultValue: "Quantity" }),
               row.quantity === null || row.quantity === undefined
-                ? "Not available"
+                ? t("common.notAvailable", { defaultValue: "Not available" })
                 : `${Number(row.quantity).toLocaleString()} ${row.unit || ""}`.trim(),
             ],
             [
-              "Emission",
-              `${Number(row.emission || 0).toLocaleString()} kg CO₂e`,
+              t("orgPortal.emission", { defaultValue: "Emission" }),
+              `${Number(row.emission || 0).toLocaleString()} ${t("activitiesPage.units.kg", { defaultValue: "kg" })} CO₂e`,
             ],
-            ["Verification", row.verificationStatus || "Not available"],
+            [
+              t("orgPortal.verificationStatus", { defaultValue: "Verification" }),
+              row.verificationStatus
+                ? t(`orgPortal.${row.verificationStatus.toLowerCase()}`, { defaultValue: row.verificationStatus })
+                : t("common.notAvailable", { defaultValue: "Not available" }),
+            ],
           ].map(([label, value]) => (
             <div
               key={label}
@@ -158,14 +179,16 @@ function ActivityDrawer({ row, onClose }) {
             >
               <dt className="text-xs text-slate-500">{label}</dt>
               <dd className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
-                {value || "Not available"}
+                {value || t("common.notAvailable", { defaultValue: "Not available" })}
               </dd>
             </div>
           ))}
         </dl>
         {row.notes && (
           <section className="mt-6">
-            <h3 className="font-semibold">Notes</h3>
+            <h3 className="font-semibold text-slate-900 dark:text-white">
+              {t("orgPortal.notes", { defaultValue: "Notes" })}
+            </h3>
             <p className="mt-2 rounded-xl border border-slate-100 p-4 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-300">
               {row.notes}
             </p>
@@ -183,6 +206,7 @@ export default function OrganisationActivityLogsPage({
   onRetry,
   onReload,
 }) {
+  const { t, i18n } = useTranslation();
   const source = data || EMPTY_DATA,
     logs = useMemo(() => source.activityLogs || [], [source.activityLogs]),
     employees = useMemo(() => source.employees || [], [source.employees]);
@@ -309,12 +333,12 @@ export default function OrganisationActivityLogsPage({
           ? { ...current, verificationStatus: status }
           : current,
       );
-      toast.success(`Activity marked ${status.toLowerCase()}`);
+      toast.success(t("orgPortal.statusUpdated", { defaultValue: `Activity marked ${status.toLowerCase()}` }));
     } catch (error) {
       toast.error(
         error.response?.data?.error ||
           error.response?.data?.message ||
-          "Unable to update verification status",
+          t("orgPortal.updateError", { defaultValue: "Unable to update verification status" }),
       );
     } finally {
       setUpdating(null);
@@ -327,7 +351,7 @@ export default function OrganisationActivityLogsPage({
         <div className="flex items-center gap-3">
           <AlertCircle className="h-5 w-5" />
           <div className="flex-1">
-            <h1 className="font-semibold">Activity logs could not be loaded</h1>
+            <h1 className="font-semibold">{t("orgPortal.loadError", { defaultValue: "Activity logs could not be loaded" })}</h1>
             <p className="text-sm">{error}</p>
           </div>
           <button
@@ -335,46 +359,46 @@ export default function OrganisationActivityLogsPage({
             onClick={onRetry}
             className="rounded-lg border px-3 py-2 text-sm font-semibold"
           >
-            Retry
+            {t("common.retry", { defaultValue: "Retry" })}
           </button>
         </div>
       </section>
     );
   return (
-    <div className="space-y-5">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-4">
+      <header className="flex flex-col gap-2.5 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.16em] text-emerald-700">
-            Verified organisation records
+          <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-emerald-700 dark:text-emerald-300">
+            {t("orgPortal.verification", { defaultValue: "Verification" })}
           </p>
-          <h1 className="mt-2 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
-            Activity Logs
+          <h1 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+            {t("orgPortal.activityLogsTitle", { defaultValue: "Activity Logs" })}
           </h1>
-          <p className="mt-2 text-sm text-slate-500">
-            Review recorded employee sustainability activities and calculated
-            emissions.
+          <p className="mt-0.5 text-xs text-slate-500">
+            {t("orgNav.activityLogsDesc", { defaultValue: "Review, filter and verify employee carbon activity records." })}
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-          <FileText className="h-4 w-4" />
-          {logs.length.toLocaleString()} records
-        </div>
+        <span className="inline-flex w-fit items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
+          <FileText className="h-3.5 w-3.5 text-emerald-600" />
+          {rows.length.toLocaleString()} {t("orgNav.verifiedRecords", { defaultValue: "records available" })}
+        </span>
       </header>
-      <section className={`${card} p-4`} aria-label="Activity log filters">
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          <label className="relative">
-            <span className="sr-only">Search activities</span>
-            <Search className="pointer-events-none absolute left-3 top-3.5 h-4 w-4 text-slate-400" />
+      <section className={card} aria-label="Activity log filters">
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-6">
+          <div className="relative xl:col-span-2">
+            <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-slate-400" />
             <input
-              className={`${control} pl-9`}
+              type="search"
+              aria-label="Search activity logs"
               value={query}
               onChange={(event) => {
                 setQuery(event.target.value);
                 setPage(1);
               }}
-              placeholder="Search employee, activity or category"
+              placeholder={t("orgPortal.searchActivities", { defaultValue: "Search employee, activity, notes…" })}
+              className={`${control} pl-8`}
             />
-          </label>
+          </div>
           <select
             aria-label="Activity date range"
             className={control}
@@ -384,11 +408,11 @@ export default function OrganisationActivityLogsPage({
               setPage(1);
             }}
           >
-            <option value="all">All available dates</option>
-            <option value="week">Last 7 days</option>
-            <option value="month">This month</option>
-            <option value="quarter">This quarter</option>
-            <option value="year">This year</option>
+            <option value="all">{t("orgPortal.allDates", { defaultValue: "All available dates" })}</option>
+            <option value="week">{t("orgPortal.lastWeek", { defaultValue: "Last 7 days" })}</option>
+            <option value="month">{t("orgPortal.thisMonth", { defaultValue: "This month" })}</option>
+            <option value="quarter">{t("orgPortal.thisQuarter", { defaultValue: "This quarter" })}</option>
+            <option value="year">{t("orgPortal.thisYear", { defaultValue: "This year" })}</option>
           </select>
           <select
             aria-label="Activity department"
@@ -399,9 +423,11 @@ export default function OrganisationActivityLogsPage({
               setPage(1);
             }}
           >
-            <option value="">All departments</option>
+            <option value="">{t("orgPortal.allDepartments", { defaultValue: "All departments" })}</option>
             {departments.map((value) => (
-              <option key={value}>{value}</option>
+              <option key={value} value={value}>
+                {t(`departments.${value}`, { defaultValue: value })}
+              </option>
             ))}
           </select>
           <select
@@ -413,9 +439,11 @@ export default function OrganisationActivityLogsPage({
               setPage(1);
             }}
           >
-            <option value="">All categories</option>
+            <option value="">{t("orgPortal.allCategories", { defaultValue: "All categories" })}</option>
             {categories.map((value) => (
-              <option key={value}>{value}</option>
+              <option key={value} value={value}>
+                {t(`categories.${value}`, { defaultValue: value })}
+              </option>
             ))}
           </select>
           <select
@@ -430,11 +458,13 @@ export default function OrganisationActivityLogsPage({
           >
             <option value="">
               {verificationOptions.length
-                ? "All verification statuses"
-                : "Verification status unavailable"}
+                ? t("orgPortal.allStatuses", { defaultValue: "All verification statuses" })
+                : t("orgPortal.noStatuses", { defaultValue: "Verification status unavailable" })}
             </option>
             {verificationOptions.map((value) => (
-              <option key={value}>{value}</option>
+              <option key={value} value={value}>
+                {t(`orgPortal.${value.toLowerCase()}`, { defaultValue: value })}
+              </option>
             ))}
           </select>
           <select
@@ -443,10 +473,10 @@ export default function OrganisationActivityLogsPage({
             value={sort}
             onChange={(event) => setSort(event.target.value)}
           >
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
-            <option value="emission-high">Highest emissions</option>
-            <option value="emission-low">Lowest emissions</option>
+            <option value="newest">{t("orgPortal.newest", { defaultValue: "Newest first" })}</option>
+            <option value="oldest">{t("orgPortal.oldest", { defaultValue: "Oldest first" })}</option>
+            <option value="emission-high">{t("orgPortal.highEmission", { defaultValue: "Highest emissions" })}</option>
+            <option value="emission-low">{t("orgPortal.lowEmission", { defaultValue: "Lowest emissions" })}</option>
           </select>
         </div>
       </section>
@@ -456,14 +486,14 @@ export default function OrganisationActivityLogsPage({
             <thead className="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800">
               <tr>
                 {[
-                  "Date",
-                  "Employee",
-                  "Department",
-                  "Category",
-                  "Activity",
-                  "Quantity",
-                  "Emission",
-                  "Verification Status",
+                  t("orgNav.date", { defaultValue: "Date" }),
+                  t("orgNav.colEmployee", { defaultValue: "Employee" }),
+                  t("orgNav.colDepartment", { defaultValue: "Department" }),
+                  t("orgNav.category", { defaultValue: "Category" }),
+                  t("orgNav.activity", { defaultValue: "Activity" }),
+                  t("orgNav.quantity", { defaultValue: "Quantity" }),
+                  t("orgPortal.emission", { defaultValue: "Emission" }),
+                  t("orgPortal.verification", { defaultValue: "Verification Status" }),
                   "",
                 ].map((label) => (
                   <th key={label || "action"} className="px-4 py-3">
@@ -480,18 +510,24 @@ export default function OrganisationActivityLogsPage({
                 >
                   <td className="px-4 py-3 whitespace-nowrap">{row.date}</td>
                   <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
-                    {row.employee}
-                  </td>
-                  <td className="px-4 py-3">{row.department}</td>
-                  <td className="px-4 py-3">
-                    {row.category || "Not available"}
+                    {formatUserName(row.employee, i18n.language)}
                   </td>
                   <td className="px-4 py-3">
-                    {row.activity || "Not available"}
+                    {row.department
+                      ? t(`departments.${row.department}`, { defaultValue: row.department })
+                      : t("departments.Unassigned", { defaultValue: "Unassigned" })}
+                  </td>
+                  <td className="px-4 py-3">
+                    {row.category
+                      ? t(`categories.${row.category}`, { defaultValue: row.category })
+                      : t("common.notAvailable", { defaultValue: "Not available" })}
+                  </td>
+                  <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
+                    {formatActivityName(row.activity, i18n.language) || t("common.notAvailable", { defaultValue: "Not available" })}
                   </td>
                   <td className="px-4 py-3">
                     {row.quantity === null || row.quantity === undefined
-                      ? "Not available"
+                      ? t("common.notAvailable", { defaultValue: "Not available" })
                       : `${Number(row.quantity).toLocaleString()} ${row.unit || ""}`.trim()}
                   </td>
                   <td className="px-4 py-3 font-semibold">
@@ -504,7 +540,7 @@ export default function OrganisationActivityLogsPage({
                     <button
                       type="button"
                       onClick={() => setDrawer(row)}
-                      aria-label={`View ${row.activity || "activity"} details`}
+                      aria-label={t("common.view", { defaultValue: "View details" })}
                       className="rounded-lg border border-slate-200 p-2 hover:bg-white"
                     >
                       <Eye className="h-4 w-4" />
@@ -524,21 +560,21 @@ export default function OrganisationActivityLogsPage({
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="font-semibold text-slate-900 dark:text-white">
-                    {row.activity || row.category}
+                    {formatActivityName(row.activity, i18n.language) || (row.category ? t(`categories.${row.category}`, { defaultValue: row.category }) : "")}
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    {row.employee} · {row.department}
+                    {formatUserName(row.employee, i18n.language)} · {row.department ? t(`departments.${row.department}`, { defaultValue: row.department }) : t("departments.Unassigned", { defaultValue: "Unassigned" })}
                   </p>
                 </div>
-                  <VerificationControl row={row} busy={updating === row.id} onChange={verify} />
+                <VerificationControl row={row} busy={updating === row.id} onChange={verify} />
               </div>
               <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <dt className="text-xs text-slate-500">Date</dt>
+                  <dt className="text-xs text-slate-500">{t("orgNav.date", { defaultValue: "Date" })}</dt>
                   <dd>{row.date}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-slate-500">Emission</dt>
+                  <dt className="text-xs text-slate-500">{t("orgPortal.emission", { defaultValue: "Emission" })}</dt>
                   <dd className="font-semibold">{row.emission} kg CO₂e</dd>
                 </div>
               </dl>
@@ -548,7 +584,7 @@ export default function OrganisationActivityLogsPage({
                 className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold"
               >
                 <Eye className="h-4 w-4" />
-                View details
+                {t("common.view", { defaultValue: "View details" })}
               </button>
             </article>
           ))}
@@ -557,13 +593,13 @@ export default function OrganisationActivityLogsPage({
         {!!visible.length && (
           <footer className="flex flex-col gap-3 border-t border-slate-100 px-4 py-3 text-sm text-slate-500 dark:border-slate-800 sm:flex-row sm:items-center sm:justify-between">
             <span>
-              Showing {(page - 1) * pageSize + 1}–
-              {Math.min(page * pageSize, rows.length)} of {rows.length}
+              {t("orgNav.showing", { defaultValue: "Showing" })} {(page - 1) * pageSize + 1}–
+              {Math.min(page * pageSize, rows.length)} {t("orgNav.of", { defaultValue: "of" })} {rows.length}
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                aria-label="Previous activity page"
+                aria-label={t("common.prev", { defaultValue: "Previous page" })}
                 disabled={page === 1}
                 onClick={() => setPage((value) => value - 1)}
                 className="rounded-lg border p-2 disabled:opacity-40"
@@ -571,11 +607,11 @@ export default function OrganisationActivityLogsPage({
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <span className="font-semibold">
-                Page {page} of {pages}
+                {t("orgNav.page", { defaultValue: "Page" })} {page} {t("orgNav.of", { defaultValue: "of" })} {pages}
               </span>
               <button
                 type="button"
-                aria-label="Next activity page"
+                aria-label={t("common.next", { defaultValue: "Next page" })}
                 disabled={page === pages}
                 onClick={() => setPage((value) => value + 1)}
                 className="rounded-lg border p-2 disabled:opacity-40"

@@ -1,13 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslation } from 'react-i18next';
 import { X, Bell, CheckCheck, Trash2, Calendar, Flame, Target, ShieldAlert, Check } from 'lucide-react';
-
-const FILTER_TABS = [
-  { id: 'all', label: 'All' },
-  { id: 'unread', label: 'Unread' },
-  { id: 'warnings', label: 'Warnings' },
-  { id: 'reminders', label: 'Reminders' },
-];
 
 export default function NotificationDrawer({
   isOpen,
@@ -17,7 +11,15 @@ export default function NotificationDrawer({
   onMarkAllAsRead,
   onDeleteAlert,
 }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('all');
+
+  const FILTER_TABS = [
+    { id: 'all', label: t('common.all', { defaultValue: 'All' }) },
+    { id: 'unread', label: t('common.unread', { defaultValue: 'Unread' }) },
+    { id: 'warnings', label: t('common.warnings', { defaultValue: 'Warnings' }) },
+    { id: 'reminders', label: t('common.reminders', { defaultValue: 'Reminders' }) },
+  ];
 
   const filteredAlerts = useMemo(() => {
     if (activeTab === 'unread') return alerts.filter((a) => !a.isRead);
@@ -86,10 +88,10 @@ export default function NotificationDrawer({
                   <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 animate-pulse" />
                 )}
               </div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Notifications</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">{t('nav.notifications', { defaultValue: 'Notifications' })}</h2>
               {unreadCount > 0 && (
                 <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/80 dark:text-rose-300 border border-rose-300/40">
-                  {unreadCount} new
+                  {unreadCount} {t('common.new', { defaultValue: 'new' })}
                 </span>
               )}
             </div>
@@ -128,7 +130,7 @@ export default function NotificationDrawer({
                 className="text-xs font-bold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1 shrink-0"
               >
                 <CheckCheck className="w-3.5 h-3.5" />
-                <span>Read all</span>
+                <span>{t('common.readAll', { defaultValue: 'Read all' })}</span>
               </button>
             )}
           </div>
@@ -138,8 +140,8 @@ export default function NotificationDrawer({
             {filteredAlerts.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center text-slate-400 dark:text-slate-500">
                 <ShieldAlert className="w-12 h-12 mb-2 opacity-50 stroke-[1.5]" />
-                <p className="text-sm font-semibold">No notifications</p>
-                <p className="text-xs mt-0.5">You're all caught up on your carbon alerts!</p>
+                <p className="text-sm font-semibold">{t('common.noNotifications', { defaultValue: 'No notifications' })}</p>
+                <p className="text-xs mt-0.5">{t('common.allCaughtUp', { defaultValue: "You're all caught up on your carbon alerts!" })}</p>
               </div>
             ) : (
               filteredAlerts.map((alert) => (
@@ -169,7 +171,7 @@ export default function NotificationDrawer({
                       </p>
 
                       <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-2 block font-mono">
-                        {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : 'Just now'}
+                        {alert.createdAt ? new Date(alert.createdAt).toLocaleString() : t('common.justNow', { defaultValue: 'Just now' })}
                       </span>
                     </div>
 
@@ -178,7 +180,7 @@ export default function NotificationDrawer({
                       {!alert.isRead && (
                         <button
                           onClick={() => onMarkAsRead(alert.id)}
-                          title="Mark as read"
+                          title={t('common.markAsRead', { defaultValue: 'Mark as read' })}
                           className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
                         >
                           <Check className="w-3.5 h-3.5" />
@@ -186,7 +188,7 @@ export default function NotificationDrawer({
                       )}
                       <button
                         onClick={() => onDeleteAlert(alert.id)}
-                        title="Delete notification"
+                        title={t('common.deleteNotification', { defaultValue: 'Delete notification' })}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -203,3 +205,4 @@ export default function NotificationDrawer({
     document.body
   );
 }
+

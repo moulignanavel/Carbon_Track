@@ -1,6 +1,7 @@
 /**
  * KpiRow — Today / Weekly / Monthly / Avg stat cards
  */
+import { useTranslation } from 'react-i18next';
 import { Sun, CalendarDays, BarChart2, TrendingDown } from 'lucide-react';
 import { StatCard } from '@/components/ui';
 import { CardSkeleton } from '@/components/skeletons';
@@ -9,28 +10,28 @@ import { formatEmission } from '@/utils/formatters';
 const CARDS = [
   {
     key:      'today',
-    title:    "Today's Carbon",
+    titleKey: 'dashboard.todaysCarbon',
     icon:     Sun,
     iconBg:   'bg-[#e8f0e6] dark:bg-green-900/30',
     iconColor:'text-[#2d6a4f] dark:text-green-400',
   },
   {
     key:      'weekly',
-    title:    'This Week',
+    titleKey: 'dashboard.thisWeek',
     icon:     CalendarDays,
     iconBg:   'bg-[#e8f0e6] dark:bg-green-900/30',
     iconColor:'text-[#2d6a4f] dark:text-green-400',
   },
   {
     key:      'monthly',
-    title:    'This Month',
+    titleKey: 'dashboard.thisMonth',
     icon:     BarChart2,
     iconBg:   'bg-[#e8f0e6] dark:bg-green-900/30',
     iconColor:'text-[#2d6a4f] dark:text-green-400',
   },
   {
     key:      'avgPerDay',
-    title:    'Daily Average',
+    titleKey: 'dashboard.dailyAverage',
     icon:     TrendingDown,
     iconBg:   'bg-[#e8f0e6] dark:bg-green-900/30',
     iconColor:'text-[#2d6a4f] dark:text-green-400',
@@ -38,6 +39,8 @@ const CARDS = [
 ];
 
 export default function KpiRow({ kpi, isLoading }) {
+  const { t } = useTranslation();
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
@@ -48,18 +51,18 @@ export default function KpiRow({ kpi, isLoading }) {
 
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-      {CARDS.map(({ key, title, icon, iconBg, iconColor }) => {
+      {CARDS.map(({ key, titleKey, icon, iconBg, iconColor }) => {
         const stat = kpi[key];
         return (
           <StatCard
             key={key}
-            title={title}
-            value={formatEmission(stat.value)}
+            title={t(titleKey)}
+            value={formatEmission(stat.value, 2, t)}
             icon={icon}
             iconBg={iconBg}
             iconColor={iconColor}
             trend={stat.trend}
-            trendValue={`${stat.delta > 0 ? '+' : ''}${stat.delta.toFixed(2)} kg`}
+            trendValue={`${stat.delta > 0 ? '+' : ''}${stat.delta.toFixed(2)} ${t('activitiesPage.units.kg', { defaultValue: 'kg' })}`}
             trendLabel={stat.deltaLabel}
           />
         );

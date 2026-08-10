@@ -1,4 +1,5 @@
 import { useForm } from 'react-hook-form';
+import { useTranslation } from 'react-i18next';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -10,6 +11,7 @@ import { extractErrorMessage } from '@/utils/errorHandler';
 import { Button, Input, Alert } from '@/components/ui';
 
 export default function AdminLoginPage() {
+  const { t } = useTranslation();
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -55,10 +57,10 @@ export default function AdminLoginPage() {
           </div>
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-purple-200 to-purple-400 bg-clip-text text-transparent">
-              Admin Portal Login
+              {t('adminPage.portalLogin', { defaultValue: 'Admin Portal Login' })}
             </h1>
             <p className="text-xs text-purple-300/80 mt-1 font-medium">
-              CarbonTrack Restricted Administrator Authentication
+              {t('adminPage.authSubtitle', { defaultValue: 'CarbonTrack Restricted Administrator Authentication' })}
             </p>
           </div>
         </div>
@@ -73,7 +75,9 @@ export default function AdminLoginPage() {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Admin Email Address</label>
+              <label className="text-xs font-bold text-slate-300">
+                {t('adminPage.adminEmail', { defaultValue: 'Admin Email Address' })}
+              </label>
               <div className="relative">
                 <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-purple-400" />
                 <Input
@@ -87,7 +91,9 @@ export default function AdminLoginPage() {
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-300">Admin Password</label>
+              <label className="text-xs font-bold text-slate-300">
+                {t('adminPage.adminPassword', { defaultValue: 'Admin Password' })}
+              </label>
               <div className="relative">
                 <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-purple-400" />
                 <Input
@@ -106,10 +112,10 @@ export default function AdminLoginPage() {
               className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-2xl shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center gap-2 text-sm mt-2"
             >
               {isSubmitting ? (
-                'Authenticating Admin...'
+                t('adminPage.authenticating', { defaultValue: 'Authenticating Admin...' })
               ) : (
                 <>
-                  <span>Sign In as Admin</span>
+                  <span>{t('adminPage.signInAdmin', { defaultValue: 'Sign In as Admin' })}</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -122,7 +128,7 @@ export default function AdminLoginPage() {
               className="text-xs font-semibold text-purple-400 hover:text-purple-300 transition-colors inline-flex items-center gap-1.5"
             >
               <User className="w-3.5 h-3.5" />
-              <span>Standard User Login</span>
+              <span>{t('adminPage.standardLogin', { defaultValue: 'Standard User Login' })}</span>
             </Link>
           </div>
         </div>
@@ -130,3 +136,4 @@ export default function AdminLoginPage() {
     </div>
   );
 }
+

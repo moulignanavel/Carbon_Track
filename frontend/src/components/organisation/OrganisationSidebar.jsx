@@ -1,4 +1,5 @@
 import { NavLink, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Activity, BarChart3, Building2, ChevronLeft, CircleHelp, FileText,
   Gauge, Leaf, LogOut, Target, TrendingDown, TrendingUp,
@@ -6,44 +7,46 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
-const groups = [
-  { label: 'Overview', items: [['/organisation/dashboard', 'Dashboard', Gauge]] },
-  {
-    label: 'Insights',
-    items: [
-      ['/organisation/analytics', 'Analytics', BarChart3],
-      ['/organisation/monthly-trends', 'Monthly Trends', TrendingUp],
-      ['/organisation/departments', 'Department Comparison', Building2],
-    ],
-  },
-  {
-    label: 'People',
-    items: [
-      ['/organisation/employees', 'Employees', Users],
-      ['/organisation/top-contributors', 'Top Contributors', Trophy],
-      ['/organisation/lowest-footprint', 'Lowest Footprint', TrendingDown],
-    ],
-  },
-  {
-    label: 'Sustainability',
-    items: [
-      ['/organisation/goals', 'Organisation Goals', Target],
-      ['/organisation/activity-logs', 'Activity Logs', Activity],
-      ['/organisation/reports', 'CSR Reports', FileText],
-    ],
-  },
-  {
-    label: 'Settings',
-    items: [
-      ['/organisation/profile', 'Organisation Profile', Building2],
-      ['/organisation/my-profile', 'My Profile', UserCircle],
-    ],
-  },
-];
-
 export default function OrganisationSidebar({ open, collapsed, onClose, onCollapse }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+
+  const groups = [
+    { label: t('orgNav.overview', 'Overview'), items: [['/organisation/dashboard', t('orgNav.dashboard', 'Dashboard'), Gauge]] },
+    {
+      label: t('orgNav.insights', 'Insights'),
+      items: [
+        ['/organisation/analytics', t('orgNav.analytics', 'Analytics'), BarChart3],
+        ['/organisation/monthly-trends', t('orgNav.monthlyTrends', 'Monthly Trends'), TrendingUp],
+        ['/organisation/departments', t('orgNav.departmentComparison', 'Department Comparison'), Building2],
+      ],
+    },
+    {
+      label: t('orgNav.people', 'People'),
+      items: [
+        ['/organisation/employees', t('orgNav.employees', 'Employees'), Users],
+        ['/organisation/top-contributors', t('orgNav.topContributors', 'Top Contributors'), Trophy],
+        ['/organisation/lowest-footprint', t('orgNav.lowestFootprint', 'Lowest Footprint'), TrendingDown],
+      ],
+    },
+    {
+      label: t('orgNav.sustainability', 'Sustainability'),
+      items: [
+        ['/organisation/goals', t('orgNav.organisationGoals', 'Organisation Goals'), Target],
+        ['/organisation/challenges', t('orgNav.challenges', 'Challenges'), Trophy],
+        ['/organisation/activity-logs', t('orgNav.activityLogs', 'Activity Logs'), Activity],
+        ['/organisation/reports', t('orgNav.csrReports', 'CSR Reports'), FileText],
+      ],
+    },
+    {
+      label: t('orgNav.settings', 'Settings'),
+      items: [
+        ['/organisation/profile', t('orgNav.organisationProfile', 'Organisation Profile'), Building2],
+        ['/organisation/my-profile', t('orgNav.myProfile', 'My Profile'), UserCircle],
+      ],
+    },
+  ];
 
   return (
     <>
@@ -67,7 +70,7 @@ export default function OrganisationSidebar({ open, collapsed, onClose, onCollap
           {!collapsed && (
             <div className="min-w-0 flex-1">
               <strong className="block truncate text-[15px]">CarbonTrack</strong>
-              <span className="block text-xs text-emerald-200">Organisation portal</span>
+              <span className="block text-xs text-emerald-200">{t('orgNav.organisationPortal', { defaultValue: 'Organisation portal' })}</span>
             </div>
           )}
           {!collapsed&&<button type="button" aria-label="Collapse sidebar" title="Collapse sidebar" onClick={onCollapse} className="ml-auto hidden h-9 w-9 items-center justify-center rounded-lg text-slate-300 hover:bg-white/10 hover:text-white lg:flex"><ChevronLeft className="h-5 w-5"/></button>}
@@ -108,25 +111,25 @@ export default function OrganisationSidebar({ open, collapsed, onClose, onCollap
           {!collapsed && (
             <div className="mb-2 flex items-center gap-2 rounded-lg bg-emerald-500/10 px-3 py-2 text-xs text-emerald-200">
               <span className="h-2 w-2 rounded-full bg-emerald-400" aria-hidden="true" />
-              <span>Live organisation sync · 5 sec</span>
+              <span>{t('orgNav.liveSync', { defaultValue: 'Live organisation sync · 5 sec' })}</span>
             </div>
           )}
           <a
             href="mailto:support@carbontrack.com"
-            title={collapsed ? 'Help' : undefined}
+            title={collapsed ? t('nav.help', { defaultValue: 'Help' }) : undefined}
             className={`flex min-h-10 items-center rounded-lg text-sm text-slate-300 hover:bg-white/[0.07] hover:text-white ${collapsed ? 'justify-center' : 'gap-3 px-3'}`}
           >
             <CircleHelp className="h-[18px] w-[18px]" />
-            {!collapsed && <span>Help</span>}
+            {!collapsed && <span>{t('nav.help', { defaultValue: 'Help' })}</span>}
           </a>
           <button
             type="button"
-            title={collapsed ? 'Logout' : undefined}
+            title={collapsed ? t('nav.logout', { defaultValue: 'Logout' }) : undefined}
             onClick={logout}
             className={`mt-1 flex min-h-10 w-full items-center rounded-lg text-sm text-slate-300 hover:bg-red-500/10 hover:text-red-200 ${collapsed ? 'justify-center' : 'gap-3 px-3'}`}
           >
             <LogOut className="h-[18px] w-[18px]" />
-            {!collapsed && <span>Logout</span>}
+            {!collapsed && <span>{t('nav.logout', { defaultValue: 'Logout' })}</span>}
           </button>
         </div>
       </aside>

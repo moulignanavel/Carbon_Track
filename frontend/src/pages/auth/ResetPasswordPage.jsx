@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -29,6 +30,7 @@ const resetSchema = z.object({
 });
 
 export default function ResetPasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
@@ -49,14 +51,14 @@ export default function ResetPasswordPage() {
 
   const onSubmit = async (data) => {
     if (!token) {
-      setError('root', { message: 'Reset token is missing from the URL.' });
+      setError('root', { message: t('authPage.missingToken', { defaultValue: 'Reset token is missing from the URL.' }) });
       return;
     }
 
     try {
       await resetPassword({ token, password: data.newPassword });
       setSuccess(true);
-      toast.success('Password reset successfully!');
+      toast.success(t('authPage.passwordResetComplete', { defaultValue: 'Password reset successfully!' }));
     } catch (err) {
       setError('root', { message: extractErrorMessage(err) });
     }
@@ -78,10 +80,12 @@ export default function ResetPasswordPage() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">Password Reset Complete</h1>
+          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">
+            {t('authPage.passwordResetComplete', { defaultValue: 'Password Reset Complete' })}
+          </h1>
 
           <p className="mt-3 text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-            Your password has been securely updated. You can now use your new password to sign in to your account.
+            {t('authPage.passwordResetDesc', { defaultValue: 'Your password has been securely updated. You can now use your new password to sign in to your account.' })}
           </p>
 
           {/* Actions */}
@@ -93,7 +97,7 @@ export default function ResetPasswordPage() {
               onClick={() => navigate('/', { replace: true })}
               className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-emerald-950 font-black"
             >
-              Go to sign in
+              {t('authPage.goToSignIn', { defaultValue: 'Go to sign in' })}
             </Button>
           </div>
         </div>
@@ -115,16 +119,18 @@ export default function ResetPasswordPage() {
             <div className="absolute inset-0 bg-emerald-400/20 blur-xl rounded-full" />
             <Lock className="h-7 w-7 text-emerald-400 relative z-10" aria-hidden="true" />
           </div>
-          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">Set New Password</h1>
+          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">
+            {t('authPage.setNewPassword', { defaultValue: 'Set New Password' })}
+          </h1>
           <p className="mt-2 text-sm text-slate-400 font-medium">
-            Please enter your new password below.
+            {t('authPage.setNewPasswordSubtitle', { defaultValue: 'Please enter your new password below.' })}
           </p>
         </div>
 
         {/* Missing token error */}
         {!token && (
           <Alert variant="error" className="mb-6 border-red-500/30 bg-red-500/10 text-red-200">
-            Missing reset token. Please use the link provided in your email.
+            {t('authPage.missingToken', { defaultValue: 'Missing reset token. Please use the link provided in your email.' })}
           </Alert>
         )}
 
@@ -143,10 +149,10 @@ export default function ResetPasswordPage() {
         >
           <div className="space-y-1.5">
             <Input
-              label="New Password"
+              label={t('authPage.newPassword', { defaultValue: 'New Password' })}
               id="new-password"
               type="password"
-              placeholder="Enter new password"
+              placeholder={t('authPage.newPasswordPlaceholder', { defaultValue: 'Enter new password' })}
               autoFocus
               required
               disabled={!token || isSubmitting}
@@ -159,10 +165,10 @@ export default function ResetPasswordPage() {
 
           <div className="space-y-1.5">
             <Input
-              label="Confirm Password"
+              label={t('authPage.confirmPassword', { defaultValue: 'Confirm Password' })}
               id="confirm-password"
               type="password"
-              placeholder="Confirm new password"
+              placeholder={t('authPage.confirmPasswordPlaceholder', { defaultValue: 'Confirm new password' })}
               required
               disabled={!token || isSubmitting}
               leftIcon={<Lock className="h-4.5 w-4.5 text-emerald-400/70" />}
@@ -182,10 +188,13 @@ export default function ResetPasswordPage() {
             rightIcon={!isSubmitting ? <ArrowRight className="h-5 w-5" /> : undefined}
             className="mt-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-emerald-950 font-black shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 py-3.5 text-base"
           >
-            {isSubmitting ? 'Updating password…' : 'Reset password'}
+            {isSubmitting 
+              ? t('authPage.updatingPassword', { defaultValue: 'Updating password…' }) 
+              : t('authPage.resetPassword', { defaultValue: 'Reset password' })}
           </Button>
         </form>
       </div>
     </div>
   );
 }
+

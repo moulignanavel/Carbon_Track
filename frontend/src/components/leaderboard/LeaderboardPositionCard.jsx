@@ -43,7 +43,7 @@ export default function LeaderboardPositionCard({ user, allUsers = [], onLogActi
       {/* Soft background glow */}
       <div className="absolute -top-10 -right-10 w-72 h-72 bg-emerald-200/40 dark:bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+      <div className="relative z-10 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
         {/* Left Section: User Info & Rank */}
         <div className="flex items-center gap-3">
           <div className="relative">
@@ -61,6 +61,11 @@ export default function LeaderboardPositionCard({ user, allUsers = [], onLogActi
                 Your Position
               </span>
               <span className="text-[11px] text-slate-500 dark:text-slate-400 font-semibold">Global Rank #{userRank}</span>
+              {user.isAnonymous && (
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  🕶️ Anonymous
+                </span>
+              )}
             </div>
             <h3 className="text-base font-black tracking-tight text-slate-900 dark:text-slate-50">
               {user.username}
@@ -79,41 +84,41 @@ export default function LeaderboardPositionCard({ user, allUsers = [], onLogActi
           </div>
         </div>
 
-        {/* Center Section: Motivational Progress Bar Card */}
-        <div className="flex-1 max-w-md bg-white/90 dark:bg-slate-900/90 border border-emerald-200/80 dark:border-emerald-800/60 rounded-xl p-2.5 shadow-sm">
-          <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
-            <span className="text-emerald-800 dark:text-emerald-300 flex items-center gap-1 font-bold">
-              <Target className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              {userRank === 1 ? '🌟 You hold Rank #1!' : `Target: Reach Rank #${targetRank}`}
-            </span>
-            <span className="text-slate-500 dark:text-slate-400 font-extrabold">{progressPct}%</span>
+        {/* Right Section: Target Progress + Log Activity */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-1 lg:flex-none justify-end">
+          {/* Motivational Progress Bar Card */}
+          <div className="w-full sm:w-72 bg-white/90 dark:bg-slate-900/90 border border-emerald-200/80 dark:border-emerald-800/60 rounded-xl p-2.5 shadow-sm">
+            <div className="flex items-center justify-between text-[11px] font-semibold mb-1">
+              <span className="text-emerald-800 dark:text-emerald-300 flex items-center gap-1 font-bold">
+                <Target className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                {userRank === 1 ? '🌟 You hold Rank #1!' : `Target: Reach Rank #${targetRank}`}
+              </span>
+              <span className="text-slate-500 dark:text-slate-400 font-extrabold">{progressPct}%</span>
+            </div>
+
+            <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden mb-1">
+              <div
+                className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 shadow-sm"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+
+            <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
+              {userRank === 1 ? (
+                <span>🎉 Amazing work! You are currently the <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">#1 Eco Champion</strong> in the community!</span>
+              ) : (
+                <span>💡 Reduce footprint by <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{distanceToNextRankKg} kg</strong> to climb to <strong className="text-slate-900 dark:text-slate-100 font-bold">Rank #{targetRank}</strong>!</span>
+              )}
+            </p>
           </div>
 
-          <div className="w-full h-2 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 overflow-hidden mb-1">
-            <div
-              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 shadow-sm"
-              style={{ width: `${progressPct}%` }}
-            />
-          </div>
-
-          <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-tight">
-            {userRank === 1 ? (
-              <span>🎉 Amazing work! You are currently the <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">#1 Eco Champion</strong> in the community!</span>
-            ) : (
-              <span>💡 Reduce your footprint by <strong className="text-emerald-700 dark:text-emerald-400 font-extrabold">{distanceToNextRankKg} kg CO₂e</strong> to climb to <strong className="text-slate-900 dark:text-slate-100 font-extrabold">Rank #{targetRank}</strong>!</span>
-            )}
-          </p>
-        </div>
-
-        {/* Right Section: Log Activity CTA */}
-        <div className="flex items-center gap-2">
           <Button
             onClick={handleLogClick}
             className="
-              px-3 py-1.5 rounded-lg font-bold text-xs text-white 
+              px-3 py-2 rounded-lg font-bold text-xs text-white 
               bg-emerald-600 hover:bg-emerald-700
               shadow-sm shadow-emerald-600/20 transition-all transform hover:scale-105
-              flex items-center gap-1.5 whitespace-nowrap border-0
+              flex items-center justify-center gap-1.5 whitespace-nowrap border-0 h-full
             "
           >
             <Plus className="w-3.5 h-3.5 stroke-[3]" />

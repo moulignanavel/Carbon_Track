@@ -1,4 +1,4 @@
-ALTER TABLE goals ADD COLUMN IF NOT EXISTS organisation_managed BOOLEAN DEFAULT FALSE;
+ALTER TABLE goals ADD COLUMN organisation_managed BOOLEAN DEFAULT FALSE;
 
 UPDATE goals
 SET organisation_managed = TRUE

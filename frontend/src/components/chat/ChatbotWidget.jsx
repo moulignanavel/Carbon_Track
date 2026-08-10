@@ -7,7 +7,8 @@
  */
 
 import { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, X, Bot, Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { MessageSquare, Send, X, Leaf, Sparkles } from 'lucide-react';
 import chatService from '@/services/api/chatService';
 import './chatbot.css';
 
@@ -62,10 +63,12 @@ const renderMessageText = (text) => {
 };
 
 export default function ChatbotWidget() {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 'init',
+      textKey: 'chatbot.welcome',
       text: "Hi! I'm CarbonBot, your carbon tracking assistant. Ask me anything about emissions, green habits, or how to use this app!",
       sender: 'bot',
       time: new Date()
@@ -112,7 +115,7 @@ export default function ChatbotWidget() {
       
       const botMsg = {
         id: `bot-${Date.now()}`,
-        text: responseData.response || "I couldn't process that request. Please try again.",
+        text: responseData.response || t('chatbot.errorProcess', { defaultValue: "I couldn't process that request. Please try again." }),
         sender: 'bot',
         time: new Date()
       };
@@ -121,7 +124,7 @@ export default function ChatbotWidget() {
       console.error('Chatbot API call failed:', error);
       const errorMsg = {
         id: `error-${Date.now()}`,
-        text: "Sorry, I'm having trouble connecting to the carbon engine right now. Please check your network and try again.",
+        text: t('chatbot.errorConnection', { defaultValue: "Sorry, I'm having trouble connecting to the carbon engine right now. Please check your network and try again." }),
         sender: 'bot',
         isError: true,
         time: new Date()
@@ -142,7 +145,7 @@ export default function ChatbotWidget() {
           onClick={() => setIsOpen(true)}
           aria-label="Open CarbonBot Chat"
         >
-          <Bot className="w-6 h-6 text-white" />
+          <Leaf className="w-6 h-6 text-white" />
           <span className="chatbot-pulse-glow"></span>
         </button>
       )}
@@ -154,12 +157,12 @@ export default function ChatbotWidget() {
           <div className="chatbot-header">
             <div className="chatbot-header-left">
               <div className="chatbot-avatar-container">
-                <Bot className="w-5 h-5 text-white" />
+                <Leaf className="w-5 h-5 text-white" />
                 <Sparkles className="w-2.5 h-2.5 text-yellow-300 absolute -top-0.5 -right-0.5 animate-pulse" />
               </div>
               <div className="chatbot-header-info">
                 <h3>CarbonBot</h3>
-                <span className="chatbot-status">Online • AI Assistant</span>
+                <span className="chatbot-status">{t('chatbot.status', { defaultValue: 'Online • AI Assistant' })}</span>
               </div>
             </div>
             <button
@@ -191,7 +194,7 @@ export default function ChatbotWidget() {
                   }`}
                 >
                   <div className="chatbot-message-text">
-                    {renderMessageText(msg.text)}
+                    {renderMessageText(msg.textKey ? t(msg.textKey) : msg.text)}
                   </div>
                   <span className="message-time">
                     {msg.time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -221,7 +224,7 @@ export default function ChatbotWidget() {
               ref={inputRef}
               rows={1}
               className="chatbot-input-field chatbot-textarea"
-              placeholder="Ask about carbon calculations, tips..."
+              placeholder={t('chatbot.placeholder', { defaultValue: 'Ask about carbon calculations, tips...' })}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={(e) => {

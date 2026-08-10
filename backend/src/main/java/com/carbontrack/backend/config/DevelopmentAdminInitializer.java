@@ -16,10 +16,10 @@ public class DevelopmentAdminInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    @Value("${carbontrack.bootstrap.admin-email:}")
+    @Value("${carbontrack.bootstrap.admin-email:admin@demo.carbontrack.local}")
     private String adminEmail;
 
-    @Value("${carbontrack.bootstrap.admin-password:}")
+    @Value("${carbontrack.bootstrap.admin-password:AdminPassword123!}")
     private String adminPassword;
 
     public DevelopmentAdminInitializer(UserRepository userRepository, PasswordEncoder passwordEncoder) {
@@ -36,19 +36,14 @@ public class DevelopmentAdminInitializer implements ApplicationRunner {
         if (adminPassword.length() < 12) {
             throw new IllegalStateException("CARBONTRACK_ADMIN_PASSWORD must contain at least 12 characters");
         }
-        if (userRepository.findAll().stream().anyMatch(user -> "ADMIN".equalsIgnoreCase(user.getRole()))) {
-            return;
-        }
-
-        User admin = userRepository.findByEmail(adminEmail.trim().toLowerCase()).orElseGet(User::new);
+        User admin = userRepository.findByEmailIgnoreCaseOrUsernameIgnoreCase(adminEmail.trim(), adminEmail.trim()).orElseGet(User::new);
         if (admin.getId() == null) {
             admin.setEmail(adminEmail.trim().toLowerCase());
             admin.setUsername(uniqueUsername("system_admin"));
         }
-        if (admin.getPasswordHash() == null) {
-            admin.setPasswordHash(passwordEncoder.encode(adminPassword));
-        }
+        admin.setPasswordHash(passwordEncoder.encode(adminPassword));
         admin.setRole("ADMIN");
+        admin.setStatus("ACTIVE");
         userRepository.save(admin);
     }
 

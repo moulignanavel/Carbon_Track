@@ -1,28 +1,35 @@
 import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Toaster } from 'react-hot-toast';
-import Sidebar    from './Sidebar';
-import TopBar     from './TopBar';
-import BottomNav  from './BottomNav';
+import Sidebar from './Sidebar';
+import TopBar from './TopBar';
+import BottomNav from './BottomNav';
 import ErrorBoundary from '@/components/errors/ErrorBoundary';
 import ChatbotWidget from '@/components/chat/ChatbotWidget';
 import DataNodeGrid from '@/components/landing/DataNodeGrid';
 
-const PAGE_TITLES = {
-  '/dashboard':  'Dashboard',
-  '/activities': 'Activity Log',
-  '/goals':      'Goals',
-  '/reports':    'Reports',
-  '/settings':   'Settings',
-  '/admin':      'Admin',
-  '/badges':     'Trophy Room',
-};
-
 export default function DashboardLayout() {
+  const { t } = useTranslation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [hasScrolled, setHasScrolled] = useState(false);
-  
+
   const { pathname } = useLocation();
+  const PAGE_TITLES = {
+    '/dashboard': t('nav.dashboard', { defaultValue: 'Dashboard' }),
+    '/activities': t('nav.activities', { defaultValue: 'Activity Log' }),
+    '/energy-simulator': t('nav.energySimulator', { defaultValue: 'Smart Home Energy Auditor' }),
+    '/route-planner': t('nav.routePlanner', { defaultValue: 'Green Route Planner' }),
+    '/offsets': t('nav.carbonOffsets', { defaultValue: 'Carbon Offsets' }),
+    '/goals': t('nav.goals', { defaultValue: 'Goals' }),
+    '/challenges': t('nav.challenges', { defaultValue: 'Challenges' }),
+    '/reports': t('nav.reports', { defaultValue: 'Reports' }),
+    '/settings': t('nav.settings', { defaultValue: 'Settings' }),
+    '/admin': t('nav.adminDashboard', { defaultValue: 'Admin' }),
+    '/badges': t('nav.myBadges', { defaultValue: 'Trophy Room' }),
+    '/community': t('nav.community', { defaultValue: 'Community' }),
+    '/recommendations': t('nav.recommendations', { defaultValue: 'Recommendations' }),
+  };
   const title = PAGE_TITLES[pathname] ?? '';
 
 

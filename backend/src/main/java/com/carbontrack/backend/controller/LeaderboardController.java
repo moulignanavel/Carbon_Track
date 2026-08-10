@@ -94,7 +94,9 @@ public class LeaderboardController {
                 .filter(u -> {
                     String un = u.getUsername() != null ? u.getUsername().toLowerCase() : "";
                     String em = u.getEmail() != null ? u.getEmail().toLowerCase() : "";
-                    return !un.contains("test") && !em.contains("test");
+                    String role = u.getRole() != null ? u.getRole().toUpperCase() : "";
+                    return !un.contains("test") && !em.contains("test")
+                            && !role.equals("ADMIN") && !role.equals("ORG_ADMIN");
                 })
                 .collect(Collectors.toList());
 
@@ -133,9 +135,17 @@ public class LeaderboardController {
     }
 
     private List<RecentAchievementDto> buildRecentAchievements(List<User> validUsers, List<ActivityLog> allLogs) {
+        User currentUser = securityService.getCurrentUser();
         List<RecentAchievementDto> list = new ArrayList<>();
-        Map<Long, String> userNameMap = validUsers.stream()
-                .collect(Collectors.toMap(User::getId, User::getUsername, (a, b) -> a));
+        Map<Long, String> userNameMap = new HashMap<>();
+        for (User u : validUsers) {
+            boolean isSelf = u.getId().equals(currentUser.getId());
+            if (u.getIsAnonymous() != null && u.getIsAnonymous() && !isSelf) {
+                userNameMap.put(u.getId(), "Anonymous User #" + (u.getId() % 10000));
+            } else {
+                userNameMap.put(u.getId(), u.getUsername());
+            }
+        }
 
         LocalDate today = LocalDate.now();
 
@@ -250,11 +260,14 @@ public class LeaderboardController {
         List<LeaderboardUserResponse> responseList = new ArrayList<>();
 
         for (User user : users) {
-            String usernameLower = user.getUsername() != null ? user.getUsername().toLowerCase() : "";
-            String emailLower = user.getEmail() != null ? user.getEmail().toLowerCase() : "";
-            if (usernameLower.contains("test") || emailLower.contains("test")) {
-                continue;
-            }
+             String usernameLower = user.getUsername() != null ? user.getUsername().toLowerCase() : "";
+             String emailLower = user.getEmail() != null ? user.getEmail().toLowerCase() : "";
+             String role = user.getRole() != null ? user.getRole().toUpperCase() : "";
+             if (usernameLower.contains("test") || emailLower.contains("test") 
+                     || role.equals("ADMIN") || role.equals("ORG_ADMIN")
+                     || !"ACTIVE".equalsIgnoreCase(user.getStatus())) {
+                 continue;
+             }
 
             List<ActivityLog> userLogs = logsByUser.getOrDefault(user.getId(), Collections.emptyList());
             int activityCount = userLogs.size();
@@ -276,9 +289,20 @@ public class LeaderboardController {
             int footprintScore = Math.max(0, Math.min(100,
                     100 - (int) Math.round(totalCO2Emitted)));
 
+            String displayName = user.getUsername();
+            boolean isSelf = user.getId().equals(currentUserId);
+            boolean isAnon = user.getIsAnonymous() != null && user.getIsAnonymous();
+            String customAnonName = (user.getAnonymousName() != null && !user.getAnonymousName().isBlank())
+                    ? user.getAnonymousName().trim()
+                    : "Anonymous User #" + (user.getId() % 10000);
+
+            if (isAnon) {
+                displayName = customAnonName;
+            }
+
             responseList.add(new LeaderboardUserResponse(
                     user.getId(),
-                    user.getUsername(),
+                    displayName,
                     0,
                     totalCO2Emitted,
                     totalCO2Emitted,
@@ -288,7 +312,10 @@ public class LeaderboardController {
                     footprintScore,
                     strength.label(),
                     strength.tip(),
-                    user.getId().equals(currentUserId)
+                    isSelf,
+                    user.getOrganisation() != null ? user.getOrganisation().getId() : null,
+                    isAnon,
+                    customAnonName
             ));
         }
 

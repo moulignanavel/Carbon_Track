@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ArrowRight, Clock } from 'lucide-react';
 import { Card, Badge, Button } from '@/components/ui';
-import { formatEmission, formatDate } from '@/utils/formatters';
+import { formatEmission, formatDate, formatActivityName } from '@/utils/formatters';
 import { CATEGORY_COLORS } from '@/constants/theme';
 import LazyLottie from '@/components/common/LazyLottie';
 import emptyAnimation from '@/assets/lottie/eco-empty.json';
@@ -20,6 +20,7 @@ const BADGE_VARIANT = {
 };
 
 function ActivityItem({ activity }) {
+  const { t, i18n } = useTranslation();
   const { category, activityType, emissions, amount, unit, logDate, icon } = activity;
   const isHighEmission = emissions > 5;
 
@@ -37,7 +38,7 @@ function ActivityItem({ activity }) {
       {/* Text */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-          {activityType}
+          {formatActivityName(activityType, i18n.language)}
         </p>
         <p className="text-xs text-slate-400 dark:text-slate-500">
           {amount} {unit} · {formatDate(logDate)}
@@ -53,7 +54,7 @@ function ActivityItem({ activity }) {
               : 'text-green-700 dark:text-green-400'
           }`}
         >
-          {formatEmission(emissions)}
+          {formatEmission(emissions, 2, t)}
         </span>
         <Badge variant={BADGE_VARIANT[category] ?? 'slate'} size="xs">
           {category}
@@ -123,7 +124,7 @@ export default function RecentActivities({ activities, isLoading }) {
       <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
         <span className="text-slate-500 dark:text-slate-400">{t('dashboard.showingLast')} {activities.length}</span>
         <span className="font-semibold text-slate-700 dark:text-slate-300">
-          {t('dashboard.total')}: {formatEmission(activities.reduce((s, a) => s + a.emissions, 0))}
+          {t('dashboard.total')}: {formatEmission(activities.reduce((s, a) => s + a.emissions, 0), 2, t)}
         </span>
       </div>
     </Card>

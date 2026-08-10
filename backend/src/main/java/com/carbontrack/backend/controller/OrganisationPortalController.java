@@ -24,27 +24,50 @@ public class OrganisationPortalController {
     private final OrganisationRepository organisations;
     private final ActivityLogRepository activities;
     private final GoalRepository goals;
+    private final ChallengeRepository challenges;
     private final PasswordEncoder passwordEncoder;
 
     public OrganisationPortalController(SecurityService security, UserRepository users,
             OrganisationRepository organisations, ActivityLogRepository activities,
-            GoalRepository goals, PasswordEncoder passwordEncoder) {
+            GoalRepository goals, ChallengeRepository challenges, PasswordEncoder passwordEncoder) {
         this.security = security; this.users = users; this.organisations = organisations;
-        this.activities = activities; this.goals = goals; this.passwordEncoder = passwordEncoder;
+        this.activities = activities; this.goals = goals; this.challenges = challenges; this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping("/overview")
     public Map<String,Object> overview() {
         User admin = currentAdmin();
         Organisation org = admin.getOrganisation();
-        List<User> members = users.findByOrganisation_Id(org.getId()).stream()
-                .filter(member -> "USER".equalsIgnoreCase(member.getRole()))
+        List<User> allOrgUsers = users.findByOrganisation_Id(org.getId());
+        Map<Long,User> allUserById = allOrgUsers.stream().collect(Collectors.toMap(User::getId, value -> value));
+        Set<Long> allUserIds = allUserById.keySet();
+
+        // Filter ONLY non-admin employees for employee lists & top contributor rankings
+        List<User> members = allOrgUsers.stream()
+                .filter(member -> "USER".equalsIgnoreCase(member.getRole()) && !admin.getId().equals(member.getId()))
                 .toList();
         Map<Long,User> memberById = members.stream().collect(Collectors.toMap(User::getId, value -> value));
-        Set<Long> ids = memberById.keySet();
+
         List<ActivityLog> logs = activities.findAll().stream()
-                .filter(log -> ids.contains(log.getUserId())).sorted(Comparator.comparing(ActivityLog::getLogDate).reversed()).toList();
-        List<Goal> organisationGoals = goals.findByUserId(admin.getId());
+                .filter(log -> allUserIds.contains(log.getUserId()))
+                .sorted(Comparator.comparing(ActivityLog::getLogDate).reversed())
+                .toList();
+        List<Goal> organisationGoals = goals.findAll().stream()
+                .filter(g -> admin.getId().equals(g.getUserId()) || (g.getOrganisationManaged() != null && g.getOrganisationManaged() && allUserIds.contains(g.getUserId())))
+                .map(g -> {
+                    double actualKg = logs.stream()
+                            .filter(l -> matchesCategory(g.getCategory(), l.getCategory(), l.getActivityType()))
+                            .mapToDouble(this::emission)
+                            .sum();
+                    g.setCurrentKg(round(actualKg));
+                    double target = g.getTargetKg() == null ? 0 : g.getTargetKg();
+                    if (target > 0 && actualKg >= target) {
+                        g.setStatus("ACHIEVED");
+                    } else {
+                        g.setStatus("ACTIVE");
+                    }
+                    return g;
+                }).toList();
         LocalDate today = LocalDate.now();
         LocalDate monthStart = today.withDayOfMonth(1);
         LocalDate previousStart = monthStart.minusMonths(1);
@@ -76,8 +99,8 @@ public class OrganisationPortalController {
         result.put("employees", employeeRows);
         result.put("topContributors", top.stream().limit(10).toList());
         result.put("lowestFootprint", employeeRows.stream().limit(10).toList());
-        result.put("activityLogs", logs.stream().limit(250).map(log -> activity(log, memberById.get(log.getUserId()))).toList());
-        result.put("recentActivities", logs.stream().limit(8).map(log -> activity(log, memberById.get(log.getUserId()))).toList());
+        result.put("activityLogs", logs.stream().limit(250).map(log -> activity(log, allUserById.get(log.getUserId()))).toList());
+        result.put("recentActivities", logs.stream().limit(8).map(log -> activity(log, allUserById.get(log.getUserId()))).toList());
         result.put("goals", organisationGoals);
         result.put("lastUpdated", Instant.now().toString());
         return result;
@@ -153,23 +176,49 @@ public class OrganisationPortalController {
                 || !admin.getOrganisation().getId().equals(employee.getOrganisation().getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Employee belongs to another organisation");
         }
-        if (!"USER".equals(employee.getRole())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Only organisation employees can be edited");
+        if ("ORG_ADMIN".equalsIgnoreCase(employee.getRole())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot edit Organisation Admin via employee list");
         }
-        String email = required(body, "email");
-        users.findByEmail(email).filter(existing -> !existing.getId().equals(employee.getId())).ifPresent(existing -> {
-            throw new DuplicateResourceException("Email already exists");
-        });
-        employee.setFullName(required(body, "fullName"));
-        employee.setEmail(email);
-        employee.setDepartment(body.get("department") == null ? "" : body.get("department").toString().trim());
-        employee.setPhone(body.get("phone") == null ? "" : body.get("phone").toString().trim());
-        String status = body.get("status") == null ? employee.getStatus() : body.get("status").toString().trim().toUpperCase(Locale.ROOT);
-        if (!Set.of("ACTIVE", "INACTIVE").contains(status)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status must be ACTIVE or INACTIVE");
+        String email = body.get("email") != null ? body.get("email").toString().trim() : employee.getEmail();
+        if (email != null && !email.isBlank()) {
+            users.findByEmail(email).filter(existing -> !existing.getId().equals(employee.getId())).ifPresent(existing -> {
+                throw new DuplicateResourceException("Email already exists");
+            });
+            employee.setEmail(email);
         }
-        employee.setStatus(status);
+        if (body.get("fullName") != null && !body.get("fullName").toString().isBlank()) {
+            employee.setFullName(body.get("fullName").toString().trim());
+        }
+        if (body.get("department") != null) {
+            employee.setDepartment(body.get("department").toString().trim());
+        }
+        if (body.get("phone") != null) {
+            employee.setPhone(body.get("phone").toString().trim());
+        }
+        if (body.get("status") != null) {
+            String status = body.get("status").toString().trim().toUpperCase(Locale.ROOT);
+            if (Set.of("ACTIVE", "INACTIVE").contains(status)) {
+                employee.setStatus(status);
+            }
+        }
         return employee(users.save(employee), List.of(), List.of());
+    }
+
+    @DeleteMapping("/employees/{id}")
+    public Map<String, Object> removeEmployee(@PathVariable Long id) {
+        User admin = currentAdmin();
+        User employee = users.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+        if (employee.getOrganisation() == null
+                || !admin.getOrganisation().getId().equals(employee.getOrganisation().getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Employee belongs to another organisation");
+        }
+        if ("ORG_ADMIN".equalsIgnoreCase(employee.getRole())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot delete Organisation Admin account");
+        }
+        employee.setOrganisation(null);
+        users.save(employee);
+        return Map.of("success", true, "message", "Employee removed from organisation");
     }
 
     @PostMapping("/activities")
@@ -219,6 +268,40 @@ public class OrganisationPortalController {
     }
     @DeleteMapping("/goals/{id}") public void deleteGoal(@PathVariable Long id){goals.delete(requireGoal(id));}
 
+    @GetMapping("/challenges")
+    public List<Challenge> getChallenges() {
+        User admin = currentAdmin();
+        Long orgId = admin.getOrganisation().getId();
+        return challenges.findAll().stream()
+                .filter(c -> c.getOrganisationId() == null || orgId.equals(c.getOrganisationId()))
+                .toList();
+    }
+
+    @PostMapping("/challenges")
+    public Challenge createChallenge(@RequestBody Challenge request) {
+        User admin = currentAdmin();
+        request.setId(null);
+        request.setOrganisationId(admin.getOrganisation().getId());
+        if (request.getMetricType() == null || request.getMetricType().isBlank()) request.setMetricType("LOG_ENTRIES");
+        if (request.getCategory() == null || request.getCategory().isBlank()) request.setCategory("all");
+        if (request.getPeriod() == null || request.getPeriod().isBlank()) request.setPeriod("weekly");
+        if (request.getTargetValue() == null) request.setTargetValue(5.0);
+        if (request.getXpReward() == null) request.setXpReward(200);
+        if (request.getIconKey() == null || request.getIconKey().isBlank()) request.setIconKey("leaf");
+        return challenges.save(request);
+    }
+
+    @DeleteMapping("/challenges/{id}")
+    public void deleteChallenge(@PathVariable Long id) {
+        User admin = currentAdmin();
+        Challenge challenge = challenges.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Challenge not found"));
+        if (!admin.getOrganisation().getId().equals(challenge.getOrganisationId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Cannot delete global or other organisation challenge");
+        }
+        challenges.delete(challenge);
+    }
+
     private User currentAdmin() {
         User user=security.getCurrentUser();
         if(!"ORG_ADMIN".equals(user.getRole())||user.getOrganisation()==null)
@@ -236,10 +319,42 @@ public class OrganisationPortalController {
     private Map<String,Object> profile(User u){Map<String,Object> m=new LinkedHashMap<>();m.put("id",u.getId());m.put("name",value(u.getFullName()));
         m.put("email",u.getEmail());m.put("phone",value(u.getPhone()));m.put("jobTitle",value(u.getJobTitle()));m.put("role",u.getRole());m.put("department",value(u.getDepartment()));
         m.put("organisation",u.getOrganisation()==null?"":value(u.getOrganisation().getName()));m.put("photo",value(u.getAvatarUrl()));return m;}
-    private Map<String,Object> employee(User u,List<ActivityLog> logs,List<Goal> allGoals){double monthly=logs.stream().filter(l->u.getId().equals(l.getUserId())&&
-        !l.getLogDate().isBefore(LocalDate.now().withDayOfMonth(1))).mapToDouble(this::emission).sum();long count=logs.stream().filter(l->u.getId().equals(l.getUserId())).count();
-        double score=Math.max(0,100-monthly);double progress=allGoals.isEmpty()?0:allGoals.stream().mapToDouble(g->g.getTargetKg()==null||g.getTargetKg()==0?0:
-        Math.min(100,(g.getCurrentKg()==null?0:g.getCurrentKg())*100/g.getTargetKg())).average().orElse(0);Map<String,Object> m=new LinkedHashMap<>();
+    private boolean matchesCategory(String goalCat, String logCat, String logAct) {
+        if (goalCat == null || goalCat.isBlank() || "all".equalsIgnoreCase(goalCat.trim())) {
+            return true;
+        }
+        String gc = goalCat.toLowerCase().trim();
+        String lc = (logCat == null ? "" : logCat).toLowerCase().trim();
+        String la = (logAct == null ? "" : logAct).toLowerCase().trim();
+
+        if (lc.contains(gc) || gc.contains(lc) || la.contains(gc)) {
+            return true;
+        }
+        if ((gc.contains("electric") || gc.contains("energy")) && (lc.contains("electric") || lc.contains("energy"))) {
+            return true;
+        }
+        if (gc.contains("transport") && (lc.contains("transport") || la.contains("car") || la.contains("bus") || la.contains("travel"))) {
+            return true;
+        }
+        return false;
+    }
+
+    private Map<String,Object> employee(User u,List<ActivityLog> logs,List<Goal> allGoals){
+        double monthly=logs.stream().filter(l->u.getId().equals(l.getUserId())&&
+            !l.getLogDate().isBefore(LocalDate.now().withDayOfMonth(1))).mapToDouble(this::emission).sum();
+        long count=logs.stream().filter(l->u.getId().equals(l.getUserId())).count();
+        double score=Math.max(0,100-monthly);
+        double progress = (allGoals == null || allGoals.isEmpty() || count == 0) ? 0.0 :
+            allGoals.stream().mapToDouble(g -> {
+                double userCategoryEmissions = logs.stream()
+                    .filter(l -> u.getId().equals(l.getUserId()))
+                    .filter(l -> matchesCategory(g.getCategory(), l.getCategory(), l.getActivityType()))
+                    .mapToDouble(this::emission)
+                    .sum();
+                double target = g.getTargetKg() == null ? 0 : g.getTargetKg();
+                return target <= 0 ? 0 : Math.min(100, (userCategoryEmissions * 100.0) / target);
+            }).average().orElse(0.0);
+        Map<String,Object> m=new LinkedHashMap<>();
         m.put("id",u.getId());m.put("name",value(u.getFullName()).isBlank()?u.getUsername():u.getFullName());m.put("email",u.getEmail());m.put("phone",value(u.getPhone()));
         m.put("department",value(u.getDepartment()).isBlank()?"Unassigned":u.getDepartment());m.put("carbonScore",round(score));m.put("monthlyEmission",round(monthly));
         m.put("activities",count);m.put("goalProgress",round(progress));m.put("status",value(u.getStatus()).isBlank()?"ACTIVE":u.getStatus());

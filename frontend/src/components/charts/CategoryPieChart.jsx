@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import {
   PieChart, Pie, Cell, Tooltip,
   ResponsiveContainer, Legend,
@@ -5,6 +6,7 @@ import {
 import { CATEGORY_COLORS, CHART_PALETTE } from '@/constants/theme';
 
 function CustomTooltip({ active, payload }) {
+  const { t } = useTranslation();
   if (!active || !payload?.length) return null;
   const d = payload[0];
   return (
@@ -14,7 +16,7 @@ function CustomTooltip({ active, payload }) {
         <span className="font-medium text-slate-700 dark:text-slate-200">{d.name}</span>
       </div>
       <p className="mt-1 text-slate-500 dark:text-slate-400">
-        {d.value.toFixed(2)} kg CO₂e
+        {d.value.toFixed(2)} {t('activitiesPage.units.kg', { defaultValue: 'kg' })} CO₂e
         <span className="ml-2 font-semibold text-slate-700 dark:text-slate-200">
           ({d.payload.percent?.toFixed(1)}%)
         </span>
@@ -47,13 +49,19 @@ export default function CategoryPieChart({
   height = 280,
   innerRadius = 60,
 }) {
+  const { t } = useTranslation();
   const total = data.reduce((s, d) => s + d.value, 0);
 
-  const enriched = data.map((d, i) => ({
-    ...d,
-    percent: total ? (d.value / total) * 100 : 0,
-    fill: CATEGORY_COLORS[d.category?.toLowerCase()] ?? CHART_PALETTE[i % CHART_PALETTE.length],
-  }));
+  const enriched = data.map((d, i) => {
+    const rawCat = d.category || d.name || '';
+    const localizedName = d.displayName || t(`categories.${rawCat.toLowerCase()}`, { defaultValue: d.name || rawCat });
+    return {
+      ...d,
+      name: localizedName,
+      percent: total ? (d.value / total) * 100 : 0,
+      fill: CATEGORY_COLORS[rawCat.toLowerCase()] ?? CHART_PALETTE[i % CHART_PALETTE.length],
+    };
+  });
 
   return (
     <ResponsiveContainer width="100%" height={height}>

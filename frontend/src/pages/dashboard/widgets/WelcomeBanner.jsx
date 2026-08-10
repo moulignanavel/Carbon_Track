@@ -1,10 +1,11 @@
 /**
  * WelcomeBanner — gradient hero strip with daily summary
  */
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Plus, Leaf, Sun, TrendingDown, Award } from 'lucide-react';
 import { Button, Badge } from '@/components/ui';
-import { formatEmission } from '@/utils/formatters';
+import { formatEmission, formatUserName } from '@/utils/formatters';
 import LazyLottie from '@/components/common/LazyLottie';
 import earthAnimation from '@/assets/lottie/eco-earth.json';
 import plantAnimation from '@/assets/lottie/eco-plant.json';
@@ -23,18 +24,22 @@ function Pill({ label, value, icon: Icon }) {
   );
 }
 
-export default function WelcomeBanner({ user, kpi, percentile }) {
+export default function WelcomeBanner({ user, kpi, percentile, streak }) {
+  const { t, i18n } = useTranslation();
   const hour = new Date().getHours();
-  const greeting =
-    hour < 12 ? 'Good morning' :
-    hour < 17 ? 'Good afternoon' :
-                'Good evening';
+  const greetingKey =
+    hour < 12 ? 'dashboard.goodMorning' :
+    hour < 17 ? 'dashboard.goodAfternoon' :
+                'dashboard.goodEvening';
+  const greeting = t(greetingKey);
 
-  const streakDays = user?.streak || 5;
+  const streakDays = typeof streak === 'number' ? streak : (user?.streak ?? 0);
+  const rawName = user?.username || 'Eco Warrior';
+  const displayName = formatUserName(rawName, i18n.language);
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-6 md:p-7 bg-gradient-to-br from-green-900 via-green-800 to-green-700"
+      className="relative overflow-hidden rounded-2xl p-5 md:p-6 bg-gradient-to-br from-green-900 via-green-800 to-green-700"
     >
       {/* Background decorations */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
@@ -60,18 +65,18 @@ export default function WelcomeBanner({ user, kpi, percentile }) {
             </span>
           </div>
           <h2 className="text-2xl font-black text-white leading-tight">
-            {user?.username ?? 'Eco Warrior'}
+            {displayName}
           </h2>
           <p className="mt-1.5 text-sm text-emerald-100 font-medium max-w-xs leading-relaxed">
             {kpi?.today?.trend === 'down'
-              ? `You're doing great today — already ${Math.abs(kpi.today.delta).toFixed(2)} kg below yesterday.`
-              : `You've logged ${formatEmission(kpi?.today?.value ?? 0)} today. Keep it up!`}
+              ? t('dashboard.doingGreatToday', { delta: Math.abs(kpi.today.delta).toFixed(2) })
+              : t('dashboard.loggedToday', { amount: formatEmission(kpi?.today?.value ?? 0, 2, t) })}
           </p>
 
           {/* Stat pills row */}
           <div className="mt-4 flex flex-wrap gap-2">
-            <Pill label="Today"     value={formatEmission(kpi?.today?.value ?? 0)}   icon={Sun}         />
-            <Pill label="This week" value={formatEmission(kpi?.weekly?.value ?? 0)}  icon={TrendingDown} />
+            <Pill label={t('dashboard.today')}     value={formatEmission(kpi?.today?.value ?? 0, 2, t)}   icon={Sun}         />
+            <Pill label={t('dashboard.thisWeek')} value={formatEmission(kpi?.weekly?.value ?? 0, 2, t)}  icon={TrendingDown} />
             
             {/* Eco Streak Pill with animated leaf Lottie */}
             <div className="flex items-center gap-2 rounded-xl px-3 py-2"
@@ -81,18 +86,18 @@ export default function WelcomeBanner({ user, kpi, percentile }) {
                 <LazyLottie animationData={plantAnimation} height={20} width={20} loop={true} />
               </div>
               <div>
-                <p className="text-[10px] font-bold leading-none text-emerald-100">Eco Streak</p>
-                <p className="text-xs font-black text-white mt-0.5 leading-none tabular-nums">{streakDays} Days 🔥</p>
+                <p className="text-[10px] font-bold leading-none text-emerald-100">{t('dashboard.ecoStreak')}</p>
+                <p className="text-xs font-black text-white mt-0.5 leading-none tabular-nums">{streakDays} {t('dashboard.days')} 🔥</p>
               </div>
             </div>
 
             {percentile !== null && percentile !== undefined && (
               <Pill 
-                label="Green Standing" 
+                label={t('dashboard.greenStanding')} 
                 value={
                   percentile >= 99 
-                    ? "Top 1% Greenest" 
-                    : `Top ${(100 - percentile).toFixed(0)}%`
+                    ? t('dashboard.top1Percent') 
+                    : t('dashboard.topPercent', { percent: (100 - percentile).toFixed(0) })
                 } 
                 icon={Award} 
               />
@@ -104,9 +109,9 @@ export default function WelcomeBanner({ user, kpi, percentile }) {
         <div className="flex items-center justify-center shrink-0">
           <LazyLottie
             animationData={earthAnimation}
-            height={240}
-            width={240}
-            className="h-[220px] w-[220px] md:h-[250px] md:w-[250px]"
+            height={150}
+            width={150}
+            className="h-[130px] w-[130px] md:h-[150px] md:w-[150px]"
             loop={true}
           />
         </div>
@@ -119,7 +124,7 @@ export default function WelcomeBanner({ user, kpi, percentile }) {
               size="md"
               leftIcon={<Plus className="h-4 w-4" />}
             >
-              Log Activity
+              {t('dashboard.logActivity')}
             </Button>
           </Link>
           <Badge
@@ -128,7 +133,7 @@ export default function WelcomeBanner({ user, kpi, percentile }) {
             dot
             className="bg-white/20 text-white border-white/30"
           >
-            Active Tracker
+            {t('dashboard.activeTracker')}
           </Badge>
         </div>
       </div>

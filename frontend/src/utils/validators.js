@@ -45,6 +45,7 @@ export const registerSchema = z
     acceptTerms: z
       .boolean()
       .refine((v) => v === true, 'You must accept the terms to continue'),
+    organisationId: z.string().optional(),
   })
   .refine((d) => d.password === d.confirmPassword, {
     message: 'Passwords do not match',

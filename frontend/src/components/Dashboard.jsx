@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { 
   ResponsiveContainer, PieChart, Pie, Cell, Tooltip, 
   LineChart, Line, XAxis, YAxis, CartesianGrid, 
@@ -21,6 +22,7 @@ const CATEGORY_ICONS = {
 };
 
 export default function Dashboard({ logs = [] }) {
+  const { t } = useTranslation();
   
   // 1. Calculations
   const totalEmissions = logs.reduce((sum, log) => sum + log.calculatedEmissions, 0);
@@ -33,7 +35,11 @@ export default function Dashboard({ logs = [] }) {
       if (data[cat] !== undefined) data[cat] += log.calculatedEmissions;
     });
     return Object.keys(data)
-      .map(key => ({ name: key.toUpperCase(), value: parseFloat(data[key].toFixed(2)) }))
+      .map(key => ({ 
+        name: t(`categories.${key}`, { defaultValue: key.toUpperCase() }), 
+        rawKey: key.toUpperCase(),
+        value: parseFloat(data[key].toFixed(2)) 
+      }))
       .filter(item => item.value > 0);
   };
 
@@ -57,7 +63,8 @@ export default function Dashboard({ logs = [] }) {
       if (data[cat] !== undefined) data[cat] += log.calculatedEmissions;
     });
     return Object.keys(data).map(key => ({
-      Category: key.toUpperCase(),
+      Category: t(`categories.${key}`, { defaultValue: key.toUpperCase() }),
+      rawKey: key.toUpperCase(),
       Emissions: parseFloat(data[key].toFixed(2))
     }));
   };
@@ -72,9 +79,9 @@ export default function Dashboard({ logs = [] }) {
         <div className="bg-emerald-500/10 p-5 rounded-full border border-emerald-500/25 mb-5">
           <Leaf className="w-12 h-12 text-emerald-400" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">No activities logged yet!</h2>
+        <h2 className="text-2xl font-bold mb-2">{t('dashboardPage.noActivitiesLogged', { defaultValue: 'No activities logged yet!' })}</h2>
         <p className="text-sm text-gray-400 max-w-md">
-          Ready to track your carbon footprint? Go to the <strong>Log Activity</strong> tab above to record your first transit, meal, energy usage, or retail purchase!
+          {t('dashboardPage.logActivitiesToSeeTrend', { defaultValue: 'Ready to track your carbon footprint? Go to the Log Activity tab above to record your first transit, meal, energy usage, or retail purchase!' })}
         </p>
       </div>
     );
@@ -86,40 +93,40 @@ export default function Dashboard({ logs = [] }) {
       {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 flex flex-col justify-between">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Total Carbon Footprint</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">{t('dashboardPage.totalCarbonFootprint', { defaultValue: 'Total Carbon Footprint' })}</span>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-extrabold text-glow-primary text-blue-400">
               {totalEmissions.toFixed(2)}
             </span>
-            <span className="text-sm text-gray-400 font-bold">kg CO₂e</span>
+            <span className="text-sm text-gray-400 font-bold">{t('activitiesPage.units.kg', { defaultValue: 'kg' })} CO₂e</span>
           </div>
-          <p className="text-xs text-gray-500 mt-4">Cumulative emissions registered</p>
+          <p className="text-xs text-gray-500 mt-4">{t('dashboardPage.cumulativeEmissionsRegistered', { defaultValue: 'Cumulative emissions registered' })}</p>
         </div>
 
         <div className="glass-panel p-6 flex flex-col justify-between">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Average Impact Per Entry</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">{t('dashboardPage.averageImpactPerEntry', { defaultValue: 'Average Impact Per Entry' })}</span>
           <div className="flex items-baseline gap-2">
             <span className="text-4xl font-extrabold text-glow-secondary text-emerald-400">
               {averageLog.toFixed(2)}
             </span>
-            <span className="text-sm text-gray-400 font-bold">kg CO₂e</span>
+            <span className="text-sm text-gray-400 font-bold">{t('activitiesPage.units.kg', { defaultValue: 'kg' })} CO₂e</span>
           </div>
-          <p className="text-xs text-gray-500 mt-4">Total emissions divided by logs</p>
+          <p className="text-xs text-gray-500 mt-4">{t('dashboardPage.totalEmissionsDividedByLogs', { defaultValue: 'Total emissions divided by logs' })}</p>
         </div>
 
         <div className="glass-panel p-6 flex flex-col justify-between">
-          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">Target Reduction Goal</span>
+          <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider block mb-2">{t('dashboardPage.targetReductionGoal', { defaultValue: 'Target Reduction Goal' })}</span>
           <div>
             <div className="flex justify-between items-baseline mb-2">
-              <span className="text-2xl font-extrabold text-purple-400">15% reduction</span>
-              <span className="text-xs text-emerald-400 font-bold">Active</span>
+              <span className="text-2xl font-extrabold text-purple-400">15% {t('dashboardPage.reduction', { defaultValue: 'reduction' })}</span>
+              <span className="text-xs text-emerald-400 font-bold">{t('challengesPage.active', { defaultValue: 'Active' })}</span>
             </div>
             {/* Goal Progress bar */}
             <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden border border-white/5">
               <div className="bg-emerald-500 h-2 rounded-full" style={{ width: '45%' }}></div>
             </div>
           </div>
-          <p className="text-xs text-gray-500 mt-4">45% progress toward milestone target</p>
+          <p className="text-xs text-gray-500 mt-4">45% {t('dashboardPage.progressTowardMilestone', { defaultValue: 'progress toward milestone target' })}</p>
         </div>
       </div>
 
@@ -129,8 +136,8 @@ export default function Dashboard({ logs = [] }) {
         {/* Category Distribution Pie Chart */}
         <div className="glass-panel p-6 lg:col-span-1 flex flex-col justify-between">
           <div>
-            <h3 className="text-lg font-bold mb-1">Category Breakdown</h3>
-            <p className="text-xs text-gray-400 mb-6">Emissions distribution across sectors</p>
+            <h3 className="text-lg font-bold mb-1">{t('dashboardPage.categoryBreakdown', { defaultValue: 'Category Breakdown' })}</h3>
+            <p className="text-xs text-gray-400 mb-6">{t('dashboardPage.emissionsDistributionAcrossSectors', { defaultValue: 'Emissions distribution across sectors' })}</p>
           </div>
           <div className="h-64 flex-center relative">
             <ResponsiveContainer width="100%" height="100%">
@@ -145,7 +152,7 @@ export default function Dashboard({ logs = [] }) {
                   dataKey="value"
                 >
                   {categoryData.map((entry) => (
-                    <Cell key={`cell-${entry.name}`} fill={COLORS[entry.name]} />
+                    <Cell key={`cell-${entry.name}`} fill={COLORS[entry.rawKey] || '#10b981'} />
                   ))}
                 </Pie>
                 <Tooltip 
@@ -157,20 +164,20 @@ export default function Dashboard({ logs = [] }) {
             {/* Center Summary */}
             <div className="absolute flex-center flex-col">
               <span className="text-2xl font-bold">{totalEmissions.toFixed(0)}</span>
-              <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">kg CO₂e</span>
+              <span className="text-[10px] uppercase text-gray-500 font-bold tracking-wider">{t('activitiesPage.units.kg', { defaultValue: 'kg' })} CO₂e</span>
             </div>
           </div>
           
           {/* Legend Grid */}
           <div className="grid grid-cols-2 gap-2 mt-4 text-xs font-semibold">
             {Object.keys(COLORS).map(key => {
-              const matched = categoryData.find(item => item.name === key);
+              const matched = categoryData.find(item => item.rawKey === key);
               const val = matched ? matched.value : 0;
               return (
                 <div key={key} className="flex items-center gap-2">
                   <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[key] }} />
-                  <span className="text-gray-400 uppercase text-[10px] tracking-wide">{key.toLowerCase()}</span>
-                  <span className="text-gray-200 ml-auto">{val.toFixed(1)} kg</span>
+                  <span className="text-gray-400 uppercase text-[10px] tracking-wide">{t(`categories.${key.toLowerCase()}`, { defaultValue: key.toLowerCase() })}</span>
+                  <span className="text-gray-200 ml-auto">{val.toFixed(1)} {t('activitiesPage.units.kg', { defaultValue: 'kg' })}</span>
                 </div>
               );
             })}
@@ -179,8 +186,8 @@ export default function Dashboard({ logs = [] }) {
 
         {/* Trends Line Chart */}
         <div className="glass-panel p-6 lg:col-span-2">
-          <h3 className="text-lg font-bold mb-1">Carbon Footprint Trend</h3>
-          <p className="text-xs text-gray-400 mb-6">Daily aggregated greenhouse gas impact</p>
+          <h3 className="text-lg font-bold mb-1">{t('dashboardPage.carbonFootprintTrend', { defaultValue: 'Carbon Footprint Trend' })}</h3>
+          <p className="text-xs text-gray-400 mb-6">{t('dashboardPage.dailyAggregatedGhgImpact', { defaultValue: 'Daily aggregated greenhouse gas impact' })}</p>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -193,6 +200,7 @@ export default function Dashboard({ logs = [] }) {
                 />
                 <Line 
                   type="monotone" 
+                  name={t('dashboardPage.emissions', { defaultValue: 'Emissions' })}
                   dataKey="Emissions" 
                   stroke="#3b82f6" 
                   strokeWidth={3} 
@@ -208,8 +216,8 @@ export default function Dashboard({ logs = [] }) {
 
       {/* Comparison Bar Chart */}
       <div className="glass-panel p-6">
-        <h3 className="text-lg font-bold mb-1">Category Comparisons</h3>
-        <p className="text-xs text-gray-400 mb-6">Carbon output comparison across sectors</p>
+        <h3 className="text-lg font-bold mb-1">{t('dashboardPage.categoryComparisons', { defaultValue: 'Category Comparisons' })}</h3>
+        <p className="text-xs text-gray-400 mb-6">{t('dashboardPage.carbonOutputComparisonAcrossSectors', { defaultValue: 'Carbon output comparison across sectors' })}</p>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -220,9 +228,9 @@ export default function Dashboard({ logs = [] }) {
                 contentStyle={{ backgroundColor: '#0d1423', borderColor: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}
                 itemStyle={{ color: '#10b981' }}
               />
-              <Bar dataKey="Emissions" fill="#10b981" radius={[8, 8, 0, 0]}>
+              <Bar name={t('dashboardPage.emissions', { defaultValue: 'Emissions' })} dataKey="Emissions" fill="#10b981" radius={[8, 8, 0, 0]}>
                 {barData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[entry.Category] || '#10b981'} />
+                  <Cell key={`cell-${index}`} fill={COLORS[entry.rawKey] || '#10b981'} />
                 ))}
               </Bar>
             </BarChart>
@@ -232,17 +240,17 @@ export default function Dashboard({ logs = [] }) {
 
       {/* Logs Table */}
       <div className="glass-panel p-6">
-        <h3 className="text-lg font-bold mb-1">Activity Logging Stream</h3>
-        <p className="text-xs text-gray-400 mb-6">Historical record of carbon-producing emissions</p>
+        <h3 className="text-lg font-bold mb-1">{t('dashboardPage.activityLoggingStream', { defaultValue: 'Activity Logging Stream' })}</h3>
+        <p className="text-xs text-gray-400 mb-6">{t('dashboardPage.historicalRecordOfEmissions', { defaultValue: 'Historical record of carbon-producing emissions' })}</p>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-white/5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                <th className="py-3 px-4">Category</th>
-                <th className="py-3 px-4">Activity Type</th>
-                <th className="py-3 px-4">Usage/Amount</th>
-                <th className="py-3 px-4">Carbon Impact</th>
-                <th className="py-3 px-4">Date</th>
+                <th className="py-3 px-4">{t('activitiesPage.colCategory', { defaultValue: 'Category' })}</th>
+                <th className="py-3 px-4">{t('activitiesPage.activityTypeLabel', { defaultValue: 'Activity Type' })}</th>
+                <th className="py-3 px-4">{t('activitiesPage.colAmount', { defaultValue: 'Usage/Amount' })}</th>
+                <th className="py-3 px-4">{t('activitiesPage.colCo2e', { defaultValue: 'Carbon Impact' })}</th>
+                <th className="py-3 px-4">{t('activitiesPage.colDate', { defaultValue: 'Date' })}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5 text-sm">
@@ -259,16 +267,16 @@ export default function Dashboard({ logs = [] }) {
                       }`}>
                         <Icon className="w-4 h-4" />
                       </div>
-                      {log.category}
+                      {t(`categories.${log.category.toLowerCase()}`, { defaultValue: log.category })}
                     </td>
                     <td className="py-3.5 px-4 text-gray-300 font-medium capitalize">
-                      {log.activityType.replace('_', ' ')}
+                      {t(`activitiesPage.types.${log.activityType}`, { defaultValue: log.activityType.replace('_', ' ') })}
                     </td>
                     <td className="py-3.5 px-4 text-gray-400 font-semibold">
-                      {log.amount} {log.unit}
+                      {log.amount} {t(`activitiesPage.units.${log.unit}`, { defaultValue: log.unit })}
                     </td>
                     <td className="py-3.5 px-4 text-emerald-400 font-extrabold">
-                      {log.calculatedEmissions.toFixed(2)} kg
+                      {log.calculatedEmissions.toFixed(2)} {t('activitiesPage.units.kg', { defaultValue: 'kg' })}
                     </td>
                     <td className="py-3.5 px-4 text-gray-500 font-medium">
                       {log.logDate}

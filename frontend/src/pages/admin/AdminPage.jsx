@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShieldCheck, Users, Activity, Database, Search, RefreshCw, Eye, Download, Flame, Car, Utensils, ShoppingBag, Building2, Pencil, Power } from 'lucide-react';
 import { Card, Badge, StatCard, Alert, Button, Input, Modal, ProgressBar } from '@/components/ui';
 import adminService from '@/services/api/adminService';
 import toast from 'react-hot-toast';
 
 export default function AdminPage() {
+  const { t } = useTranslation();
   const [stats, setStats] = useState({ totalUsers: 0, totalActivityLogs: 0, totalEmissionsKg: 0, totalAdmins: 0, categoryBreakdown: {} });
   const [users, setUsers] = useState([]);
   const [factors, setFactors] = useState([]);
@@ -170,19 +172,23 @@ export default function AdminPage() {
             <ShieldCheck className="h-6 w-6 text-[#7FBF8C]" />
           </div>
           <div>
-            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">Admin Governance & Platform Oversight</h2>
-            <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Platform user activity inspection, category breakdown analytics & factor control</p>
+            <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+              {t('adminPage.title', { defaultValue: 'Admin Governance & Platform Oversight' })}
+            </h2>
+            <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+              {t('adminPage.subtitle', { defaultValue: 'Platform user activity inspection, category breakdown analytics & factor control' })}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
           <button onClick={handleExportUserReport} className="flex items-center gap-1.5 px-4 py-2 bg-[#1E4432] hover:bg-[#153225] text-white font-black text-xs rounded-xl shadow-md transition-all border border-[#7FBF8C]/40">
             <Download className="w-4 h-4 text-[#7FBF8C]" />
-            <span>Export User CSV</span>
+            <span>{t('adminPage.exportCsv', { defaultValue: 'Export User CSV' })}</span>
           </button>
           <button onClick={loadData} className="flex items-center gap-1.5 px-3.5 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 hover:bg-slate-100 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl shadow-xs transition-all">
             <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-300 ${loading ? 'animate-spin' : ''}`} />
-            <span>Refresh</span>
+            <span>{t('adminPage.refresh', { defaultValue: 'Refresh' })}</span>
           </button>
         </div>
       </div>
@@ -191,35 +197,35 @@ export default function AdminPage() {
       <div className="p-4 rounded-2xl bg-[#EBF5ED] dark:bg-emerald-950/60 border-2 border-[#7FBF8C] dark:border-emerald-700 text-[#0F2E22] dark:text-emerald-100 flex items-center gap-3 shadow-xs">
         <ShieldCheck className="w-5 h-5 text-[#1E4432] dark:text-[#7FBF8C] shrink-0" />
         <p className="text-xs font-bold leading-relaxed">
-          Administrative Portal: Active governance mode is enabled for platform oversight, user management, organisation management, audit review, analytics, and system factor control.
+          {t('adminPage.alertBanner', { defaultValue: 'Administrative Portal: Active governance mode is enabled for platform oversight, user management, organisation management, audit review, analytics, and system factor control.' })}
         </p>
       </div>
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          title="Total Registered Users"
+          title={t('adminPage.totalUsers', { defaultValue: 'Total Registered Users' })}
           value={stats.totalUsers || users.length}
           icon={Users}
           iconBg="bg-blue-100 dark:bg-blue-900/40"
           iconColor="text-blue-700 dark:text-blue-300"
         />
         <StatCard
-          title="Total Activity Logs"
+          title={t('adminPage.totalLogs', { defaultValue: 'Total Activity Logs' })}
           value={stats.totalActivityLogs}
           icon={Activity}
           iconBg="bg-emerald-100 dark:bg-emerald-900/40"
           iconColor="text-emerald-700 dark:text-emerald-300"
         />
         <StatCard
-          title="Platform CO₂e Tracked"
-          value={`${(stats.totalEmissionsKg || 0).toFixed(1)} kg`}
+          title={t('adminPage.platformCo2', { defaultValue: 'Platform CO₂e Tracked' })}
+          value={`${(stats.totalEmissionsKg || 0).toFixed(1)} ${t('activitiesPage.units.kg', { defaultValue: 'kg' })}`}
           icon={Database}
           iconBg="bg-teal-100 dark:bg-teal-900/40"
           iconColor="text-teal-700 dark:text-teal-300"
         />
         <StatCard
-          title="System Administrator"
+          title={t('adminPage.systemAdmin', { defaultValue: 'System Administrator' })}
           value={stats.totalAdmins || users.filter((u) => u.role === 'ADMIN').length}
           icon={ShieldCheck}
           iconBg="bg-emerald-100 dark:bg-emerald-900/40"
@@ -230,8 +236,12 @@ export default function AdminPage() {
       {/* PLATFORM CATEGORY BREAKDOWN CARDS */}
       <Card className="p-5 shadow-sm border-2 border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
         <div className="mb-4">
-          <h3 className="font-black text-lg text-slate-900 dark:text-slate-100">Platform Category Emissions Breakdown</h3>
-          <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Aggregated carbon impact per activity category across all registered users</p>
+          <h3 className="font-black text-lg text-slate-900 dark:text-slate-100">
+            {t('adminPage.categoryBreakdownTitle', { defaultValue: 'Platform Category Emissions Breakdown' })}
+          </h3>
+          <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+            {t('adminPage.categoryBreakdownSubtitle', { defaultValue: 'Aggregated carbon impact per activity category across all registered users' })}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -270,7 +280,7 @@ export default function AdminPage() {
               : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700'
           }`}
         >
-          User Inspection ({users.length})
+          {t('adminPage.tabUsers', { defaultValue: 'User Inspection' })} ({users.length})
         </button>
         <button
           onClick={() => setActiveTab('factors')}
@@ -280,7 +290,7 @@ export default function AdminPage() {
               : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700'
           }`}
         >
-          Emission Factors ({factors.length})
+          {t('adminPage.tabFactors', { defaultValue: 'Emission Factors' })} ({factors.length})
         </button>
         <button
           onClick={() => setActiveTab('organisations')}
@@ -290,7 +300,7 @@ export default function AdminPage() {
               : 'bg-slate-200 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-700'
           }`}
         >
-          Organisations ({organisations.length})
+          {t('adminPage.tabOrgs', { defaultValue: 'Organisations' })} ({organisations.length})
         </button>
       </div>
 
@@ -299,15 +309,19 @@ export default function AdminPage() {
         <Card className="shadow-sm border-2 border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
           <div className="p-4 sm:p-5 border-b-2 border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-black text-lg text-slate-900 dark:text-slate-100">User Governance & Log Inspection</h3>
-              <p className="text-xs font-bold text-slate-600 dark:text-slate-400">Inspect individual user activity logs, track emissions, and export reports</p>
+              <h3 className="font-black text-lg text-slate-900 dark:text-slate-100">
+                {t('adminPage.userGovernanceTitle', { defaultValue: 'User Governance & Log Inspection' })}
+              </h3>
+              <p className="text-xs font-bold text-slate-600 dark:text-slate-400">
+                {t('adminPage.userGovernanceSubtitle', { defaultValue: 'Inspect individual user activity logs, track emissions, and export reports' })}
+              </p>
             </div>
 
             <div className="w-full sm:w-72 relative">
               <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500 font-bold" />
               <input
                 type="text"
-                placeholder="Search username, email or role..."
+                placeholder={t('adminPage.searchPlaceholder', { defaultValue: 'Search username, email or role...' })}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1E4432]"
@@ -319,19 +333,19 @@ export default function AdminPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b-2 border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 font-black uppercase tracking-wider text-[11px]">
-                  <th className="py-3.5 px-4">User Account</th>
-                  <th className="py-3.5 px-4">Email</th>
-                  <th className="py-3.5 px-4">Role</th>
-                  <th className="py-3.5 px-4 text-right">Activities Logged</th>
-                  <th className="py-3.5 px-4 text-right">Total Emissions</th>
-                  <th className="py-3.5 px-4 text-center">Actions</th>
+                  <th className="py-3.5 px-4">{t('adminPage.colUser', { defaultValue: 'User Account' })}</th>
+                  <th className="py-3.5 px-4">{t('adminPage.colEmail', { defaultValue: 'Email' })}</th>
+                  <th className="py-3.5 px-4">{t('adminPage.colRole', { defaultValue: 'Role' })}</th>
+                  <th className="py-3.5 px-4 text-right">{t('adminPage.colActivities', { defaultValue: 'Activities Logged' })}</th>
+                  <th className="py-3.5 px-4 text-right">{t('adminPage.colTotalEmissions', { defaultValue: 'Total Emissions' })}</th>
+                  <th className="py-3.5 px-4 text-center">{t('adminPage.colActions', { defaultValue: 'Actions' })}</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-slate-100 dark:divide-slate-800">
                 {filteredUsers.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="text-center py-10 text-slate-600 dark:text-slate-400 font-bold">
-                      No users match your query.
+                      {t('adminPage.noUsersMatch', { defaultValue: 'No users match your query.' })}
                     </td>
                   </tr>
                 ) : (
@@ -376,7 +390,7 @@ export default function AdminPage() {
                             className="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border-2 border-emerald-600 dark:border-emerald-500 font-black text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
                           >
                             <Eye className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                            <span>Inspect Logs</span>
+                            <span>{t('adminPage.inspectLogs', { defaultValue: 'Inspect Logs' })}</span>
                           </button>
                         </div>
                       </td>
@@ -393,17 +407,17 @@ export default function AdminPage() {
       {activeTab === 'factors' && (
         <Card className="shadow-sm border-2 border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
           <Card.Header
-            title="System Emission Factors (DEFRA / EPA Standard)"
-            subtitle="Global CO₂e multipliers used for computing activity carbon impact"
+            title={t('adminPage.factorsTitle', { defaultValue: 'System Emission Factors (DEFRA / EPA Standard)' })}
+            subtitle={t('adminPage.factorsSubtitle', { defaultValue: 'Global CO₂e multipliers used for computing activity carbon impact' })}
           />
           <div className="overflow-x-auto p-4">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b-2 border-slate-200 dark:border-slate-800 bg-slate-100/90 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 font-black uppercase tracking-wider text-[11px]">
-                  <th className="py-3.5 px-4">Activity Type</th>
-                  <th className="py-3.5 px-4">Unit</th>
-                  <th className="py-3.5 px-4 text-right">Factor (kg CO₂e / unit)</th>
-                  <th className="py-3.5 px-4">Source / Region</th>
+                  <th className="py-3.5 px-4">{t('adminPage.colActivityType', { defaultValue: 'Activity Type' })}</th>
+                  <th className="py-3.5 px-4">{t('adminPage.colUnit', { defaultValue: 'Unit' })}</th>
+                  <th className="py-3.5 px-4 text-right">{t('adminPage.colFactor', { defaultValue: 'Factor (kg CO₂e / unit)' })}</th>
+                  <th className="py-3.5 px-4">{t('adminPage.colSource', { defaultValue: 'Source / Region' })}</th>
                 </tr>
               </thead>
               <tbody className="divide-y-2 divide-slate-100 dark:divide-slate-800">
@@ -435,23 +449,23 @@ export default function AdminPage() {
         <Card className="shadow-sm border-2 border-slate-200 dark:border-slate-800 rounded-3xl bg-white dark:bg-slate-900">
           <div className="p-5 border-b-2 border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row gap-3 justify-between">
             <div>
-              <h3 className="font-black text-lg">Organisation Management</h3>
-              <p className="text-xs font-bold text-slate-500">Create, edit, activate, deactivate, and inspect members.</p>
+              <h3 className="font-black text-lg">{t('adminPage.orgTitle', { defaultValue: 'Organisation Management' })}</h3>
+              <p className="text-xs font-bold text-slate-500">{t('adminPage.orgSubtitle', { defaultValue: 'Create, edit, activate, deactivate, and inspect members.' })}</p>
             </div>
             <div className="flex gap-2">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3 top-3 text-slate-500" />
                 <input value={organisationSearch} onChange={(event) => { setOrganisationSearch(event.target.value); setOrganisationPage(1); }}
-                  placeholder="Search organisations..."
+                  placeholder={t('adminPage.searchOrgs', { defaultValue: 'Search organisations...' })}
                   className="pl-9 pr-3 py-2 border-2 border-slate-300 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-xs font-bold" />
               </div>
-              <Button onClick={() => { setOrganisationForm(null); setOrganisationName(''); }}>Create Organisation</Button>
+              <Button onClick={() => { setOrganisationForm(null); setOrganisationName(''); }}>{t('adminPage.createOrg', { defaultValue: 'Create Organisation' })}</Button>
             </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-100 dark:bg-slate-800 uppercase">
-                <tr><th className="p-4">Organisation</th><th className="p-4">Status</th><th className="p-4">Members</th><th className="p-4">Org Admins</th><th className="p-4 text-right">Actions</th></tr>
+                <tr><th className="p-4">{t('settingsPage.organization', { defaultValue: 'Organisation' })}</th><th className="p-4">Status</th><th className="p-4">{t('adminPage.members', { defaultValue: 'Members' })}</th><th className="p-4">Org Admins</th><th className="p-4 text-right">{t('adminPage.colActions', { defaultValue: 'Actions' })}</th></tr>
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
                 {visibleOrganisations.map((organisation) => (
@@ -461,20 +475,20 @@ export default function AdminPage() {
                     <td className="p-4 font-bold">{organisation.memberCount}</td>
                     <td className="p-4 font-bold">{organisation.orgAdminCount}</td>
                     <td className="p-4"><div className="flex justify-end gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => viewMembers(organisation)}><Eye className="w-4 h-4" /> Members</Button>
-                      <Button size="sm" variant="ghost" onClick={() => { setOrganisationForm(organisation); setOrganisationName(organisation.name); }}><Pencil className="w-4 h-4" /> Edit</Button>
-                      <Button size="sm" variant="ghost" onClick={() => toggleOrganisation(organisation)}><Power className="w-4 h-4" />{organisation.active ? 'Deactivate' : 'Activate'}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => viewMembers(organisation)}><Eye className="w-4 h-4" /> {t('adminPage.members', { defaultValue: 'Members' })}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => { setOrganisationForm(organisation); setOrganisationName(organisation.name); }}><Pencil className="w-4 h-4" /> {t('adminPage.edit', { defaultValue: 'Edit' })}</Button>
+                      <Button size="sm" variant="ghost" onClick={() => toggleOrganisation(organisation)}><Power className="w-4 h-4" />{organisation.active ? t('adminPage.deactivate', { defaultValue: 'Deactivate' }) : t('adminPage.activate', { defaultValue: 'Activate' })}</Button>
                     </div></td>
                   </tr>
                 ))}
-                {!visibleOrganisations.length && <tr><td colSpan={5} className="p-10 text-center text-slate-500">No organisations found.</td></tr>}
+                {!visibleOrganisations.length && <tr><td colSpan={5} className="p-10 text-center text-slate-500">{t('adminPage.noOrgsFound', { defaultValue: 'No organisations found.' })}</td></tr>}
               </tbody>
             </table>
           </div>
           <div className="p-4 flex justify-end items-center gap-3">
-            <Button size="sm" variant="ghost" disabled={organisationPage === 1} onClick={() => setOrganisationPage((page) => page - 1)}>Previous</Button>
-            <span className="text-xs font-bold">Page {organisationPage} of {organisationPages}</span>
-            <Button size="sm" variant="ghost" disabled={organisationPage === organisationPages} onClick={() => setOrganisationPage((page) => page + 1)}>Next</Button>
+            <Button size="sm" variant="ghost" disabled={organisationPage === 1} onClick={() => setOrganisationPage((page) => page - 1)}>{t('adminPage.previous', { defaultValue: 'Previous' })}</Button>
+            <span className="text-xs font-bold">{t('adminPage.pageOf', { page: organisationPage, pages: organisationPages, defaultValue: `Page ${organisationPage} of ${organisationPages}` })}</span>
+            <Button size="sm" variant="ghost" disabled={organisationPage === organisationPages} onClick={() => setOrganisationPage((page) => page + 1)}>{t('adminPage.next', { defaultValue: 'Next' })}</Button>
           </div>
         </Card>
       )}

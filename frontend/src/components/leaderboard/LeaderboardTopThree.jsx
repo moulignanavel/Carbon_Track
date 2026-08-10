@@ -62,7 +62,7 @@ export default function LeaderboardTopThree({ users = [] }) {
         const cfg = medalConfig[index + 1];
         return (
           <div
-            key={user.userId}
+            key={user.username || index}
             onClick={() => window.dispatchEvent(new CustomEvent('open-badge-sidebar', { detail: user }))}
             className={`
               relative overflow-hidden rounded-xl border bg-white dark:bg-slate-900 p-3
@@ -81,9 +81,16 @@ export default function LeaderboardTopThree({ users = [] }) {
             <div className="relative z-10 pt-0.5">
               {/* Username & Rank */}
               <div className="mb-1.5">
-                <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-slate-50 truncate pr-8">
-                  {user.username}
-                </h3>
+                <div className="flex items-center gap-1.5 pr-8">
+                  <h3 className="text-base lg:text-lg font-bold text-slate-900 dark:text-slate-50 truncate">
+                    {user.username}
+                  </h3>
+                  {user.isAnonymous && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 font-semibold shrink-0">
+                      🕶️
+                    </span>
+                  )}
+                </div>
                 <p className={`text-xs font-bold tracking-wide ${cfg.rankText}`}>
                   Rank #{user.rank}
                 </p>

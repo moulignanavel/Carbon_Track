@@ -23,6 +23,38 @@ import { API_ENDPOINTS } from '@/config/constants';
 
 class ActivityService {
   /**
+   * Log transport activity to dedicated endpoint
+   * @param {Object} data - { transportMode, distance, unit, logDate, notes }
+   * @returns {Promise<ActivityLog>}
+   */
+  async logTransportActivity(data) {
+    const { data: res } = await axiosInstance.post(API_ENDPOINTS.ACTIVITY_LOGS_TRANSPORT, {
+      transportMode: data.transportMode,
+      distance: Number(data.distance),
+      unit: data.unit || 'km',
+      logDate: data.logDate || new Date().toISOString().split('T')[0],
+      notes: data.notes || '',
+    });
+    return res;
+  }
+
+  /**
+   * Log electricity activity to dedicated endpoint
+   * @param {Object} data - { energySource, kwhConsumed, unit, logDate, notes }
+   * @returns {Promise<ActivityLog>}
+   */
+  async logElectricityActivity(data) {
+    const { data: res } = await axiosInstance.post(API_ENDPOINTS.ACTIVITY_LOGS_ELECTRICITY, {
+      energySource: data.energySource || 'grid',
+      kwhConsumed: Number(data.kwhConsumed || data.amount || 0),
+      unit: data.unit || 'kWh',
+      logDate: data.logDate || new Date().toISOString().split('T')[0],
+      notes: data.notes || '',
+    });
+    return res;
+  }
+
+  /**
    * Create new activity log
    * @param {Object} activityData - Activity details
    * @returns {Promise<ActivityLog>}

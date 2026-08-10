@@ -12,6 +12,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -26,6 +27,7 @@ import { Button, Input, Alert } from '@/components/ui';
 const REDIRECT_DELAY = 30; // seconds before auto-redirect to login
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [submitted, setSubmitted] = useState(false);
   const [sentEmail, setSentEmail] = useState('');
@@ -57,12 +59,9 @@ export default function ForgotPasswordPage() {
   /* ── Submit ──────────────────────────────────────────────── */
   const onSubmit = useCallback(async (data) => {
     try {
-      // Backend stub — will 404 until the endpoint is implemented.
-      // We always show the confirmation screen regardless (security).
       await requestPasswordReset({ email: data.email });
     } catch {
-      // Intentionally swallow errors here — we never reveal whether
-      // the email exists in our system.
+      // Intentionally swallow errors here for security
     } finally {
       setSentEmail(data.email);
       setSubmitted(true);
@@ -75,15 +74,14 @@ export default function ForgotPasswordPage() {
     setResending(true);
     try {
       await requestPasswordReset({ email: sentEmail });
-      toast.success('Reset email resent!', { id: 'resend' });
+      toast.success(t('authPage.resent', { defaultValue: 'Reset email resent!' }), { id: 'resend' });
       setCountdown(REDIRECT_DELAY);
     } catch {
-      // swallow — security
-      toast.success('Reset email resent!', { id: 'resend' });
+      toast.success(t('authPage.resent', { defaultValue: 'Reset email resent!' }), { id: 'resend' });
     } finally {
       setResending(false);
     }
-  }, [sentEmail]);
+  }, [sentEmail, t]);
 
   /* ── Success state ───────────────────────────────────────── */
   if (submitted) {
@@ -101,23 +99,23 @@ export default function ForgotPasswordPage() {
             </div>
           </div>
 
-          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">Check your inbox</h1>
+          <h1 className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">
+            {t('authPage.checkInbox', { defaultValue: 'Check your inbox' })}
+          </h1>
 
           <p className="mt-3 text-sm text-slate-400 max-w-xs mx-auto leading-relaxed">
-            If an account exists for{' '}
-            <span className="font-semibold text-emerald-400 break-all">
-              {sentEmail}
-            </span>
-            , you&apos;ll receive a password reset link shortly.
+            {t('authPage.checkInboxDesc', { email: sentEmail, defaultValue: `If an account exists for ${sentEmail}, you'll receive a password reset link shortly.` })}
           </p>
 
           {/* Tips */}
           <div className="mt-6 rounded-xl bg-black/20 border border-white/10 p-5 text-left space-y-3">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">Tips</p>
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-wide">
+              {t('authPage.tips', { defaultValue: 'Tips' })}
+            </p>
             {[
-              'Check your spam or junk folder',
-              'The link expires in 30 minutes',
-              'Use the same email you registered with',
+              t('authPage.tipSpam', { defaultValue: 'Check your spam or junk folder' }),
+              t('authPage.tipExpiry', { defaultValue: 'The link expires in 30 minutes' }),
+              t('authPage.tipEmail', { defaultValue: 'Use the same email you registered with' }),
             ].map((tip) => (
               <p key={tip} className="flex items-start gap-2 text-sm text-slate-300">
                 <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true" />
@@ -128,10 +126,7 @@ export default function ForgotPasswordPage() {
 
           {/* Countdown */}
           <p className="mt-6 text-sm text-slate-500">
-            Redirecting to sign in in{' '}
-            <span className="font-semibold text-emerald-400 tabular-nums">
-              {countdown}s
-            </span>
+            {t('authPage.redirecting', { seconds: countdown, defaultValue: `Redirecting to sign in in ${countdown}s` })}
           </p>
 
           {/* Actions */}
@@ -143,7 +138,7 @@ export default function ForgotPasswordPage() {
               onClick={() => navigate('/', { replace: true })}
               className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-emerald-950 font-black"
             >
-              Back to sign in
+              {t('authPage.backToSignIn', { defaultValue: 'Back to sign in' })}
             </Button>
 
             <button
@@ -153,7 +148,9 @@ export default function ForgotPasswordPage() {
               className="flex items-center justify-center gap-2 text-sm text-slate-400 hover:text-emerald-400 hover:underline disabled:opacity-50 disabled:no-underline mx-auto transition-colors"
             >
               <RefreshCw className={`h-4 w-4 ${resending ? 'animate-spin' : ''}`} aria-hidden="true" />
-              {resending ? 'Resending…' : "Didn't receive it? Resend"}
+              {resending 
+                ? t('authPage.resending', { defaultValue: 'Resending…' }) 
+                : t('authPage.didntReceive', { defaultValue: "Didn't receive it? Resend" })}
             </button>
           </div>
         </div>
@@ -175,13 +172,15 @@ export default function ForgotPasswordPage() {
             <div className="absolute inset-0 bg-emerald-400/20 blur-xl rounded-full" />
             <Mail className="h-7 w-7 text-emerald-400 relative z-10" aria-hidden="true" />
           </div>
-          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">Forgot password?</h1>
+          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-400 tracking-tight">
+            {t('authPage.forgotPassword', { defaultValue: 'Forgot password?' })}
+          </h1>
           <p className="mt-2 text-sm text-slate-400 font-medium">
-            Enter your email and we&apos;ll send you a link to reset your password.
+            {t('authPage.forgotSubtitle', { defaultValue: "Enter your email and we'll send you a link to reset your password." })}
           </p>
         </div>
 
-        {/* Server error (shouldn't normally appear — we swallow errors above) */}
+        {/* Server error */}
         {errors.root && (
           <Alert variant="error" className="mb-6 border-red-500/30 bg-red-500/10 text-red-200" dismissible>
             {errors.root.message}
@@ -196,15 +195,15 @@ export default function ForgotPasswordPage() {
         >
           <div className="space-y-1.5">
             <Input
-              label="Email address"
+              label={t('authPage.emailAddress', { defaultValue: 'Email address' })}
               id="forgot-email"
               type="email"
-              placeholder="you@example.com"
+              placeholder={t('authPage.emailPlaceholder', { defaultValue: 'you@example.com' })}
               autoComplete="email"
               autoFocus
               required
               leftIcon={<Mail className="h-4.5 w-4.5 text-emerald-400/70" />}
-              hint="We'll send the reset link to this address."
+              hint={t('authPage.emailHint', { defaultValue: "We'll send the reset link to this address." })}
               error={errors.email?.message}
               className="bg-black/20 border-white/10 focus:border-emerald-500/50 text-white placeholder-slate-500"
               {...register('email')}
@@ -220,7 +219,9 @@ export default function ForgotPasswordPage() {
             leftIcon={!isSubmitting ? <Send className="h-5 w-5" /> : undefined}
             className="mt-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-emerald-950 font-black shadow-[0_0_20px_rgba(16,185,129,0.25)] hover:shadow-[0_0_30px_rgba(16,185,129,0.4)] transition-all duration-300 py-3.5 text-base"
           >
-            {isSubmitting ? 'Sending reset link…' : 'Send reset link'}
+            {isSubmitting 
+              ? t('authPage.sendingResetLink', { defaultValue: 'Sending reset link…' }) 
+              : t('authPage.sendResetLink', { defaultValue: 'Send reset link' })}
           </Button>
         </form>
 
@@ -231,10 +232,11 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center gap-2 text-sm font-semibold text-slate-400 hover:text-emerald-400 transition-colors"
           >
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Back to sign in
+            {t('authPage.backToSignIn', { defaultValue: 'Back to sign in' })}
           </Link>
         </div>
       </div>
     </div>
   );
 }
+

@@ -86,8 +86,8 @@ public class SecurityConfig {
                         })
                 )
                 .authorizeHttpRequests(auth -> auth
-                        // Permit all auth endpoints, public AI suggestions, and static assets
-                        .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/ai/suggestions", "/error", "/error/**", 
+                        // Permit all auth endpoints, public AI chat/suggestions, and static assets
+                        .requestMatchers("/api/auth/**", "/api/v1/auth/**", "/api/ai/**", "/error", "/error/**",
                                        "/login/**", "/oauth2/**", "/h2-console/**", "/uploads/**",
                                        "/api/organisations/public").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

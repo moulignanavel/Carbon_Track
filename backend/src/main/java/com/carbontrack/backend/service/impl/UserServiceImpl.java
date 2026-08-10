@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 @Service
 public class UserServiceImpl implements UserService {
 
@@ -27,17 +29,20 @@ public class UserServiceImpl implements UserService {
     private final ObjectMapper objectMapper;
     private final UserBadgeRepository userBadgeRepository;
     private final BadgeRepository badgeRepository;
+    private final PasswordEncoder passwordEncoder;
 
     public UserServiceImpl(UserRepository userRepository, 
                            SecurityService securityService, 
                            ObjectMapper objectMapper,
                            UserBadgeRepository userBadgeRepository,
-                           BadgeRepository badgeRepository) {
+                           BadgeRepository badgeRepository,
+                           PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.securityService = securityService;
         this.objectMapper = objectMapper;
         this.userBadgeRepository = userBadgeRepository;
         this.badgeRepository = badgeRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Override
@@ -61,6 +66,12 @@ public class UserServiceImpl implements UserService {
 
         currentUser.setUsername(request.getUsername());
         currentUser.setEmail(request.getEmail());
+        if (request.getIsAnonymous() != null) {
+            currentUser.setIsAnonymous(request.getIsAnonymous());
+        }
+        if (request.getAnonymousName() != null) {
+            currentUser.setAnonymousName(request.getAnonymousName().trim());
+        }
 
         if (request.getSustainabilityPreferences() != null) {
             try {
@@ -73,6 +84,22 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(currentUser);
         return mapToResponse(savedUser);
+    }
+
+    @Override
+    public void changePassword(String currentPassword, String newPassword) {
+        User currentUser = securityService.getCurrentUser();
+        if (!passwordEncoder.matches(currentPassword, currentUser.getPasswordHash())) {
+            throw new IllegalArgumentException("Current password is incorrect");
+        }
+        if (newPassword == null || newPassword.length() < 6) {
+            throw new IllegalArgumentException("New password must be at least 6 characters");
+        }
+        if (passwordEncoder.matches(newPassword, currentUser.getPasswordHash())) {
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+        currentUser.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(currentUser);
     }
 
     private UserProfileResponse mapToResponse(User user) {
@@ -98,9 +125,13 @@ public class UserServiceImpl implements UserService {
                 user.getEmail(),
                 user.getRole(),
                 user.getOrganisation() != null ? user.getOrganisation().getId() : null,
+                user.getOrganisation() != null ? user.getOrganisation().getName() : null,
                 prefs,
                 user.getAvatarUrl(),
-                userBadges
+                userBadges,
+                user.getIsAnonymous() != null ? user.getIsAnonymous() : false,
+                user.getAnonymousName(),
+                user.getStatus()
         );
     }
 }

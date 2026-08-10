@@ -13,17 +13,20 @@
  *   goalLabel — string label for the reference line
  */
 
+import { useTranslation } from 'react-i18next';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
 import { COLORS } from '@/constants/theme';
+import { formatMonthLabel } from '@/utils/formatters';
 
 function ChartTooltip({ active, payload, label }) {
+  const { i18n } = useTranslation();
   if (!active || !payload?.length) return null;
   return (
     <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm px-4 py-3 shadow-xl text-xs min-w-[160px]">
-      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">{label}</p>
+      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-2">{formatMonthLabel(label, i18n.language)}</p>
       {payload.map((p) => (
         <div key={p.dataKey} className="flex items-center justify-between gap-4 py-0.5">
           <div className="flex items-center gap-1.5">
@@ -67,6 +70,7 @@ export default function TrendLineChart({
   goalLine,
   goalLabel  = 'Goal',
 }) {
+  const { i18n } = useTranslation();
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 16, right: 24, bottom: 0, left: -8 }}>
@@ -103,6 +107,7 @@ export default function TrendLineChart({
           axisLine={false}
           tickLine={false}
           dy={6}
+          tickFormatter={(v) => formatMonthLabel(v, i18n.language)}
         />
         <YAxis
           tick={{ fontSize: 11, fill: '#94a3b8' }}

@@ -16,13 +16,24 @@ public class LeaderboardUserResponse {
     private String categoryStrength;
     private String habitTip;
     private Boolean currentUser;
+    private Long organisationId;
+    private Boolean isAnonymous;
+    private String anonymousName;
 
     public LeaderboardUserResponse() {}
 
     public LeaderboardUserResponse(Long userId, String username, Integer rank, Double totalCO2Saved,
                                    Double totalEmissionsSaved, Integer activityCount, List<String> badges,
                                    String badge, Integer footprintScore, String categoryStrength,
-                                   String habitTip, Boolean currentUser) {
+                                   String habitTip, Boolean currentUser, Long organisationId) {
+        this(userId, username, rank, totalCO2Saved, totalEmissionsSaved, activityCount, badges, badge, footprintScore, categoryStrength, habitTip, currentUser, organisationId, false, null);
+    }
+
+    public LeaderboardUserResponse(Long userId, String username, Integer rank, Double totalCO2Saved,
+                                   Double totalEmissionsSaved, Integer activityCount, List<String> badges,
+                                   String badge, Integer footprintScore, String categoryStrength,
+                                   String habitTip, Boolean currentUser, Long organisationId,
+                                   Boolean isAnonymous, String anonymousName) {
         this.userId = userId;
         this.username = username;
         this.rank = rank;
@@ -35,7 +46,13 @@ public class LeaderboardUserResponse {
         this.categoryStrength = categoryStrength;
         this.habitTip = habitTip;
         this.currentUser = currentUser;
+        this.organisationId = organisationId;
+        this.isAnonymous = isAnonymous;
+        this.anonymousName = anonymousName;
     }
+
+    public Long getOrganisationId() { return organisationId; }
+    public void setOrganisationId(Long organisationId) { this.organisationId = organisationId; }
 
     @JsonIgnore
     public Long getUserId() { return userId; }
@@ -73,4 +90,10 @@ public class LeaderboardUserResponse {
 
     public Boolean getCurrentUser() { return currentUser; }
     public void setCurrentUser(Boolean currentUser) { this.currentUser = currentUser; }
+
+    public Boolean getIsAnonymous() { return isAnonymous; }
+    public void setIsAnonymous(Boolean isAnonymous) { this.isAnonymous = isAnonymous; }
+
+    public String getAnonymousName() { return anonymousName; }
+    public void setAnonymousName(String anonymousName) { this.anonymousName = anonymousName; }
 }

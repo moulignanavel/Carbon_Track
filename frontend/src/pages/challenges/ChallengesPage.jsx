@@ -9,6 +9,7 @@
  */
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import confetti from 'canvas-confetti';
 import {
   Trophy, Zap, Leaf, ShoppingBag, Car, Flame,
@@ -48,30 +49,42 @@ const CAT_STYLE = {
   all:         { badge: 'green',  ring: 'from-emerald-500 to-green-400' },
 };
 
-const STATUS_FILTER_TABS = [
-  { id: 'all',       label: 'All'       },
-  { id: 'active',    label: 'Active'    },
-  { id: 'completed', label: 'Completed' },
-  { id: 'available', label: 'Available' },
-];
+const CAT_KEY_MAP = {
+  transport:   'activitiesPage.catTransport',
+  electricity: 'activitiesPage.catElectricity',
+  food:        'activitiesPage.catFood',
+  shopping:    'activitiesPage.catShopping',
+  energy:      'activitiesPage.catEnergy',
+};
+
+const CHALLENGE_ITEM_MAP = {
+  'Green Commuter':   { titleKey: 'challengesPage.items.greenCommuter.title',   descKey: 'challengesPage.items.greenCommuter.desc'   },
+  'Plant Power Week': { titleKey: 'challengesPage.items.plantPowerWeek.title', descKey: 'challengesPage.items.plantPowerWeek.desc' },
+  'Energy Saver':     { titleKey: 'challengesPage.items.energySaver.title',     descKey: 'challengesPage.items.energySaver.desc'     },
+  'Logging Streak':   { titleKey: 'challengesPage.items.loggingStreak.title',   descKey: 'challengesPage.items.loggingStreak.desc'   },
+  'Shopping Detox':   { titleKey: 'challengesPage.items.shoppingDetox.title',   descKey: 'challengesPage.items.shoppingDetox.desc'   },
+  'Carbon Budget':    { titleKey: 'challengesPage.items.carbonBudget.title',    descKey: 'challengesPage.items.carbonBudget.desc'    },
+  'First Step':       { titleKey: 'challengesPage.items.firstStep.title',       descKey: 'challengesPage.items.firstStep.desc'       },
+  'Consistency King': { titleKey: 'challengesPage.items.consistencyKing.title', descKey: 'challengesPage.items.consistencyKing.desc' },
+};
 
 /* ── XP level thresholds ─────────────────────────────────────── */
-function getLevel(xp) {
-  if (xp >= 1500) return { level: 5, title: 'Eco Champion',  next: Infinity };
-  if (xp >= 900)  return { level: 4, title: 'Green Expert',  next: 1500 };
-  if (xp >= 500)  return { level: 3, title: 'Eco Warrior',   next: 900  };
-  if (xp >= 200)  return { level: 2, title: 'Green Starter', next: 500  };
-  return              { level: 1, title: 'Eco Novice',    next: 200  };
+function getLevelInfo(xp, t) {
+  if (xp >= 1500) return { level: 5, title: t ? t('challengesPage.rankChampion') : 'Eco Champion',  next: Infinity };
+  if (xp >= 900)  return { level: 4, title: t ? t('challengesPage.rankExpert') : 'Green Expert',  next: 1500 };
+  if (xp >= 500)  return { level: 3, title: t ? t('challengesPage.rankWarrior') : 'Eco Warrior',   next: 900  };
+  if (xp >= 200)  return { level: 2, title: t ? t('challengesPage.rankStarter') : 'Green Starter', next: 500  };
+  return              { level: 1, title: t ? t('challengesPage.rankNovice') : 'Eco Novice',    next: 200  };
 }
 
 /* ── Progress label helper ───────────────────────────────────── */
-function progressLabel(c) {
+function progressLabel(c, t) {
   const metric = c.metricType;
   const prog   = c.progressValue ?? 0;
   const target = c.targetValue ?? 1;
 
-  if (metric === 'LOG_DAYS')    return `${Math.floor(prog)} / ${target} days`;
-  if (metric === 'LOG_ENTRIES') return `${Math.floor(prog)} / ${target} entries`;
+  if (metric === 'LOG_DAYS')    return t ? t('challengesPage.daysUnit', { prog: Math.floor(prog), target }) : `${Math.floor(prog)} / ${target} days`;
+  if (metric === 'LOG_ENTRIES') return t ? t('challengesPage.entriesUnit', { prog: Math.floor(prog), target }) : `${Math.floor(prog)} / ${target} entries`;
   // STAY_UNDER / REDUCE_EMISSIONS
   return `${prog.toFixed(2)} / ${target} kg CO₂e`;
 }
@@ -90,6 +103,7 @@ function fireConfetti() {
    Challenge Card
    ══════════════════════════════════════════════════════════════ */
 function ChallengeCard({ challenge, onJoin, previousStatus }) {
+  const { t } = useTranslation();
   const { status, progressPct = 0, xpReward, category, iconKey } = challenge;
   const catStyle  = CAT_STYLE[category] ?? CAT_STYLE.all;
   const isJoined  = status !== 'NOT_JOINED';
@@ -110,6 +124,14 @@ function ChallengeCard({ challenge, onJoin, previousStatus }) {
     setJoining(false);
   };
 
+  const catLabel = category === 'all'
+    ? t('challengesPage.tabAll')
+    : (CAT_KEY_MAP[category] ? t(CAT_KEY_MAP[category]) : capitalize(category));
+
+  const itemMap = CHALLENGE_ITEM_MAP[challenge.title];
+  const displayTitle = itemMap ? t(itemMap.titleKey) : challenge.title;
+  const displayDesc = itemMap ? t(itemMap.descKey) : challenge.description;
+
   return (
     <div className={`card group relative overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl ${
       isDone ? 'ring-2 ring-emerald-400 dark:ring-emerald-500' : ''
@@ -118,7 +140,7 @@ function ChallengeCard({ challenge, onJoin, previousStatus }) {
       {isDone && (
         <div className="absolute top-3 right-3 z-10">
           <span className="flex items-center gap-1 rounded-full bg-emerald-500 px-2 py-0.5 text-[10px] font-bold text-white shadow">
-            <CheckCircle2 className="h-3 w-3" /> DONE
+            <CheckCircle2 className="h-3 w-3" /> {t('challengesPage.done')}
           </span>
         </div>
       )}
@@ -134,29 +156,29 @@ function ChallengeCard({ challenge, onJoin, previousStatus }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap mb-0.5">
-              <Badge variant={catStyle.badge} size="xs">{capitalize(category)}</Badge>
+              <Badge variant={catStyle.badge} size="xs">{catLabel}</Badge>
               <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded px-1.5 py-0.5">
                 +{xpReward} XP
               </span>
             </div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 leading-tight">
-              {challenge.title}
+              {displayTitle}
             </h3>
           </div>
         </div>
 
         {/* Description */}
         <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4 line-clamp-2">
-          {challenge.description}
+          {displayDesc}
         </p>
 
         {/* Progress section */}
         {isJoined && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-xs text-slate-500 dark:text-slate-400">Progress</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400">{t('challengesPage.progress')}</span>
               <span className="text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-300">
-                {progressLabel(challenge)}
+                {progressLabel(challenge, t)}
               </span>
             </div>
             <div className="h-2 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
@@ -171,7 +193,7 @@ function ChallengeCard({ challenge, onJoin, previousStatus }) {
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-[10px] text-slate-400">
-                {isActive ? 'In progress' : 'Complete!'}
+                {isActive ? t('challengesPage.inProgress') : t('challengesPage.complete')}
               </span>
               <span className="text-[10px] font-semibold text-slate-500">
                 {(progressPct ?? 0).toFixed(0)}%
@@ -184,18 +206,18 @@ function ChallengeCard({ challenge, onJoin, previousStatus }) {
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center gap-1 text-[10px] text-slate-400">
             <Clock className="h-3 w-3" />
-            {challenge.period === 'weekly' ? 'Weekly reset' : 'One-time'}
+            {challenge.period === 'weekly' ? t('challengesPage.weeklyReset') : t('challengesPage.oneTime')}
           </span>
 
           {isDone ? (
             <span className="flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              Completed
+              {t('challengesPage.completed')}
             </span>
           ) : isActive ? (
             <span className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400">
               <Target className="h-3.5 w-3.5" />
-              Active
+              {t('challengesPage.active')}
             </span>
           ) : (
             <Button
@@ -205,7 +227,7 @@ function ChallengeCard({ challenge, onJoin, previousStatus }) {
               onClick={handleJoin}
               id={`join-challenge-${challenge.id}`}
             >
-              Accept Mission
+              {t('challengesPage.acceptMission')}
             </Button>
           )}
         </div>
@@ -254,29 +276,36 @@ function XpRing({ xp, level, levelTitle, nextXp }) {
    Main Page
    ══════════════════════════════════════════════════════════════ */
 export default function ChallengesPage() {
+  const { t } = useTranslation();
   const { challenges, isLoading, join } = useChallenges();
   const { user } = useAuth();
   const [filter, setFilter] = useState('all');
   const [catFilter, setCatFilter] = useState('all');
   const [prevStatuses, setPrevStatuses] = useState({});
 
+  const statusFilterTabs = useMemo(() => [
+    { id: 'all',       label: t('challengesPage.tabAll')       },
+    { id: 'active',    label: t('challengesPage.tabActive')    },
+    { id: 'completed', label: t('challengesPage.tabCompleted') },
+    { id: 'available', label: t('challengesPage.tabAvailable') },
+  ], [t]);
+
   // Track previous statuses for confetti trigger
   useEffect(() => {
     const map = {};
     challenges.forEach(c => { map[c.id] = c.status; });
     setPrevStatuses(prev => {
-      // Only keep previous if we already had it (don't overwrite first load)
       const merged = { ...map };
       Object.keys(prev).forEach(k => { if (prev[k]) merged[k] = prev[k]; });
       return merged;
     });
-  }, []); // only on mount
+  }, []);
 
   const totalXp = useMemo(
     () => challenges.filter(c => c.status === 'COMPLETED').reduce((s, c) => s + (c.xpReward ?? 0), 0),
     [challenges],
   );
-  const { level, title: levelTitle, next: nextXp } = getLevel(totalXp);
+  const { level, title: levelTitle, next: nextXp } = getLevelInfo(totalXp, t);
   const completedCount = challenges.filter(c => c.status === 'COMPLETED').length;
   const activeCount    = challenges.filter(c => c.status === 'IN_PROGRESS').length;
 
@@ -297,12 +326,14 @@ export default function ChallengesPage() {
     return ['all', ...cats];
   }, [challenges]);
 
-  const catTabs = categories.map(c => ({ id: c, label: c === 'all' ? 'All Categories' : capitalize(c) }));
+  const catTabs = categories.map(c => ({
+    id: c,
+    label: c === 'all' ? t('challengesPage.allCategories') : (CAT_KEY_MAP[c] ? t(CAT_KEY_MAP[c]) : capitalize(c))
+  }));
 
   const handleJoin = useCallback(async (id) => {
     const prevStatus = challenges.find(c => c.id === id)?.status;
     await join(id);
-    // Check if newly completed after join
     const updated = challenges.find(c => c.id === id);
     if (updated?.status === 'COMPLETED' && prevStatus !== 'COMPLETED') {
       fireConfetti();
@@ -324,13 +355,13 @@ export default function ChallengesPage() {
             <XpRing xp={totalXp} level={level} levelTitle={levelTitle} nextXp={nextXp} />
             <div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-200">
-                Your Rank
+                {t('challengesPage.yourRank')}
               </p>
               <h2 className="text-2xl font-black text-white leading-tight">{levelTitle}</h2>
               <p className="text-sm font-semibold text-emerald-100 mt-0.5">
-                {totalXp} XP total
+                {t('challengesPage.xpTotal', { xp: totalXp })}
                 {nextXp !== Infinity && (
-                  <span className="text-white font-normal"> · {nextXp - totalXp} to next level</span>
+                  <span className="text-white font-normal"> · {t('challengesPage.toNextLevel', { xp: nextXp - totalXp })}</span>
                 )}
               </p>
             </div>
@@ -339,9 +370,9 @@ export default function ChallengesPage() {
           {/* Stat pills */}
           <div className="flex flex-wrap gap-3 sm:ml-auto">
             {[
-              { label: 'Completed', value: completedCount, icon: CheckCircle2 },
-              { label: 'Active',    value: activeCount,    icon: Target       },
-              { label: 'Total XP',  value: totalXp,        icon: Trophy       },
+              { label: t('challengesPage.completed'), value: completedCount, icon: CheckCircle2 },
+              { label: t('challengesPage.active'),    value: activeCount,    icon: Target       },
+              { label: t('challengesPage.totalXp'),  value: totalXp,        icon: Trophy       },
             ].map(({ label, value, icon: Icon }) => (
               <div key={label} className="flex flex-col items-center rounded-xl bg-white/20 border border-white/25 px-4 py-3 backdrop-blur-sm min-w-[76px] shadow-sm">
                 <Icon className="h-4 w-4 text-emerald-200 mb-1" />
@@ -356,8 +387,8 @@ export default function ChallengesPage() {
         {nextXp !== Infinity && (
           <div className="relative mt-5">
             <div className="flex justify-between text-xs font-semibold text-emerald-100 mb-1.5">
-              <span>Level {level}</span>
-              <span>Level {level + 1} — {nextXp} XP</span>
+              <span>{t('challengesPage.levelNum', { level })}</span>
+              <span>{t('challengesPage.levelNum', { level: level + 1 })} — {nextXp} XP</span>
             </div>
             <div className="h-2.5 w-full rounded-full bg-emerald-950/40 border border-white/20 overflow-hidden">
               <div
@@ -372,7 +403,7 @@ export default function ChallengesPage() {
       {/* ── Filters ──────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row gap-3">
         <Tabs
-          tabs={STATUS_FILTER_TABS}
+          tabs={statusFilterTabs}
           variant="pills"
           activeTab={filter}
           defaultTab="all"
@@ -397,18 +428,18 @@ export default function ChallengesPage() {
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Trophy}
-          title="No challenges found"
+          title={t('challengesPage.noChallengesFound')}
           description={
             filter === 'completed'
-              ? "You haven't completed any challenges yet. Join one to get started!"
+              ? t('challengesPage.noCompletedDesc')
               : filter === 'active'
-              ? "No active challenges. Accept a mission below!"
-              : "No challenges available. Check back soon!"
+              ? t('challengesPage.noActiveDesc')
+              : t('challengesPage.noAvailableDesc')
           }
           action={
             filter !== 'all' ? (
               <Button variant="primary" size="sm" onClick={() => setFilter('all')}>
-                View All Missions
+                {t('challengesPage.viewAllMissions')}
               </Button>
             ) : null
           }
@@ -432,11 +463,10 @@ export default function ChallengesPage() {
           <Leaf className="h-5 w-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-              How Challenges Work
+              {t('challengesPage.howChallengesWork')}
             </p>
             <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-0.5 leading-relaxed">
-              Accept a mission and your progress is tracked automatically from your activity logs.
-              Weekly challenges reset every Monday. Earn XP to level up your sustainability rank!
+              {t('challengesPage.howChallengesWorkDesc')}
             </p>
           </div>
         </div>

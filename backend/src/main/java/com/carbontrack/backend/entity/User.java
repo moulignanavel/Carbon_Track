@@ -83,6 +83,18 @@ public class User {
     public String getSustainabilityPreferences() { return sustainabilityPreferences; }
     public void setSustainabilityPreferences(String sustainabilityPreferences) { this.sustainabilityPreferences = sustainabilityPreferences; }
 
+    @Column(name = "is_anonymous")
+    private Boolean isAnonymous = false;
+
+    public Boolean getIsAnonymous() { return isAnonymous; }
+    public void setIsAnonymous(Boolean isAnonymous) { this.isAnonymous = isAnonymous; }
+
+    @Column(name = "anonymous_name", length = 50)
+    private String anonymousName;
+
+    public String getAnonymousName() { return anonymousName; }
+    public void setAnonymousName(String anonymousName) { this.anonymousName = anonymousName; }
+
     public String getAvatarUrl() { return avatarUrl; }
     public void setAvatarUrl(String avatarUrl) { this.avatarUrl = avatarUrl; }
 }

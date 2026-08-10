@@ -4,6 +4,7 @@
  * Grouped bar chart comparing user's emissions vs platform-wide average.
  */
 
+import { useTranslation } from 'react-i18next';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Legend, ResponsiveContainer, Cell
@@ -11,6 +12,7 @@ import {
 import { COLORS } from '@/constants/theme';
 
 function CustomTooltip({ active, payload, label }) {
+  const { t } = useTranslation();
   if (!active || !payload?.length) return null;
   const userVal = payload.find((p) => p.dataKey === 'userVal');
   const avgVal = payload.find((p) => p.dataKey === 'avgVal');
@@ -33,8 +35,8 @@ function CustomTooltip({ active, payload, label }) {
       {userVal && avgVal && (
         <p className={`mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 font-bold text-xs ${isBetter ? 'text-green-500' : 'text-amber-500'}`}>
           {isBetter
-            ? `✔ You are ${(avgVal.value - userVal.value).toFixed(1)} kg below average!`
-            : `▲ You are ${(userVal.value - avgVal.value).toFixed(1)} kg above average`}
+            ? `✔ ${(avgVal.value - userVal.value).toFixed(1)} kg ${t('dashboardPage.belowAverage', { defaultValue: 'below average!' })}`
+            : `▲ ${(userVal.value - avgVal.value).toFixed(1)} kg ${t('dashboardPage.aboveAverage', { defaultValue: 'above average' })}`}
         </p>
       )}
     </div>
@@ -42,6 +44,7 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function PlatformBenchmarkChart({ data = [], height = 272 }) {
+  const { t } = useTranslation();
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -8 }} barGap={6} barCategoryGap="25%">
@@ -68,10 +71,10 @@ export default function PlatformBenchmarkChart({ data = [], height = 272 }) {
         />
 
         {/* Platform Average Bar */}
-        <Bar dataKey="avgVal" name="Platform Avg" fill="#00bc7d" radius={[6, 6, 0, 0]} maxBarSize={22} />
+        <Bar dataKey="avgVal" name={t('dashboardPage.platformAvg', { defaultValue: 'Platform Avg' })} fill="#00bc7d" radius={[6, 6, 0, 0]} maxBarSize={22} />
 
         {/* User Emissions Bar */}
-        <Bar dataKey="userVal" name="You" radius={[6, 6, 0, 0]} maxBarSize={22}>
+        <Bar dataKey="userVal" name={t('dashboardPage.you', { defaultValue: 'You' })} radius={[6, 6, 0, 0]} maxBarSize={22}>
           {data.map((entry, i) => (
             <Cell
               key={i}

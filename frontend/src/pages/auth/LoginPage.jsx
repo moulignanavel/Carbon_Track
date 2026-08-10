@@ -192,7 +192,7 @@ export default function LoginPage() {
         {/* Divider */}
         <div className="my-8 flex items-center gap-4" aria-hidden="true">
           <div className="flex-1 h-px bg-gradient-to-r from-transparent via-[#1E4432] to-transparent" />
-          <span className="text-xs text-[#5B7A67] font-bold uppercase tracking-widest">OR</span>
+          <span className="text-xs text-[#5B7A67] font-bold uppercase tracking-widest">{t('auth.or', { defaultValue: 'OR' })}</span>
           <div className="flex-1 h-px bg-gradient-to-l from-transparent via-[#1E4432] to-transparent" />
         </div>
 

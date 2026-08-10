@@ -2,6 +2,7 @@ package com.carbontrack.backend.service;
 
 import com.carbontrack.backend.dto.ChallengeResponse;
 import com.carbontrack.backend.entity.Challenge;
+import com.carbontrack.backend.entity.User;
 import com.carbontrack.backend.entity.UserChallenge;
 import com.carbontrack.backend.repository.ActivityLogRepository;
 import com.carbontrack.backend.repository.ChallengeRepository;
@@ -137,7 +138,12 @@ public class ChallengeService {
         Long userId = currentUserId();
         evaluateUserChallenges(userId);
 
-        List<Challenge> all = challengeRepository.findAll();
+        User currentUser = securityService.getCurrentUser();
+        Long userOrgId = (currentUser != null && currentUser.getOrganisation() != null) ? currentUser.getOrganisation().getId() : null;
+
+        List<Challenge> all = challengeRepository.findAll().stream()
+                .filter(c -> c.getOrganisationId() == null || (userOrgId != null && userOrgId.equals(c.getOrganisationId())))
+                .toList();
         List<UserChallenge> joined = userChallengeRepository.findByUserId(userId);
 
         return all.stream().map(c -> {
@@ -224,41 +230,39 @@ public class ChallengeService {
     /* ── Progress computation ──────────────────────────────────── */
 
     private double computeProgress(Challenge c, Long userId) {
-        LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate weekEnd   = LocalDate.now();
+        LocalDate activeStart = LocalDate.now().minusDays(30);
+        LocalDate activeEnd   = LocalDate.now();
+
+        String cat = c.getCategory();
+        boolean isAll = cat == null || "all".equalsIgnoreCase(cat);
+
+        List<com.carbontrack.backend.entity.ActivityLog> logs = activityLogRepository.findByUserIdOrderByIdDesc(userId);
 
         return switch (c.getMetricType()) {
             case "STAY_UNDER", "REDUCE_EMISSIONS" -> {
-                if ("all".equalsIgnoreCase(c.getCategory())) {
-                    yield activityLogRepository
-                            .sumEmissionsByUserAndDateRange(userId, weekStart, weekEnd);
+                LocalDate weekMonday = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                if (isAll) {
+                    yield activityLogRepository.sumEmissionsByUserAndDateRange(userId, weekMonday, activeEnd);
                 } else {
-                    yield activityLogRepository
-                            .sumEmissionsByUserCategoryAndDateRange(userId, c.getCategory(), weekStart, weekEnd);
+                    yield activityLogRepository.sumEmissionsByUserCategoryAndDateRange(userId, cat, weekMonday, activeEnd);
                 }
             }
-            case "LOG_DAYS" -> (double) activityLogRepository
-                    .countDistinctLogDatesByUserAndDateRange(userId, weekStart, weekEnd);
+            case "LOG_DAYS" -> {
+                // Count distinct active dates where the user logged this category
+                long distinctDays = logs.stream()
+                        .filter(l -> l.getLogDate() != null && !l.getLogDate().isBefore(activeStart) && !l.getLogDate().isAfter(activeEnd))
+                        .filter(l -> isAll || (l.getCategory() != null && l.getCategory().equalsIgnoreCase(cat)))
+                        .map(com.carbontrack.backend.entity.ActivityLog::getLogDate)
+                        .distinct()
+                        .count();
+                yield (double) distinctDays;
+            }
             case "LOG_ENTRIES" -> {
-                if ("all".equalsIgnoreCase(c.getCategory())) {
-                    // Count all entries this week
-                    yield activityLogRepository
-                            .findByUserIdOrderByIdDesc(userId)
-                            .stream()
-                            .filter(l -> l.getLogDate() != null
-                                    && !l.getLogDate().isBefore(weekStart)
-                                    && !l.getLogDate().isAfter(weekEnd))
-                            .count();
-                } else {
-                    yield activityLogRepository
-                            .findByUserIdOrderByIdDesc(userId)
-                            .stream()
-                            .filter(l -> l.getLogDate() != null
-                                    && !l.getLogDate().isBefore(weekStart)
-                                    && !l.getLogDate().isAfter(weekEnd)
-                                    && c.getCategory().equalsIgnoreCase(l.getCategory()))
-                            .count();
-                }
+                long entriesCount = logs.stream()
+                        .filter(l -> l.getLogDate() != null && !l.getLogDate().isBefore(activeStart) && !l.getLogDate().isAfter(activeEnd))
+                        .filter(l -> isAll || (l.getCategory() != null && l.getCategory().equalsIgnoreCase(cat)))
+                        .count();
+                yield (double) entriesCount;
             }
             default -> 0.0;
         };

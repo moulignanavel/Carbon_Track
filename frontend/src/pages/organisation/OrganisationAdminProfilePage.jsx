@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, ImagePlus, KeyRound, Save, ShieldCheck, UserRound, X } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import toast from 'react-hot-toast';
@@ -44,6 +45,7 @@ function Field({ label, error, ...props }) {
 }
 
 function ProfileForm({ value, onReload }) {
+  const { t } = useTranslation();
   const initial = useMemo(() => normalize(value), [value]);
   const [form, setForm] = useState(initial);
   const [editing, setEditing] = useState(false);
@@ -139,42 +141,43 @@ function ProfileForm({ value, onReload }) {
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="truncate text-base font-bold text-slate-950 dark:text-white">{form.name || 'Organisation administrator'}</h2>
-          <p className="truncate text-xs text-slate-500">{form.email || 'No work email available'}</p>
-          <p className="mt-1 text-[10px] text-slate-400">PNG, JPEG or WebP · maximum 500 KB</p>
+          <h2 className="truncate text-base font-bold text-slate-950 dark:text-white">{form.name || t('orgPortal.orgAdmin', { defaultValue: 'Organisation administrator' })}</h2>
+          <p className="truncate text-xs text-slate-500">{form.email || t('orgPortal.noWorkEmail', { defaultValue: 'No work email available' })}</p>
+          <p className="mt-1 text-[10px] text-slate-400">{t('orgNav.photoSpecs', { defaultValue: 'PNG, JPEG or WebP · maximum 500 KB' })}</p>
         </div>
         {!editing && (
           <button type="button" onClick={() => setEditing(true)} className="rounded-lg bg-emerald-700 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-800">
-            Edit profile
+            {t('orgNav.editProfile', { defaultValue: 'Edit profile' })}
           </button>
         )}
       </div>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <Field label="Full name" name="name" value={form.name} onChange={change} disabled={!editing} error={errors.name} required />
-        <Field label="Work email" name="email" type="email" value={form.email} onChange={change} disabled={!editing} error={errors.email} required />
-        <Field label="Phone" name="phone" type="tel" value={form.phone} onChange={change} disabled={!editing} error={errors.phone} />
-        <Field label="Job title" name="jobTitle" value={form.jobTitle} onChange={change} disabled={!editing} />
-        <Field label="Role" name="role" value={form.role === 'ORG_ADMIN' ? 'Organisation Administrator' : form.role} disabled />
-        <Field label="Organisation" name="organisation" value={form.organisation} disabled />
+        <Field label={t('orgNav.fullName', { defaultValue: 'Full name' })} name="name" value={form.name} onChange={change} disabled={!editing} error={errors.name} required />
+        <Field label={t('orgNav.workEmail', { defaultValue: 'Work email' })} name="email" type="email" value={form.email} onChange={change} disabled={!editing} error={errors.email} required />
+        <Field label={t('orgNav.phone', { defaultValue: 'Phone' })} name="phone" type="tel" value={form.phone} onChange={change} disabled={!editing} error={errors.phone} />
+        <Field label={t('orgNav.jobTitle', { defaultValue: 'Job title' })} name="jobTitle" value={form.jobTitle} onChange={change} disabled={!editing} />
+        <Field label={t('orgNav.role', { defaultValue: 'Role' })} name="role" value={form.role === 'ORG_ADMIN' ? t('orgNav.orgAdministrator', { defaultValue: 'Organisation Administrator' }) : form.role} disabled />
+        <Field label={t('orgNav.organisation', { defaultValue: 'Organisation' })} name="organisation" value={form.organisation} disabled />
       </div>
       {editing && (
         <div className="mt-5 flex flex-col-reverse gap-2.5 sm:flex-row sm:justify-end">
           <button type="button" onClick={cancel} disabled={saving} className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold disabled:opacity-50">
             <X className="h-3.5 w-3.5" />
-            Cancel
+            {t('common.cancel', { defaultValue: 'Cancel' })}
           </button>
           <button type="submit" disabled={!dirty || saving} className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-emerald-700 px-3.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50">
             <Save className="h-3.5 w-3.5" />
-            {saving ? 'Saving…' : 'Save changes'}
+            {saving ? t('common.saving', { defaultValue: 'Saving…' }) : t('common.saveChanges', { defaultValue: 'Save changes' })}
           </button>
         </div>
       )}
-      {success && <Success label="Profile saved" />}
+      {success && <Success label={t('orgPortal.profileSaved', { defaultValue: 'Profile saved' })} />}
     </form>
   );
 }
 
 function PasswordForm() {
+  const { t } = useTranslation();
   const blank = { currentPassword: '', newPassword: '', confirmPassword: '' };
   const [form, setForm] = useState(blank);
   const [visible, setVisible] = useState({});
@@ -182,11 +185,11 @@ function PasswordForm() {
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const rules = [
-    ['length', 'At least 8 characters', form.newPassword.length >= 8],
-    ['upper', 'One uppercase letter', /[A-Z]/.test(form.newPassword)],
-    ['lower', 'One lowercase letter', /[a-z]/.test(form.newPassword)],
-    ['number', 'One number', /\d/.test(form.newPassword)],
-    ['special', 'One special character', /[^A-Za-z0-9]/.test(form.newPassword)],
+    ['length', t('orgNav.ruleLength', { defaultValue: 'At least 8 characters' }), form.newPassword.length >= 8],
+    ['upper', t('orgNav.ruleUpper', { defaultValue: 'One uppercase letter' }), /[A-Z]/.test(form.newPassword)],
+    ['lower', t('orgNav.ruleLower', { defaultValue: 'One lowercase letter' }), /[a-z]/.test(form.newPassword)],
+    ['number', t('orgNav.ruleNumber', { defaultValue: 'One number' }), /\d/.test(form.newPassword)],
+    ['special', t('orgNav.ruleSpecial', { defaultValue: 'One special character' }), /[^A-Za-z0-9]/.test(form.newPassword)],
   ];
   const strength = rules.filter((rule) => rule[2]).length;
 
@@ -221,15 +224,19 @@ function PasswordForm() {
           <KeyRound className="h-4 w-4" />
         </span>
         <div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-950 dark:text-white">Change password</h2>
-          <p className="mt-0.5 text-xs text-slate-500">Your existing password is never displayed or returned by the server.</p>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-slate-950 dark:text-white">
+            {t('orgNav.changePassword', { defaultValue: 'Change password' })}
+          </h2>
+          <p className="mt-0.5 text-xs text-slate-500">
+            {t('orgNav.passwordNeverDisplayed', { defaultValue: 'Your existing password is never displayed or returned by the server.' })}
+          </p>
         </div>
       </div>
       <div className="space-y-3">
         {[
-          ['currentPassword', 'Current password'],
-          ['newPassword', 'New password'],
-          ['confirmPassword', 'Confirm new password'],
+          ['currentPassword', t('orgNav.currentPassword', { defaultValue: 'Current password' })],
+          ['newPassword', t('orgNav.newPassword', { defaultValue: 'New password' })],
+          ['confirmPassword', t('orgNav.confirmNewPassword', { defaultValue: 'Confirm new password' })],
         ].map(([name, label]) => (
           <label key={name} className="block">
             <span className="mb-1 block text-xs font-semibold text-slate-600 dark:text-slate-300">{label}</span>
@@ -257,8 +264,8 @@ function PasswordForm() {
       </div>
       <div className="mt-4 rounded-lg bg-slate-50 p-3 dark:bg-slate-800/60">
         <div className="flex justify-between text-xs font-semibold">
-          <span>Password strength</span>
-          <span>{['Very weak', 'Weak', 'Fair', 'Good', 'Strong', 'Strong'][strength]}</span>
+          <span>{t('orgNav.passwordStrength', { defaultValue: 'Password strength' })}</span>
+          <span>{[t('orgNav.veryWeak', { defaultValue: 'Very weak' }), t('orgNav.weak', { defaultValue: 'Weak' }), t('orgNav.fair', { defaultValue: 'Fair' }), t('orgNav.good', { defaultValue: 'Good' }), t('orgNav.strong', { defaultValue: 'Strong' }), t('orgNav.strong', { defaultValue: 'Strong' })][strength]}</span>
         </div>
         <div className="mt-1.5 grid grid-cols-5 gap-1" aria-hidden="true">
           {rules.map((rule, index) => (
@@ -275,14 +282,15 @@ function PasswordForm() {
       </div>
       <button type="submit" disabled={saving} className="mt-4 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50 dark:bg-emerald-700 dark:hover:bg-emerald-800">
         <ShieldCheck className="h-3.5 w-3.5" />
-        {saving ? 'Updating…' : 'Update password'}
+        {saving ? t('settingsPage.updatingPassword', { defaultValue: 'Updating…' }) : t('orgNav.updatePassword', { defaultValue: 'Update password' })}
       </button>
-      {success && <Success label="Password changed" />}
+      {success && <Success label={t('settingsPage.passwordChanged', { defaultValue: 'Password changed' })} />}
     </form>
   );
 }
 
 export default function OrganisationAdminProfilePage({ data, loading, error, onRetry, onReload }) {
+  const { t } = useTranslation();
   if (loading)
     return (
       <div className="grid gap-3.5 lg:grid-cols-2">
@@ -293,9 +301,9 @@ export default function OrganisationAdminProfilePage({ data, loading, error, onR
   if (error)
     return (
       <div className={`${card} text-rose-700`}>
-        Unable to load your profile.{' '}
+        {t('orgPortal.profileLoadError', { defaultValue: 'Unable to load your profile.' })}{' '}
         <button onClick={onRetry} className="ml-2 underline font-bold">
-          Retry
+          {t('common.retry', { defaultValue: 'Retry' })}
         </button>
       </div>
     );
@@ -304,10 +312,14 @@ export default function OrganisationAdminProfilePage({ data, loading, error, onR
       <header>
         <div className="flex items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[.16em] text-emerald-700 dark:text-emerald-300">
           <UserRound className="h-3.5 w-3.5" />
-          Account settings
+          {t('orgNav.accountSettings', { defaultValue: 'Account settings' })}
         </div>
-        <h1 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">My Profile</h1>
-        <p className="mt-0.5 text-xs text-slate-500">Manage your administrator information and account security.</p>
+        <h1 className="mt-1 text-xl font-black tracking-tight text-slate-950 dark:text-white sm:text-2xl">
+          {t('orgNav.myProfile', { defaultValue: 'My Profile' })}
+        </h1>
+        <p className="mt-0.5 text-xs text-slate-500">
+          {t('orgNav.manageAdminInfo', { defaultValue: 'Manage your administrator information and account security.' })}
+        </p>
       </header>
       <div className="grid items-start gap-3.5 xl:grid-cols-2">
         <ProfileForm value={data?.adminProfile} onReload={onReload} />
@@ -316,3 +328,4 @@ export default function OrganisationAdminProfilePage({ data, loading, error, onR
     </div>
   );
 }
+

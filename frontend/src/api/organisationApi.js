@@ -104,3 +104,29 @@ export async function updateOrganisationActivityVerification(id, status) {
   const { data } = await axiosInstance.patch(`/org-portal/activities/${id}/verification`, { status });
   return data;
 }
+
+export async function getPendingJoinRequests() {
+  const { data } = await axiosInstance.get('/organisations/requests');
+  return data;
+}
+
+export async function approveJoinRequest(userId) {
+  const { data } = await axiosInstance.put(`/organisations/requests/${userId}/approve`);
+  return data;
+}
+
+export async function rejectJoinRequest(userId) {
+  const { data } = await axiosInstance.put(`/organisations/requests/${userId}/reject`);
+  return data;
+}
+
+export async function getOrganisationChallenges() {
+  const { data } = await axiosInstance.get('/org-portal/challenges'); return data;
+}
+export async function createOrganisationChallenge(payload) {
+  const { data } = await axiosInstance.post('/org-portal/challenges', payload); return data;
+}
+export async function deleteOrganisationChallenge(id) {
+  await axiosInstance.delete(`/org-portal/challenges/${id}`);
+}
+

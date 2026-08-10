@@ -32,7 +32,7 @@ public class SecurityService {
             throw new UsernameNotFoundException("No authenticated user found");
         }
 
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
+        return userRepository.findByEmailIgnoreCaseOrUsernameIgnoreCase(email, email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email or username: " + email));
     }
 }

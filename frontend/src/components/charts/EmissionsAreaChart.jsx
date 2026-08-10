@@ -1,15 +1,18 @@
+import { useTranslation } from 'react-i18next';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import { CHART_PALETTE } from '@/constants/theme';
+import { formatMonthLabel } from '@/utils/formatters';
 
 /** Custom tooltip box */
 function CustomTooltip({ active, payload, label }) {
+  const { i18n } = useTranslation();
   if (!active || !payload?.length) return null;
   return (
     <div className="card-glass rounded-xl px-3 py-2.5 shadow-lg text-xs">
-      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-1">{label}</p>
+      <p className="font-semibold text-slate-700 dark:text-slate-200 mb-1">{formatMonthLabel(label, i18n.language)}</p>
       {payload.map((p) => (
         <div key={p.dataKey} className="flex items-center gap-2 py-0.5">
           <span className="h-2 w-2 rounded-full shrink-0" style={{ background: p.color }} />
@@ -38,6 +41,7 @@ export default function EmissionsAreaChart({
   height = 280,
   stacked = false,
 }) {
+  const { i18n } = useTranslation();
   return (
     <ResponsiveContainer width="100%" height={height}>
       <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -58,6 +62,7 @@ export default function EmissionsAreaChart({
           axisLine={false}
           tickLine={false}
           dy={8}
+          tickFormatter={(l) => formatMonthLabel(l, i18n.language)}
         />
         <YAxis
           tick={{ fontSize: 11, fill: '#94a3b8' }}

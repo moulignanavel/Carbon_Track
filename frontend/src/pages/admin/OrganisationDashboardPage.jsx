@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { TrendingUp, Users, Leaf, Download, RefreshCw } from 'lucide-react';
 import { getDashboardMetrics, getCSRReport } from '@/api/organisationApi';
 import { useAuth } from '@/context/AuthContext';
@@ -23,6 +24,7 @@ import Alert from '@/components/ui/Alert';
  */
 
 export default function OrganisationDashboardPage() {
+  const { t } = useTranslation();
   const [dashboardData, setDashboardData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -84,7 +86,7 @@ export default function OrganisationDashboardPage() {
   };
 
   if (isLoading && !dashboardData) {
-    return <Spinner fullPage label="Loading dashboard…" />;
+    return <Spinner fullPage label={t('orgDash.loading', { defaultValue: 'Loading dashboard…' })} />;
   }
 
   return (
@@ -96,7 +98,7 @@ export default function OrganisationDashboardPage() {
             <TrendingUp className="w-8 h-8 text-green-600" />
             <div>
               <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 dark:text-slate-50">
-                Organization Dashboard
+                {t('orgDash.title', { defaultValue: 'Organization Dashboard' })}
               </h1>
               <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
                 {dashboardData?.organisationName}
@@ -119,19 +121,21 @@ export default function OrganisationDashboardPage() {
               disabled={isExportingReport || !dashboardData}
             >
               <Download className="w-4 h-4" />
-              {isExportingReport ? 'Exporting…' : 'CSR Report'}
+              {isExportingReport 
+                ? t('orgDash.exporting', { defaultValue: 'Exporting…' }) 
+                : t('orgDash.csrReport', { defaultValue: 'CSR Report' })}
             </Button>
           </div>
         </div>
         <p className="text-slate-600 dark:text-slate-400">
-          Monitor your organization's sustainability progress and employee engagement.
+          {t('orgDash.subtitle', { defaultValue: "Monitor your organization's sustainability progress and employee engagement." })}
         </p>
       </div>
 
       {/* Error Alert */}
       {error && (
         <div className="max-w-7xl mx-auto mb-6">
-          <Alert variant="danger" title="Error" message={error} />
+          <Alert variant="danger" title={t('common.error', { defaultValue: 'Error' })} message={error} />
         </div>
       )}
 
@@ -162,8 +166,8 @@ export default function OrganisationDashboardPage() {
           {/* Employee Table */}
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-              <EmployeeTable employees={dashboardData.topEmployees} title="Top Contributors" />
-              <EmployeeTable employees={dashboardData.lowestFootprintEmployees} title="Lowest Footprint Employees" />
+              <EmployeeTable employees={dashboardData.topEmployees} title={t('orgDash.topContributors', { defaultValue: 'Top Contributors' })} />
+              <EmployeeTable employees={dashboardData.lowestFootprintEmployees} title={t('orgDash.lowestFootprintEmployees', { defaultValue: 'Lowest Footprint Employees' })} />
             </div>
           </div>
         </>
@@ -172,9 +176,10 @@ export default function OrganisationDashboardPage() {
       {/* Last Updated */}
       {dashboardData && (
         <div className="max-w-7xl mx-auto mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
-          Last updated: {new Date(dashboardData.lastUpdated).toLocaleString()}
+          {t('orgDash.lastUpdated', { defaultValue: 'Last updated:' })} {new Date(dashboardData.lastUpdated).toLocaleString()}
         </div>
       )}
     </div>
   );
 }
+

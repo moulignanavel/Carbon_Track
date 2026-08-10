@@ -19,6 +19,21 @@ import { formatError } from '@/utils/errorHandler';
 import ActivityContext from './activityContextValue';
 import { useAuth } from '@/context/AuthContext';
 
+const normalizeLog = (l) => {
+  if (!l) return l;
+  let dStr = l.logDate || l.date || '';
+  if (Array.isArray(dStr)) {
+    dStr = `${dStr[0]}-${String(dStr[1]).padStart(2, '0')}-${String(dStr[2]).padStart(2, '0')}`;
+  } else if (typeof dStr === 'string' && dStr.includes('T')) {
+    dStr = dStr.split('T')[0];
+  }
+  return {
+    ...l,
+    logDate: dStr,
+    calculatedEmissions: Number(l.calculatedEmissions ?? l.co2e ?? l.emission ?? 0),
+  };
+};
+
 /* ─── Provider ──────────────────────────────────────────────────── */
 export function ActivityProvider({ children }) {
   const [logs,      setLogs]      = useState([]);
@@ -32,7 +47,10 @@ export function ActivityProvider({ children }) {
     setIsLoading(true);
     try {
       const data = await getActivityLogs();
-      if (version === requestVersion.current) setLogs(data);
+      if (version === requestVersion.current) {
+        const normalized = Array.isArray(data) ? data.map(normalizeLog) : [];
+        setLogs(normalized);
+      }
     } catch (err) {
       if (version === requestVersion.current) {
         toast.error(formatError(err, 'Failed to load activity logs'));
@@ -54,7 +72,8 @@ export function ActivityProvider({ children }) {
   /* ── add ───────────────────────────────────────────────────── */
   const addLog = useCallback(async (logData) => {
     try {
-      const newLog = await createActivityLog(logData);
+      const rawLog = await createActivityLog(logData);
+      const newLog = normalizeLog(rawLog);
       // Optimistically prepend so the user sees it instantly...
       setLogs((prev) => [newLog, ...prev]);
       // ...then sync with server to guarantee the list is accurate.
@@ -62,7 +81,8 @@ export function ActivityProvider({ children }) {
       setTimeout(async () => {
         try {
           const data = await getActivityLogs();
-          setLogs(data);
+          const normalized = Array.isArray(data) ? data.map(normalizeLog) : [];
+          setLogs(normalized);
         } catch (_) { /* ignore background refresh errors */ }
       }, 300);
       window.dispatchEvent(new CustomEvent('activity-created', { detail: { newLog, logCount: logs.length + 1 } }));

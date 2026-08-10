@@ -1,49 +1,10 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from '../utils/api';
 import { Leaf, Navigation, Zap, UtensilsCrossed, ShoppingBag, Calendar, Plus, ShieldCheck } from 'lucide-react';
 
-const CATEGORIES = [
-  { id: 'transport', label: 'Transport', icon: Navigation, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-  { id: 'electricity', label: 'Electricity', icon: Zap, color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
-  { id: 'food', label: 'Food', icon: UtensilsCrossed, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-  { id: 'shopping', label: 'Shopping', icon: ShoppingBag, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' }
-];
-
-const CONFIG = {
-  transport: {
-    types: [
-      { id: 'car', label: 'Car (Gasoline)' },
-      { id: 'flight', label: 'Flight' },
-      { id: 'public_transit', label: 'Public Transit' }
-    ],
-    unit: 'km'
-  },
-  electricity: {
-    types: [
-      { id: 'grid', label: 'Grid Electricity' },
-      { id: 'solar', label: 'Solar Power' },
-      { id: 'wind', label: 'Wind Power' }
-    ],
-    unit: 'kWh'
-  },
-  food: {
-    types: [
-      { id: 'meat', label: 'Meat Meal' },
-      { id: 'vegetarian', label: 'Vegetarian Meal' },
-      { id: 'vegan', label: 'Vegan Meal' }
-    ],
-    unit: 'serving'
-  },
-  shopping: {
-    types: [
-      { id: 'electronics', label: 'Electronics' },
-      { id: 'clothing', label: 'Clothing/Retail' }
-    ],
-    unit: 'USD'
-  }
-};
-
 export default function ActivityForm({ onLogSuccess }) {
+  const { t } = useTranslation();
   const [category, setCategory] = useState('transport');
   const [activityType, setActivityType] = useState('car');
   const [quantity, setQuantity] = useState('');
@@ -51,6 +12,47 @@ export default function ActivityForm({ onLogSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successResult, setSuccessResult] = useState(null);
+
+  const CATEGORIES = [
+    { id: 'transport', label: t('activitiesPage.categories.transport', { defaultValue: 'Transport' }), icon: Navigation, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+    { id: 'electricity', label: t('activitiesPage.categories.electricity', { defaultValue: 'Electricity' }), icon: Zap, color: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20' },
+    { id: 'food', label: t('activitiesPage.categories.food', { defaultValue: 'Food' }), icon: UtensilsCrossed, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+    { id: 'shopping', label: t('activitiesPage.categories.shopping', { defaultValue: 'Shopping' }), icon: ShoppingBag, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' }
+  ];
+
+  const CONFIG = {
+    transport: {
+      types: [
+        { id: 'car', label: t('activitiesPage.transportModes.car_gasoline', { defaultValue: 'Car (Gasoline)' }) },
+        { id: 'flight', label: t('activitiesPage.transportModes.flight', { defaultValue: 'Flight' }) },
+        { id: 'public_transit', label: t('activitiesPage.transportModes.public_transit', { defaultValue: 'Public Transit' }) }
+      ],
+      unit: 'km'
+    },
+    electricity: {
+      types: [
+        { id: 'grid', label: t('activitiesPage.energySources.grid', { defaultValue: 'Grid Electricity' }) },
+        { id: 'solar', label: t('activitiesPage.energySources.solar', { defaultValue: 'Solar Power' }) },
+        { id: 'wind', label: t('activitiesPage.energySources.wind', { defaultValue: 'Wind Power' }) }
+      ],
+      unit: 'kWh'
+    },
+    food: {
+      types: [
+        { id: 'meat', label: t('activitiesPage.mealTypes.meat', { defaultValue: 'Meat Meal' }) },
+        { id: 'vegetarian', label: t('activitiesPage.mealTypes.vegetarian', { defaultValue: 'Vegetarian Meal' }) },
+        { id: 'vegan', label: t('activitiesPage.mealTypes.vegan', { defaultValue: 'Vegan Meal' }) }
+      ],
+      unit: 'serving'
+    },
+    shopping: {
+      types: [
+        { id: 'electronics', label: t('activitiesPage.productCategories.electronics', { defaultValue: 'Electronics' }) },
+        { id: 'clothing', label: t('activitiesPage.productCategories.clothing', { defaultValue: 'Clothing/Retail' }) }
+      ],
+      unit: 'USD'
+    }
+  };
 
   // Update activity type when category changes
   const handleCategoryChange = (catId) => {
@@ -67,7 +69,7 @@ export default function ActivityForm({ onLogSuccess }) {
     setLoading(true);
 
     if (!quantity || parseFloat(quantity) < 0) {
-      setError('Quantity must be non-negative');
+      setError(t('activitiesPage.quantityNonNegative', { defaultValue: 'Quantity must be non-negative' }));
       setLoading(false);
       return;
     }
@@ -81,7 +83,7 @@ export default function ActivityForm({ onLogSuccess }) {
         onLogSuccess(response);
       }
     } catch (err) {
-      setError(err.message || 'Failed to submit activity log');
+      setError(err.message || t('activitiesPage.failedToSaveLog', { defaultValue: 'Failed to record activity. Please check input values.' }));
     } finally {
       setLoading(false);
     }

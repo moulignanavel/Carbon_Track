@@ -13,13 +13,17 @@ public class UserProfileResponse {
     private String email;
     private String role;
     private Long organisationId;
+    private String organisationName;
     private SustainabilityPreferences sustainabilityPreferences;
     private String avatarUrl;
     private java.util.List<String> badges;
+    private Boolean isAnonymous;
+    private String anonymousName;
+    private String status;
 
     public UserProfileResponse(Long id, String username, String email, String role,
                                SustainabilityPreferences sustainabilityPreferences,
                                String avatarUrl, java.util.List<String> badges) {
-        this(id, username, email, role, null, sustainabilityPreferences, avatarUrl, badges);
+        this(id, username, email, role, null, null, sustainabilityPreferences, avatarUrl, badges, false, null, "ACTIVE");
     }
 }

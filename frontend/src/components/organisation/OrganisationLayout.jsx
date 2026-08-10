@@ -10,35 +10,6 @@ import NotificationBell from '@/components/notifications/NotificationBell';
 import OrganisationSidebar from './OrganisationSidebar';
 import OrganisationEcoBackground from './OrganisationEcoBackground';
 
-const pageMeta = {
-  dashboard: ['Organisation Dashboard', 'Monitor your organisation’s sustainability performance.'],
-  analytics: ['Analytics', 'Explore performance trends and sustainability insights.'],
-  employees: ['Employees', 'Review employee participation and carbon performance.'],
-  'monthly-trends': ['Monthly Trends', 'Track how emissions change over time.'],
-  departments: ['Department Comparison', 'Compare carbon performance across departments.'],
-  goals: ['Organisation Goals', 'Create and track sustainability targets.'],
-  'top-contributors': ['Top Contributors', 'Recognise employees making the greatest verified impact.'],
-  'lowest-footprint': ['Lowest Footprint', 'View employees with the lowest verified carbon footprint.'],
-  reports: ['CSR Reports', 'Generate and download organisation sustainability reports.'],
-  'activity-logs': ['Activity Logs', 'Review verified sustainability activity across your organisation.'],
-  profile: ['Organisation Profile', 'Manage organisation details and sustainability settings.'],
-  'my-profile': ['My Profile', 'Manage your organisation administrator profile.'],
-};
-
-const ORG_SEARCH_DESTINATIONS = [
-  { label: 'Organisation Dashboard', to: '/organisation/dashboard' },
-  { label: 'Emissions Analytics', to: '/organisation/analytics' },
-  { label: 'Employee Directory', to: '/organisation/employees' },
-  { label: 'Monthly Trends', to: '/organisation/monthly-trends' },
-  { label: 'Department Comparison', to: '/organisation/departments' },
-  { label: 'Sustainability Goals', to: '/organisation/goals' },
-  { label: 'Top Contributors', to: '/organisation/top-contributors' },
-  { label: 'CSR & ESG Reports', to: '/organisation/reports' },
-  { label: 'Activity Logs', to: '/organisation/activity-logs' },
-  { label: 'Organisation Profile', to: '/organisation/profile' },
-  { label: 'Admin Profile', to: '/organisation/my-profile' },
-];
-
 export default function OrganisationLayout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -51,7 +22,7 @@ export default function OrganisationLayout() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { isDark, toggleTheme } = useTheme();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const reduceMotion = useReducedMotion();
 
   const searchRef = useRef(null);
@@ -59,8 +30,38 @@ export default function OrganisationLayout() {
   const scrollContainerRef = useRef(null);
 
   const currentLanguage = i18n.resolvedLanguage || i18n.language || 'en';
+
+  const pageMeta = {
+    dashboard: [t('orgNav.dashboard', 'Organisation Dashboard'), t('orgNav.dashboardDesc', 'Monitor your organisation’s sustainability performance.')],
+    analytics: [t('orgNav.analytics', 'Analytics'), t('orgNav.analyticsDesc', 'Explore performance trends and sustainability insights.')],
+    employees: [t('orgNav.employees', 'Employees'), t('orgNav.employeesDesc', 'Review employee participation and carbon performance.')],
+    'monthly-trends': [t('orgNav.monthlyTrends', 'Monthly Trends'), t('orgNav.monthlyTrendsDesc', 'Track how emissions change over time.')],
+    departments: [t('orgNav.departmentComparison', 'Department Comparison'), t('orgNav.departmentComparisonDesc', 'Compare carbon performance across departments.')],
+    goals: [t('orgNav.organisationGoals', 'Organisation Goals'), t('orgNav.goalsDesc', 'Create and track sustainability targets.')],
+    'top-contributors': [t('orgNav.topContributors', 'Top Contributors'), t('orgNav.topContributorsDesc', 'Recognise employees making the greatest verified impact.')],
+    'lowest-footprint': [t('orgNav.lowestFootprint', 'Lowest Footprint'), t('orgNav.lowestFootprintDesc', 'View employees with the lowest verified carbon footprint.')],
+    reports: [t('orgNav.csrReports', 'CSR Reports'), t('orgNav.csrReportsDesc', 'Generate and download organisation sustainability reports.')],
+    'activity-logs': [t('orgNav.activityLogs', 'Activity Logs'), t('orgNav.activityLogsDesc', 'Review verified sustainability activity across your organisation.')],
+    profile: [t('orgNav.organisationProfile', 'Organisation Profile'), t('orgNav.profileDesc', 'Manage organisation details and sustainability settings.')],
+    'my-profile': [t('orgNav.myProfile', 'My Profile'), t('orgNav.myProfileDesc', 'Manage your organisation administrator profile.')],
+  };
+
+  const ORG_SEARCH_DESTINATIONS = [
+    { label: t('orgNav.dashboard', 'Organisation Dashboard'), to: '/organisation/dashboard' },
+    { label: t('orgNav.analytics', 'Emissions Analytics'), to: '/organisation/analytics' },
+    { label: t('orgNav.employees', 'Employee Directory'), to: '/organisation/employees' },
+    { label: t('orgNav.monthlyTrends', 'Monthly Trends'), to: '/organisation/monthly-trends' },
+    { label: t('orgNav.departmentComparison', 'Department Comparison'), to: '/organisation/departments' },
+    { label: t('orgNav.organisationGoals', 'Sustainability Goals'), to: '/organisation/goals' },
+    { label: t('orgNav.topContributors', 'Top Contributors'), to: '/organisation/top-contributors' },
+    { label: t('orgNav.csrReports', 'CSR & ESG Reports'), to: '/organisation/reports' },
+    { label: t('orgNav.activityLogs', 'Activity Logs'), to: '/organisation/activity-logs' },
+    { label: t('orgNav.organisationProfile', 'Organisation Profile'), to: '/organisation/profile' },
+    { label: t('orgNav.myProfile', 'Admin Profile'), to: '/organisation/my-profile' },
+  ];
+
   const segment = pathname === '/organisation' ? 'dashboard' : pathname.split('/').filter(Boolean).at(-1);
-  const [title, subtitle] = pageMeta[segment] || ['Organisation Portal', 'Sustainability management workspace.'];
+  const [title, subtitle] = pageMeta[segment] || [t('orgNav.organisationPortal', 'Organisation Portal'), t('orgNav.portalSub', 'Sustainability management workspace.')];
 
   const results = ORG_SEARCH_DESTINATIONS.filter((item) =>
     item.label.toLowerCase().includes(query.trim().toLowerCase())
@@ -149,7 +150,7 @@ export default function OrganisationLayout() {
                       </h1>
                       <span className="hidden lg:inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/60">
                         <ShieldCheck className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                        CSR Enterprise
+                        {t('orgNav.csrEnterprise', { defaultValue: 'CSR Enterprise' })}
                       </span>
                     </div>
                     <p className="hidden truncate text-xs text-slate-500 dark:text-slate-400 sm:block">
@@ -174,8 +175,8 @@ export default function OrganisationLayout() {
                       if (event.key === 'Enter' && results[0]) selectSearchResult(results[0].to);
                     }}
                     className="h-9 w-full rounded-xl border border-slate-200 bg-slate-50/80 pl-9 pr-8 text-xs text-slate-800 outline-none transition focus:border-emerald-500 focus:bg-white focus:ring-3 focus:ring-emerald-500/10 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-100 dark:focus:bg-slate-900"
-                    placeholder="Search organisation workspace…"
-                    aria-label="Search organisation portal"
+                    placeholder={t('orgNav.searchWorkspace', 'Search organisation workspace…')}
+                    aria-label={t('orgNav.searchWorkspace', 'Search organisation portal')}
                   />
                   {searchOpen && query.trim() && (
                     <div className="absolute left-0 right-0 top-11 overflow-hidden rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900 z-50">
@@ -192,7 +193,7 @@ export default function OrganisationLayout() {
                           </button>
                         ))
                       ) : (
-                        <p className="px-3 py-2 text-xs text-slate-500">No matching section found</p>
+                        <p className="px-3 py-2 text-xs text-slate-500">{t('orgNav.noMatchingSection', 'No matching section found')}</p>
                       )}
                     </div>
                   )}

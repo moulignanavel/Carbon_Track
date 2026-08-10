@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
@@ -13,54 +14,110 @@ const inputClass = '!bg-white border-slate-200 text-slate-900 placeholder:text-s
 const passwordTests = [(v) => v.length >= 8, (v) => /[A-Z]/.test(v), (v) => /\d/.test(v), (v) => /[^A-Za-z0-9]/.test(v)];
 
 function PasswordStrength({ value = '' }) {
+  const { t } = useTranslation();
   const score = passwordTests.filter((test) => test(value)).length;
   if (!value) return null;
+  const strengthLabels = [
+    t('registerPage.weak', { defaultValue: 'Weak' }),
+    t('registerPage.weak', { defaultValue: 'Weak' }),
+    t('registerPage.fair', { defaultValue: 'Fair' }),
+    t('registerPage.good', { defaultValue: 'Good' }),
+    t('registerPage.strong', { defaultValue: 'Strong' }),
+  ];
   return <div className="mt-2" aria-live="polite">
     <div className="flex gap-1">{[1,2,3,4].map((n) => <span key={n} className={`h-1.5 flex-1 rounded ${n <= score ? 'bg-[#7FBF8C]' : 'bg-slate-700'}`} />)}</div>
-    <p className="mt-1 text-xs text-[#9FAFA5]">Password strength: {['Weak','Weak','Fair','Good','Strong'][score]}</p>
+    <p className="mt-1 text-xs text-[#9FAFA5]">{t('registerPage.passwordStrength', { level: strengthLabels[score], defaultValue: `Password strength: ${strengthLabels[score]}` })}</p>
   </div>;
 }
 
 function Terms({ register, error }) {
+  const { t } = useTranslation();
   return <div><label className="flex gap-3 text-sm text-[#C8D3CB]">
     <input type="checkbox" className="mt-1" {...register('acceptTerms')} />
-    <span>I accept the <Link className="text-[#7FBF8C]" to="#">Terms</Link> and <Link className="text-[#7FBF8C]" to="#">Privacy Policy</Link>.</span>
+    <span>{t('registerPage.acceptTerms', { defaultValue: 'I accept the' })} <Link className="text-[#7FBF8C]" to="#">{t('registerPage.terms', { defaultValue: 'Terms' })}</Link> {t('registerPage.and', { defaultValue: 'and' })} <Link className="text-[#7FBF8C]" to="#">{t('registerPage.privacyPolicy', { defaultValue: 'Privacy Policy' })}</Link>.</span>
   </label>{error && <p className="form-error mt-1">{error.message}</p>}</div>;
 }
 
 function IndividualForm() {
+  const { t } = useTranslation();
   const { register: createAccount } = useAuth();
   const navigate = useNavigate();
-  const form = useForm({ resolver: zodResolver(registerSchema), defaultValues:{ fullName:'', username:'', email:'', password:'', confirmPassword:'', acceptTerms:false } });
-  const { register, handleSubmit, watch, setError, formState:{ errors, isSubmitting } } = form;
+  const [organisations, setOrganisations] = useState([]);
+
+  useEffect(() => {
+    fetch('/api/organisations/public')
+      .then(res => res.json())
+      .then(data => setOrganisations(data || []))
+      .catch(err => console.error('Failed to load organisations', err));
+  }, []);
+
+  const form = useForm({ 
+    resolver: zodResolver(registerSchema), 
+    defaultValues: { fullName: '', username: '', email: '', password: '', confirmPassword: '', acceptTerms: false, organisationId: '' } 
+  });
+  const { register, handleSubmit, watch, setError, formState: { errors, isSubmitting } } = form;
+
   const submit = async (data) => {
     try {
-      await createAccount({ fullName:data.fullName, username:data.username, email:data.email, password:data.password });
-      toast.success('Your individual account has been created successfully.');
-      navigate('/', { replace:true });
-    } catch (error) { setError('root', { message:extractErrorMessage(error) }); }
+      await createAccount({ 
+        fullName: data.fullName, 
+        username: data.username, 
+        email: data.email, 
+        password: data.password,
+        organisationId: data.organisationId ? Number(data.organisationId) : null
+      });
+      toast.success(t('registerPage.individualTitle', { defaultValue: 'Your individual account has been created successfully.' }));
+      navigate('/', { replace: true });
+    } catch (error) { setError('root', { message: extractErrorMessage(error) }); }
   };
+
   return <form onSubmit={handleSubmit(submit)} className="space-y-5" noValidate>
     <div>
-      <h2 className="text-xl font-bold">Individual User Details</h2>
-      <p className="mt-1 text-sm text-[#9FAFA5]">Enter your details using the example format shown in each field.</p>
+      <h2 className="text-xl font-bold">{t('registerPage.individualTitle', { defaultValue: 'Individual User Details' })}</h2>
+      <p className="mt-1 text-sm text-[#9FAFA5]">{t('registerPage.individualSubtitle', { defaultValue: 'Enter your details using the example format shown in each field.' })}</p>
     </div>
     {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
     <div className="grid sm:grid-cols-2 gap-4">
-      <Input label="Full name" placeholder="e.g. Priya Sharma" autoComplete="name" required error={errors.fullName?.message} className={inputClass} {...register('fullName')} />
-      <Input label="Username" placeholder="e.g. priya_sharma" autoComplete="username" hint="3–50 characters; letters, numbers, dots, dashes or underscores." required error={errors.username?.message} className={inputClass} {...register('username')} />
+      <Input label={t('registerPage.fullName', { defaultValue: 'Full name' })} placeholder={t('registerPage.fullNamePlaceholder', { defaultValue: 'e.g. Priya Sharma' })} autoComplete="name" required error={errors.fullName?.message} className={inputClass} {...register('fullName')} />
+      <Input label={t('registerPage.username', { defaultValue: 'Username' })} placeholder={t('registerPage.usernamePlaceholder', { defaultValue: 'e.g. priya_sharma' })} autoComplete="username" hint={t('registerPage.usernameHint', { defaultValue: '3–50 characters; letters, numbers, dots, dashes or underscores.' })} required error={errors.username?.message} className={inputClass} {...register('username')} />
     </div>
-    <Input label="Email" type="email" placeholder="e.g. priya@example.com" autoComplete="email" required leftIcon={<Mail />} error={errors.email?.message} className={inputClass} {...register('email')} />
+    <Input label={t('registerPage.email', { defaultValue: 'Email' })} type="email" placeholder={t('registerPage.emailPlaceholder', { defaultValue: 'e.g. priya@example.com' })} autoComplete="email" required leftIcon={<Mail />} error={errors.email?.message} className={inputClass} {...register('email')} />
     <div className="grid sm:grid-cols-2 gap-4">
-      <div><Input label="Password" type="password" placeholder="Enter your password" autoComplete="new-password" required leftIcon={<Lock />} error={errors.password?.message} className={inputClass} {...register('password')} /><PasswordStrength value={watch('password')} /></div>
-      <Input label="Confirm password" type="password" placeholder="Re-enter the same password" autoComplete="new-password" required error={errors.confirmPassword?.message} className={inputClass} {...register('confirmPassword')} />
+      <div><Input label={t('registerPage.password', { defaultValue: 'Password' })} type="password" placeholder={t('registerPage.passwordPlaceholder', { defaultValue: 'Enter your password' })} autoComplete="new-password" required leftIcon={<Lock />} error={errors.password?.message} className={inputClass} {...register('password')} /><PasswordStrength value={watch('password')} /></div>
+      <Input label={t('registerPage.confirmPassword', { defaultValue: 'Confirm password' })} type="password" placeholder={t('registerPage.confirmPasswordPlaceholder', { defaultValue: 'Re-enter the same password' })} autoComplete="new-password" required error={errors.confirmPassword?.message} className={inputClass} {...register('confirmPassword')} />
     </div>
+    
+    <div>
+      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">
+        {t('registerPage.organisation', { defaultValue: 'Organisation (optional)' })}
+      </label>
+      <select
+        className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 focus:outline-none"
+        {...register('organisationId')}
+      >
+        <option value="">{t('registerPage.selectOrg', { defaultValue: 'Select an organisation (optional)' })}</option>
+        {organisations.map(org => (
+          <option key={org.id} value={org.id}>
+            {org.name}
+          </option>
+        ))}
+      </select>
+      <p className="text-[10px] text-slate-400 mt-1">
+        {t('registerPage.organisationHint', { defaultValue: 'If chosen, your account requires administrator approval before accessing organization features.' })}
+      </p>
+    </div>
+
     <Terms register={register} error={errors.acceptTerms} />
-    <Button type="submit" fullWidth size="lg" isLoading={isSubmitting} disabled={isSubmitting}>Create individual account</Button>
+    <Button type="submit" fullWidth size="lg" isLoading={isSubmitting} disabled={isSubmitting}>
+      {isSubmitting 
+        ? t('registerPage.creating', { defaultValue: 'Creating account…' }) 
+        : t('registerPage.createAccount', { defaultValue: 'Create account' })}
+    </Button>
   </form>;
 }
 
 function OrganisationForm() {
+  const { t } = useTranslation();
   const { registerOrganisation } = useAuth();
   const navigate = useNavigate();
   const { register, handleSubmit, watch, setError, formState:{ errors, isSubmitting } } = useForm({
@@ -79,14 +136,14 @@ function OrganisationForm() {
   return <form onSubmit={handleSubmit(submit)} className="space-y-6" noValidate>
     {errors.root && <Alert variant="error">{errors.root.message}</Alert>}
     <section>
-      <h2 className="text-xl font-bold">1. Organisation Details</h2>
-      <p className="mt-1 mb-4 text-sm text-[#9FAFA5]">Tell us about the organisation using its official information.</p>
+      <h2 className="text-xl font-bold">{t('registerPage.orgTitle', { defaultValue: 'Organisation Registration' })}</h2>
+      <p className="mt-1 mb-4 text-sm text-[#9FAFA5]">{t('registerPage.orgSubtitle', { defaultValue: 'Register your company or institution to start your sustainability journey.' })}</p>
       <div className="grid sm:grid-cols-2 gap-4">
-        {field('organisationName','Organisation name',true,'text','e.g. Greenfield Technologies Pvt Ltd')}
-        {field('organisationCode','Organisation code',true,'text','e.g. GFT-2026','Use your company or institution code.')}
+        {field('organisationName', t('registerPage.orgName', { defaultValue: 'Organisation Name' }), true, 'text', t('registerPage.orgNamePlaceholder', { defaultValue: 'e.g. GreenTech Solutions' }))}
+        {field('organisationCode', 'Organisation code', true, 'text', 'e.g. GFT-2026', 'Use your company or institution code.')}
         <div><label className="form-label">Organisation type *</label><select className={`form-input ${inputClass}`} {...register('organisationType')}><option value="">Choose organisation type</option><option>Company</option><option>Institution</option><option>Non-profit</option><option>Government</option><option>Team</option></select>{errors.organisationType && <p className="form-error">{errors.organisationType.message}</p>}</div>
         {field('industry','Industry',false,'text','e.g. Information Technology')}
-        {field('officialEmail','Official organisation email',true,'email','e.g. contact@greenfield.com')}
+        {field('officialEmail', t('registerPage.orgEmail', { defaultValue: 'Official Email' }), true, 'email', t('registerPage.orgEmailPlaceholder', { defaultValue: 'e.g. admin@greentech.in' }))}
         {field('contactNumber','Contact number',false,'tel','e.g. +91 98765 43210')}
         <div className="sm:col-span-2">{field('address','Address',false,'text','e.g. 12, Anna Salai, Guindy')}</div>
         {field('city','City',false,'text','e.g. Chennai')}
@@ -98,24 +155,29 @@ function OrganisationForm() {
       <h2 className="text-xl font-bold">2. Organisation Administrator Details</h2>
       <p className="mt-1 mb-4 text-sm text-[#9FAFA5]">This person will manage the organisation dashboard and members.</p>
       <div className="grid sm:grid-cols-2 gap-4">
-        {field('adminFullName','Admin full name',true,'text','e.g. Priya Sharma')}
-        {field('username','Username',true,'text','e.g. priya.admin','3–50 characters; letters, numbers, dots, dashes or underscores.')}
-        {field('workEmail','Work email',true,'email','e.g. priya@greenfield.com')}
-        {field('jobTitle','Job title',false,'text','e.g. Sustainability Manager')}
-        <div>{field('password','Password',true,'password','Enter your password')}<PasswordStrength value={watch('password')} /></div>
-        {field('confirmPassword','Confirm password',true,'password','Re-enter the same password')}
+        {field('adminFullName', t('registerPage.fullName', { defaultValue: 'Admin full name' }), true, 'text', 'e.g. Priya Sharma')}
+        {field('username', t('registerPage.username', { defaultValue: 'Username' }), true, 'text', 'e.g. priya.admin', t('registerPage.usernameHint', { defaultValue: '3–50 characters; letters, numbers, dots, dashes or underscores.' }))}
+        {field('workEmail', 'Work email', true, 'email', 'e.g. priya@greenfield.com')}
+        {field('jobTitle', 'Job title', false, 'text', 'e.g. Sustainability Manager')}
+        <div>{field('password', t('registerPage.orgPassword', { defaultValue: 'Admin Password' }), true, 'password', t('registerPage.orgPasswordPlaceholder', { defaultValue: 'Create a strong password' }))}<PasswordStrength value={watch('password')} /></div>
+        {field('confirmPassword', t('registerPage.confirmOrgPassword', { defaultValue: 'Confirm Password' }), true, 'password', t('registerPage.confirmPasswordPlaceholder', { defaultValue: 'Re-enter the same password' }))}
       </div>
     </section>
     <Terms register={register} error={errors.acceptTerms} />
-    <Button type="submit" fullWidth size="lg" isLoading={isSubmitting} disabled={isSubmitting}>Create organisation account</Button>
+    <Button type="submit" fullWidth size="lg" isLoading={isSubmitting} disabled={isSubmitting}>
+      {isSubmitting 
+        ? t('registerPage.registeringOrg', { defaultValue: 'Registering…' }) 
+        : t('registerPage.registerOrg', { defaultValue: 'Register Organisation' })}
+    </Button>
   </form>;
 }
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const [accountType,setAccountType] = useState('INDIVIDUAL');
   const options = [
-    { id:'INDIVIDUAL', title:'Individual User', icon:UserRound, text:'Track your personal carbon footprint, log activities, set sustainability goals, earn badges and receive personalised recommendations.', action:'Continue as Individual' },
-    { id:'ORGANISATION', title:'Organisation', icon:Building2, text:'Register your company, institution or team to monitor organisation emissions, compare employee performance and generate CSR reports.', action:'Continue as Organisation' },
+    { id:'INDIVIDUAL', title: t('registerPage.individualTab', { defaultValue: 'Individual User' }), icon:UserRound, text:'Track your personal carbon footprint, log activities, set sustainability goals, earn badges and receive personalised recommendations.', action:'Continue as Individual' },
+    { id:'ORGANISATION', title: t('registerPage.orgTab', { defaultValue: 'Organisation' }), icon:Building2, text:'Register your company, institution or team to monitor organisation emissions, compare employee performance and generate CSR reports.', action:'Continue as Organisation' },
   ];
   return <div className="slide-up rounded-3xl border border-[#1E4432] bg-[#0F2E22]/70 p-5 sm:p-9 text-[#F3EFE4] backdrop-blur-3xl">
     <header className="text-center mb-7"><h1 className="text-3xl font-black">Create your CarbonTrack account</h1><p className="mt-2 text-[#9FAFA5]">Choose how you want to use CarbonTrack.</p></header>

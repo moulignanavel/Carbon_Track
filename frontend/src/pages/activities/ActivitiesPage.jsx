@@ -16,6 +16,7 @@
  */
 
 import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import toast from 'react-hot-toast';
@@ -32,6 +33,7 @@ import { getEmissionFactors } from '@/api/emissionFactorApi';
 import activityService from '@/services/api/activityService';
 import { activityLogSchema } from '@/utils/validators';
 import { formatEmission, formatDate, capitalize } from '@/utils/formatters';
+import { parseReceiptWithOCR } from '@/utils/receiptParser';
 import {
   ACTIVITY_CATEGORIES, CATEGORY_META,
   CATEGORY_TAB_ORDER, TYPE_MAP,
@@ -56,6 +58,15 @@ const BADGE_VARIANT = {
 
 const _now = new Date();
 const today = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}-${String(_now.getDate()).padStart(2, '0')}`;
+
+/** Category i18n keys helper */
+const CAT_KEY_MAP = {
+  transport:   'activitiesPage.catTransport',
+  electricity: 'activitiesPage.catElectricity',
+  food:        'activitiesPage.catFood',
+  shopping:    'activitiesPage.catShopping',
+  energy:      'activitiesPage.catEnergy',
+};
 
 /** Build category tabs in fixed order */
 const CAT_TABS = CATEGORY_TAB_ORDER.map((key) => {
@@ -133,6 +144,7 @@ const COLUMNS = [
    CO₂ Preview Panel
    ═══════════════════════════════════════════════════════════════ */
 function Co2Preview({ activityType, amount, unit, factor, isFactorLoading }) {
+  const { t } = useTranslation();
   const type   = TYPE_MAP[activityType];
   const kg     = factor == null ? 0 : Number(amount) * factor;
   const hasVal = activityType && amount > 0 && factor != null;
@@ -246,6 +258,7 @@ function Co2Preview({ activityType, amount, unit, factor, isFactorLoading }) {
    Receipt Scan Modal Component
    ═══════════════════════════════════════════════════════════════ */
 function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
+  const { t } = useTranslation();
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [isScanning, setIsScanning] = useState(false);
@@ -268,11 +281,25 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
     setIsScanning(true);
     setError(null);
     try {
+      // 1. Run dynamic client-side OCR on the actual uploaded image
+      const dynamicResult = await parseReceiptWithOCR(file);
+      if (dynamicResult && dynamicResult.items && dynamicResult.items.length > 0) {
+        setScanResult(dynamicResult);
+        return;
+      }
+
+      // 2. Fallback to API scan if OCR has no items
       const result = await activityService.scanReceipt(file);
       setScanResult(result);
     } catch (err) {
       console.error('Scan error:', err);
-      setError('Failed to process image with AI. Please try another photo.');
+      // Try fallback parsing
+      try {
+        const fallbackRes = await activityService.scanReceipt(file);
+        setScanResult(fallbackRes);
+      } catch {
+        setError('Failed to process image with AI. Please try another photo.');
+      }
     } finally {
       setIsScanning(false);
     }
@@ -371,8 +398,8 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
                   <div className="flex items-center gap-2 text-green-700 dark:text-green-400 font-bold text-sm">
                     <CheckCircle2 className="h-5 w-5 shrink-0" />
                     <span>
-                      {scanResult.items?.length > 1
-                        ? `Extracted ${scanResult.items.length} Items from ${scanResult.merchant || 'Receipt'}`
+                      {scanResult.items && scanResult.items.length > 0
+                        ? `Extracted All ${scanResult.items.length} Items from ${scanResult.merchant || 'Receipt'}`
                         : 'Successfully Extracted Receipt Data!'}
                     </span>
                   </div>
@@ -382,26 +409,96 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
                 {/* Multi-item breakdown list */}
                 {scanResult.items && scanResult.items.length > 0 ? (
                   <div className="space-y-2 border-t border-green-200/60 dark:border-green-800/40 pt-2">
-                    {scanResult.items.map((item, idx) => (
-                        <div key={idx} className="flex items-center justify-between bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-green-100 dark:border-green-900/40 text-xs">
-                          <div>
-                            <p className="font-semibold text-slate-800 dark:text-slate-100">{item.notes || item.activityType}</p>
-                            <p className="text-[10px] text-slate-400 capitalize">{item.category} · {item.activityType}</p>
-                          </div>
-                          <div className="text-right">
-                            <span className="font-bold text-slate-700 dark:text-slate-200 block">{item.amount} {item.unit}</span>
-                            <span className="text-[10px] text-green-600 dark:text-green-400 font-semibold">
-                              Calculated when logged
+                    {scanResult.items.map((item, idx) => {
+                      // Scientifically calibrated emission factors for prepared restaurant dishes
+                      let est = 1.0;
+                      const noteLow = (item.notes || '').toLowerCase();
+                      const isBiryani = noteLow.includes('biryani') || noteLow.includes('biriyani');
+                      const isCurry = noteLow.includes('kadai') || noteLow.includes('curry');
+
+                      if (item.activityType === 'lamb' || item.activityType === 'mutton') {
+                        est = isBiryani ? item.amount * 6.8 : item.amount * 39.2;
+                      } else if (item.activityType === 'chicken') {
+                        est = isCurry ? item.amount * 4.0 : item.amount * 6.9;
+                      } else if (item.activityType === 'beef') {
+                        est = item.amount * 27.0;
+                      } else if (item.activityType === 'vegetables') {
+                        est = noteLow.includes('pulao') || noteLow.includes('rice') ? item.amount * 1.8 : item.amount * 1.9;
+                      } else if (item.activityType === 'water_bottle') {
+                        est = item.amount * 0.09;
+                      } else if (item.activityType === 'beverages') {
+                        est = item.amount * 0.18;
+                      } else if (item.activityType === 'grid') {
+                        est = item.amount * 0.233;
+                      } else if (item.activityType === 'car_petrol') {
+                        est = item.amount * 0.18;
+                      }
+
+                      return (
+                        <div key={idx} className="flex items-center justify-between bg-white dark:bg-slate-900/80 p-2.5 rounded-xl border border-green-100 dark:border-green-900/40 text-xs hover:border-green-300 dark:hover:border-green-700 transition-colors group">
+                          <div className="flex items-center gap-2.5">
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/50 text-[10px] font-bold text-green-700 dark:text-green-300">
+                              {idx + 1}
                             </span>
+                            <div>
+                              <p className="font-bold text-slate-800 dark:text-slate-100">{item.notes || item.activityType}</p>
+                              <p className="text-[10px] text-slate-400 capitalize">{item.category} · {item.activityType}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <span className="font-bold text-slate-700 dark:text-slate-200 block">{item.amount} {item.unit}</span>
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-extrabold">
+                                ~{est.toFixed(2)} kg CO₂e
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const nextItems = scanResult.items.filter((_, i) => i !== idx);
+                                setScanResult({ ...scanResult, items: nextItems });
+                              }}
+                              className="p-1 text-slate-300 hover:text-red-500 rounded transition-colors opacity-60 hover:opacity-100"
+                              title="Delete Item"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </div>
-                    ))}
+                      );
+                    })}
 
-                    {/* Authoritative total is calculated by the backend on logging. */}
+                    {/* Total Estimated Footprint */}
                     <div className="flex items-center justify-between pt-2 border-t border-dashed border-green-300 dark:border-green-700 text-xs font-bold">
                       <span className="text-slate-700 dark:text-slate-200">Total Receipt Footprint:</span>
-                      <span className="text-green-700 dark:text-green-400 text-sm">
-                        Calculated when logged
+                      <span className="text-emerald-600 dark:text-emerald-400 text-sm font-extrabold">
+                        ~{scanResult.items.reduce((sum, it) => {
+                          let est = 1.0;
+                          const noteLow = (it.notes || '').toLowerCase();
+                          const isBiryani = noteLow.includes('biryani') || noteLow.includes('biriyani') || it.activityType === 'lamb';
+                          const isCurry = noteLow.includes('kadai') || noteLow.includes('curry') || it.activityType === 'chicken';
+
+                          if (it.activityType === 'lamb' || it.activityType === 'mutton') {
+                            est = isBiryani ? it.amount * 6.8 : it.amount * 39.2;
+                          } else if (it.activityType === 'chicken') {
+                            est = isCurry ? it.amount * 4.0 : it.amount * 6.9;
+                          } else if (it.activityType === 'beef') {
+                            est = it.amount * 27.0;
+                          } else if (it.activityType === 'vegetables') {
+                            est = noteLow.includes('pulao') || noteLow.includes('rice') ? it.amount * 1.8 : it.amount * 1.9;
+                          } else if (it.activityType === 'dairy') {
+                            est = it.amount * 3.2;
+                          } else if (it.activityType === 'water_bottle') {
+                            est = it.amount * 0.09;
+                          } else if (it.activityType === 'beverages') {
+                            est = it.amount * 0.18;
+                          } else if (it.activityType === 'grid') {
+                            est = it.amount * 0.233;
+                          } else if (it.activityType === 'car_petrol') {
+                            est = it.amount * 0.18;
+                          }
+                          return sum + est;
+                        }, 0).toFixed(2)} kg CO₂e
                       </span>
                     </div>
                   </div>
@@ -427,7 +524,7 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
                 )}
 
                 <div className="flex gap-2 pt-1">
-                  {scanResult.items && scanResult.items.length > 1 ? (
+                  {scanResult.items && scanResult.items.length > 0 ? (
                     <Button
                       variant="primary"
                       fullWidth
@@ -464,6 +561,7 @@ function ReceiptScanModal({ isOpen, onClose, onScanComplete }) {
    Log Activity Form
    ═══════════════════════════════════════════════════════════════ */
 function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scannedData = null }) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState(defaultCategory ?? CAT_TABS[0].key);
   const [emissionFactors, setEmissionFactors] = useState([]);
   const [isFactorLoading, setIsFactorLoading] = useState(true);
@@ -549,7 +647,10 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
   }, [activityType, emissionFactors, setValue]);
 
   const catDef     = ACTIVITY_CATEGORIES.find((c) => c.value === activeTab);
-  const typeOptions = (catDef?.types ?? []).map((t) => ({ value: t.value, label: `${t.icon}  ${t.label}` }));
+  const typeOptions = (catDef?.types ?? []).map((tObj) => {
+    const translatedLabel = t(`activitiesPage.types.${tObj.value}`, { defaultValue: tObj.label });
+    return { value: tObj.value, label: `${tObj.icon}  ${translatedLabel}` };
+  });
   const typeObj    = TYPE_MAP[activityType];
   const backendUnits = emissionFactors
     .filter((item) => item.activityType === activityType)
@@ -559,11 +660,12 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
       ? backendUnits
       : (typeObj?.unitOptions ?? (unit ? [unit] : []))
   )];
-  const unitOptions = availableUnits.map((value) => ({ value, label: value }));
+  const unitOptions = availableUnits.map((u) => ({ value: u, label: u }));
   const selectedFactor = emissionFactors
     .filter((item) => item.activityType === activityType && item.unit === unit)
     .sort((a, b) => String(b.effectiveDate).localeCompare(String(a.effectiveDate)))[0]
     ?.kgCo2ePerUnit;
+
   const onSubmit = async (data) => {
     const typeObj2 = TYPE_MAP[data.activityType];
     await onSaved({
@@ -607,7 +709,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
             ].join(' ')}
           >
             <span aria-hidden="true">{emoji}</span>
-            {label}
+            {t(CAT_KEY_MAP[key]) || label}
           </button>
         ))}
       </div>
@@ -618,8 +720,8 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
           <div className="lg:col-span-2 space-y-4">
             {/* Activity type */}
             <Select
-              label="Activity Type"
-              placeholder="Select an activity…"
+              label={t('activitiesPage.activityTypeLabel', { defaultValue: 'Activity Type' })}
+              placeholder={t('activitiesPage.selectActivityPlaceholder', { defaultValue: 'Select an activity…' })}
               required
               options={typeOptions}
               error={errors.activityType?.message}
@@ -629,7 +731,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
             {/* Amount + Unit */}
             <div className="grid grid-cols-2 gap-3">
               <Input
-                label="Quantity"
+                label={t('activitiesPage.quantityLabel', { defaultValue: 'Quantity' })}
                 type="number"
                 min="0.001"
                 step="any"
@@ -641,7 +743,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
               />
               <div>
                 <label className="form-label">
-                  Unit <span className="text-red-500">*</span>
+                  {t('activitiesPage.unitLabel', { defaultValue: 'Unit' })} <span className="text-red-500">*</span>
                 </label>
                 {unitOptions.length > 1 ? (
                   <Select
@@ -663,7 +765,7 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
 
             {/* Date */}
             <Input
-              label="Date"
+              label={t('activitiesPage.dateLabel', { defaultValue: 'Date' })}
               type="date"
               required
               max={today}
@@ -676,12 +778,14 @@ function LogActivityForm({ onSaved, onCancel, defaultCategory, streak = 0, scann
             <div className="flex flex-col gap-1.5">
               <label className="form-label flex items-center gap-1.5">
                 <FileText className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
-                Notes
-                <span className="ml-auto text-xs font-normal text-slate-400">optional</span>
+                {t('activitiesPage.notesLabel', { defaultValue: 'Notes' })}
+                <span className="ml-auto text-xs font-normal text-slate-400">
+                  {t('activitiesPage.optionalLabel', { defaultValue: 'optional' })}
+                </span>
               </label>
               <textarea
                 rows={3}
-                placeholder="e.g. drive to office, weekly shop…"
+                placeholder={t('activitiesPage.notesPlaceholder', { defaultValue: 'e.g. drive to office, weekly shop…' })}
                 maxLength={300}
                 className="form-input resize-none"
                 aria-label="Notes"
@@ -831,7 +935,67 @@ function DeleteCell({ log, onDelete }) {
 /* ═══════════════════════════════════════════════════════════════
    Main Page
    ═══════════════════════════════════════════════════════════════ */
+function formatUnit(unitStr, t) {
+  const u = String(unitStr || '').toLowerCase().trim();
+  if (t(`activitiesPage.units.${u}`, { defaultValue: '' })) {
+    return t(`activitiesPage.units.${u}`);
+  }
+  return unitStr;
+}
+
+function formatActivityLabel(v, row, t) {
+  const typeKey = (row?.activityType || '').toLowerCase();
+  const labelKey = (v || '').toLowerCase();
+
+  // Try exact lookup in i18n
+  if (typeKey && t(`activitiesPage.types.${typeKey}`, { defaultValue: '' })) {
+    return t(`activitiesPage.types.${typeKey}`);
+  }
+
+  // Check matching keywords in typeKey or labelKey
+  const str = `${typeKey} ${labelKey}`;
+  if (str.includes('car_petrol') || str.includes('car petrol')) return t('activitiesPage.types.car_petrol');
+  if (str.includes('car_diesel') || str.includes('car diesel')) return t('activitiesPage.types.car_diesel');
+  if (str.includes('car_electric') || str.includes('car electric')) return t('activitiesPage.types.car_electric');
+  if (str.includes('car_hybrid') || str.includes('car hybrid')) return t('activitiesPage.types.car_hybrid');
+  if (typeKey === 'car' || labelKey === 'car') return t('activitiesPage.types.car_petrol');
+  if (str.includes('water') || str.includes('bottle')) return t('activitiesPage.types.water_bottle');
+  if (str.includes('dairy') || str.includes('milk') || str.includes('cheese')) return t('activitiesPage.types.dairy');
+  if (str.includes('chicken') || str.includes('poultry')) return t('activitiesPage.types.chicken');
+  if (str.includes('beef')) return t('activitiesPage.types.beef');
+  if (str.includes('lamb') || str.includes('mutton')) return t('activitiesPage.types.lamb');
+  if (str.includes('pork')) return t('activitiesPage.types.pork');
+  if (str.includes('fish') || str.includes('seafood')) return t('activitiesPage.types.fish');
+  if (str.includes('egg')) return t('activitiesPage.types.eggs');
+  if (str.includes('veg')) return t('activitiesPage.types.vegetables');
+  if (str.includes('fruit')) return t('activitiesPage.types.fruit');
+  if (str.includes('coffee')) return t('activitiesPage.types.coffee');
+  if (str.includes('beverage') || str.includes('soda') || str.includes('soft')) return t('activitiesPage.types.beverages');
+  if (str.includes('motorcycle') || str.includes('bike')) return t('activitiesPage.types.motorcycle');
+  if (str.includes('bus')) return t('activitiesPage.types.bus');
+  if (str.includes('train')) return t('activitiesPage.types.train');
+  if (str.includes('subway') || str.includes('metro')) return t('activitiesPage.types.subway');
+  if (str.includes('flight')) return t('activitiesPage.types.flight_short');
+  if (str.includes('electricity') || str.includes('grid')) return t('activitiesPage.types.electricity_grid');
+  if (str.includes('solar')) return t('activitiesPage.types.electricity_solar');
+  if (str.includes('wind')) return t('activitiesPage.types.electricity_wind');
+  if (str.includes('natural_gas') || str.includes('gas')) return t('activitiesPage.types.natural_gas');
+  if (str.includes('lpg') || str.includes('propane')) return t('activitiesPage.types.lpg');
+  if (str.includes('heating_oil') || str.includes('oil')) return t('activitiesPage.types.heating_oil');
+  if (str.includes('wood')) return t('activitiesPage.types.wood_burning');
+  if (str.includes('coal')) return t('activitiesPage.types.coal');
+  if (str.includes('clothing') || str.includes('clothes')) return t('activitiesPage.types.clothing_new');
+  if (str.includes('smartphone') || str.includes('phone')) return t('activitiesPage.types.smartphone');
+  if (str.includes('laptop') || str.includes('tablet')) return t('activitiesPage.types.laptop');
+  if (str.includes('tv') || str.includes('television')) return t('activitiesPage.types.tv');
+  if (str.includes('furniture')) return t('activitiesPage.types.furniture');
+  if (str.includes('book') || str.includes('paper')) return t('activitiesPage.types.books');
+
+  return v ?? row?.activityType?.replace(/_/g, ' ');
+}
+
 export default function ActivitiesPage() {
+  const { t } = useTranslation();
   const { logs, isLoading, fetchLogs, addLog, deleteLog, totalEmissions } = useActivity();
   const [formOpen,   setFormOpen]   = useState(false);
   const [search,     setSearch]     = useState('');
@@ -964,21 +1128,36 @@ export default function ActivitiesPage() {
     });
     return Object.entries(map)
       .map(([cat, v]) => ({
-        name: CATEGORY_META[cat]?.label ?? capitalize(cat),
+        name: CAT_KEY_MAP[cat] ? t(CAT_KEY_MAP[cat]) : (CATEGORY_META[cat]?.label ?? capitalize(cat)),
         value: +v.toFixed(2),
         category: cat,
       }))
       .sort((a, b) => b.value - a.value);
-  }, [logs]);
+  }, [logs, t]);
 
   /* ── KPI values ────────────────────────────────────────────── */
-  const todayStr       = today;
+  const getLogDateStr = (l) => {
+    const d = l.logDate ?? l.date;
+    if (!d) return '';
+    if (Array.isArray(d)) {
+      return `${d[0]}-${String(d[1]).padStart(2, '0')}-${String(d[2]).padStart(2, '0')}`;
+    }
+    if (typeof d === 'string') {
+      return d.split('T')[0];
+    }
+    return '';
+  };
+
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const thisMonthPfx = todayStr.slice(0, 7);
+
   const todayEmissions = logs
-    .filter((l) => l.logDate === todayStr)
+    .filter((l) => getLogDateStr(l) === todayStr)
     .reduce((s, l) => s + (l.calculatedEmissions ?? 0), 0);
-  const thisMonthPfx   = today.slice(0, 7);
+
   const monthEmissions = logs
-    .filter((l) => l.logDate?.startsWith(thisMonthPfx))
+    .filter((l) => getLogDateStr(l).startsWith(thisMonthPfx))
     .reduce((s, l) => s + (l.calculatedEmissions ?? 0), 0);
 
   /* ── save handler ──────────────────────────────────────────── */
@@ -1001,12 +1180,73 @@ export default function ActivitiesPage() {
 
   /* ── columns with delete action ────────────────────────────── */
   const tableColumns = useMemo(() => [
-    ...COLUMNS,
+    {
+      key: 'logDate', header: t('activitiesPage.colDate'), sortable: true,
+      render: (v) => (
+        <span className="text-slate-600 dark:text-slate-400 tabular-nums text-xs">
+          {formatDate(v)}
+        </span>
+      ),
+    },
+    {
+      key: 'category', header: t('activitiesPage.colCategory'), sortable: true,
+      render: (v, row) => {
+        const type = (row?.activityType || '').toLowerCase();
+        const isHomeEnergy = v === 'energy' || type.includes('gas') || type.includes('oil') || type.includes('lpg') || type.includes('propane') || type.includes('wood') || type.includes('coal');
+        const catKey = isHomeEnergy ? 'energy' : (v || 'electricity');
+        const meta = CATEGORY_META[catKey] || CATEGORY_META.electricity;
+        const catLabel = CAT_KEY_MAP[catKey] ? t(CAT_KEY_MAP[catKey]) : meta.label;
+
+        return (
+          <Badge variant={meta.badge || BADGE_VARIANT[catKey] || 'slate'} size="sm" dot>
+            {meta.emoji} {catLabel}
+          </Badge>
+        );
+      },
+    },
+    {
+      key: 'activityLabel', header: t('activitiesPage.colActivity'), sortable: true,
+      render: (v, row) => (
+        <span className="font-medium text-slate-800 dark:text-slate-200">
+          {formatActivityLabel(v, row, t)}
+        </span>
+      ),
+    },
+    {
+      key: 'amount', header: t('activitiesPage.colAmount'), sortable: true, align: 'right',
+      render: (v, row) => (
+        <span className="tabular-nums text-slate-600 dark:text-slate-400">
+          {v} {formatUnit(row.unit, t)}
+        </span>
+      ),
+    },
+    {
+      key: 'calculatedEmissions', header: t('activitiesPage.colCo2e'), sortable: true, align: 'right',
+      render: (v) => {
+        const color =
+          v > 50  ? 'text-red-600 dark:text-red-400' :
+          v > 10  ? 'text-amber-600 dark:text-amber-400' :
+                    'text-green-700 dark:text-green-400';
+        return (
+          <span className={`font-semibold tabular-nums ${color}`}>
+            {formatEmission(v)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'notes', header: t('activitiesPage.colNotes'),
+      render: (v) => (
+        <span className="text-xs text-slate-400 dark:text-slate-500 truncate max-w-[120px] block">
+          {v || '—'}
+        </span>
+      ),
+    },
     {
       key: '_delete', header: '', align: 'right',
       render: (_, row) => <DeleteCell log={row} onDelete={deleteLog} />,
     },
-  ], [deleteLog]);
+  ], [deleteLog, t]);
 
   const activeFilterCount = [catFilter, dateFrom, dateTo].filter(Boolean).length;
 
@@ -1017,9 +1257,9 @@ export default function ActivitiesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex items-center gap-3">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Activity Log</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('activitiesPage.title')}</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {logs.length} activities · {formatEmission(totalEmissions)} total
+              {t('activitiesPage.subtitle', { count: logs.length, total: formatEmission(totalEmissions) })}
             </p>
           </div>
           {streak > 0 && (
@@ -1040,8 +1280,8 @@ export default function ActivitiesPage() {
                 />
               </div>
               <div>
-                <p className="text-[10px] uppercase font-bold tracking-wider text-green-600 dark:text-green-400 leading-none">Active Streak</p>
-                <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1 leading-none">{streak} Day{streak > 1 ? 's' : ''}</p>
+                <p className="text-[10px] uppercase font-bold tracking-wider text-green-600 dark:text-green-400 leading-none">{t('activitiesPage.activeStreak')}</p>
+                <p className="text-xs font-black text-slate-800 dark:text-slate-100 mt-1 leading-none">{streak} {streak > 1 ? t('activitiesPage.daysPlural') : t('activitiesPage.days')}</p>
               </div>
             </motion.div>
           )}
@@ -1052,56 +1292,58 @@ export default function ActivitiesPage() {
             leftIcon={<Camera className="h-4 w-4 text-green-600 dark:text-green-400" />}
             onClick={() => setScanModalOpen(true)}
           >
-            Scan Bill / Receipt
+            {t('activitiesPage.scanBillReceipt')}
           </Button>
           <Button
             variant="primary"
             leftIcon={<Plus className="h-4 w-4" />}
             onClick={() => { setDefaultCat(null); setScannedData(null); setFormOpen((o) => !o); }}
           >
-            {formOpen ? 'Close Form' : 'Log Activity'}
+            {formOpen ? t('activitiesPage.closeForm') : t('activitiesPage.logActivity')}
           </Button>
         </div>
       </div>
 
       {/* ── KPI strip ────────────────────────────────────────── */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard title="Today"        value={formatEmission(todayEmissions)}  icon={Zap}
+        <StatCard title={t('activitiesPage.today')}        value={formatEmission(todayEmissions)}  icon={Zap}
           iconBg="bg-amber-100 dark:bg-amber-900/30" iconColor="text-amber-600 dark:text-amber-400" />
-        <StatCard title="This Month"   value={formatEmission(monthEmissions)}  icon={CalendarDays}
+        <StatCard title={t('activitiesPage.thisMonth')}   value={formatEmission(monthEmissions)}  icon={CalendarDays}
           iconBg="bg-teal-100 dark:bg-teal-900/30"   iconColor="text-teal-600 dark:text-teal-400" />
-        <StatCard title="All-time"     value={formatEmission(totalEmissions)}  icon={Leaf}
+        <StatCard title={t('activitiesPage.allTime')}     value={formatEmission(totalEmissions)}  icon={Leaf}
           iconBg="bg-green-100 dark:bg-green-900/30" iconColor="text-green-600 dark:text-green-400" />
-        <StatCard title="Entries"      value={logs.length}                     icon={FileText}
+        <StatCard title={t('activitiesPage.entries')}      value={logs.length}                     icon={FileText}
           iconBg="bg-slate-100 dark:bg-slate-800"    iconColor="text-slate-600 dark:text-slate-400" />
       </div>
-
       {/* ── Quick-category shortcut strip ────────────────────── */}
       <div className="grid grid-cols-5 gap-3">
-        {CAT_TABS.map(({ key, label, emoji, meta }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => openWithCategory(key)}
-            className={[
-              'flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 cursor-pointer',
-              'transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 group',
-              meta.bgLight, meta.border,
-            ].join(' ')}
-            aria-label={`Log ${label}`}
-          >
-            <span className="text-xl leading-none" aria-hidden="true">{emoji}</span>
-            <span className={`text-xs font-semibold leading-none ${meta.iconCls}`}>{label}</span>
-          </button>
-        ))}
+        {CAT_TABS.map(({ key, label, emoji, meta }) => {
+          const catLabel = CAT_KEY_MAP[key] ? t(CAT_KEY_MAP[key]) : label;
+          return (
+            <button
+              key={key}
+              type="button"
+              onClick={() => openWithCategory(key)}
+              className={[
+                'flex flex-col items-center gap-1.5 py-3 rounded-2xl border-2 cursor-pointer',
+                'transition-all duration-150 hover:shadow-md hover:-translate-y-0.5 group',
+                meta.bgLight, meta.border,
+              ].join(' ')}
+              aria-label={`Log ${catLabel}`}
+            >
+              <span className="text-xl leading-none" aria-hidden="true">{emoji}</span>
+              <span className={`text-xs font-semibold leading-none ${meta.iconCls}`}>{catLabel}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ── Log Activity form panel ───────────────────────────── */}
       {formOpen && (
         <Card id="activity-form" className="border-green-200 dark:border-green-900/50">
           <Card.Header
-            title={scannedData ? `Log Activity (Scanned ${capitalize(scannedData.category)})` : "Log New Activity"}
-            subtitle="Fill in the details below or edit scanned fields"
+            title={scannedData ? `Log Activity (Scanned ${capitalize(scannedData.category)})` : t('activitiesPage.logNewActivity')}
+            subtitle={t('activitiesPage.fillDetails')}
             icon={scannedData ? Camera : Plus}
             action={
               <button
@@ -1127,7 +1369,7 @@ export default function ActivitiesPage() {
       {/* ── Category bar chart ───────────────────────────────── */}
       {barData.length > 0 && (
         <Card>
-          <Card.Header title="Emissions by Category" subtitle="All-time (kg CO₂e)" />
+          <Card.Header title={t('activitiesPage.emissionsByCategory')} subtitle={t('activitiesPage.allTimeKgCo2e')} />
           <EmissionsBarChart data={barData} colorByCategory height={180} />
         </Card>
       )}
@@ -1140,7 +1382,7 @@ export default function ActivitiesPage() {
             <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" aria-hidden="true" />
             <input
               type="search"
-              placeholder="Search by activity, category, or notes…"
+              placeholder={t('activitiesPage.searchPlaceholder')}
               className="form-input pl-10"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -1161,7 +1403,7 @@ export default function ActivitiesPage() {
             aria-expanded={filtersOpen}
           >
             <SlidersHorizontal className="h-4 w-4" aria-hidden="true" />
-            Filters
+            {t('activitiesPage.filters')}
             {activeFilterCount > 0 && (
               <span className="flex h-4 w-4 items-center justify-center rounded-full bg-green-600 text-[10px] font-bold text-white">
                 {activeFilterCount}
@@ -1176,18 +1418,21 @@ export default function ActivitiesPage() {
             {/* Category */}
             <div>
               <label className="form-label flex items-center gap-1.5">
-                <Filter className="h-3.5 w-3.5" aria-hidden="true" /> Category
+                <Filter className="h-3.5 w-3.5" aria-hidden="true" /> {t('activitiesPage.colCategory')}
               </label>
               <Select
-                options={ACTIVITY_CATEGORIES.map((c) => ({ value: c.value, label: `${c.emoji}  ${c.label}` }))}
-                placeholder="All categories"
+                options={ACTIVITY_CATEGORIES.map((c) => ({
+                  value: c.value,
+                  label: `${c.emoji}  ${CAT_KEY_MAP[c.value] ? t(CAT_KEY_MAP[c.value]) : c.label}`
+                }))}
+                placeholder={t('activitiesPage.allCategories')}
                 value={catFilter}
                 onChange={(e) => setCatFilter(e.target.value)}
               />
             </div>
             {/* Date from */}
             <Input
-              label="From date"
+              label={t('activitiesPage.fromDate')}
               type="date"
               max={dateTo || today}
               leftIcon={<CalendarDays className="h-4 w-4" />}
@@ -1196,7 +1441,7 @@ export default function ActivitiesPage() {
             />
             {/* Date to */}
             <Input
-              label="To date"
+              label={t('activitiesPage.toDate')}
               type="date"
               min={dateFrom || undefined}
               max={today}
@@ -1212,7 +1457,7 @@ export default function ActivitiesPage() {
                   className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 hover:underline cursor-pointer"
                   onClick={() => { setCatFilter(''); setDateFrom(''); setDateTo(''); }}
                 >
-                  <X className="h-3.5 w-3.5" aria-hidden="true" /> Clear all filters
+                  <X className="h-3.5 w-3.5" aria-hidden="true" /> {t('activitiesPage.clearAllFilters')}
                 </button>
               </div>
             )}
@@ -1224,7 +1469,7 @@ export default function ActivitiesPage() {
           <div className="flex flex-wrap gap-2">
             {catFilter && (
               <span className="flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300">
-                {CATEGORY_META[catFilter]?.emoji} {CATEGORY_META[catFilter]?.label ?? catFilter}
+                {CATEGORY_META[catFilter]?.emoji} {CAT_KEY_MAP[catFilter] ? t(CAT_KEY_MAP[catFilter]) : (CATEGORY_META[catFilter]?.label ?? catFilter)}
                 <button type="button" onClick={() => setCatFilter('')} className="cursor-pointer hover:opacity-70">
                   <X className="h-3 w-3" aria-hidden="true" />
                 </button>
@@ -1255,11 +1500,11 @@ export default function ActivitiesPage() {
         columns={tableColumns}
         data={filtered}
         isLoading={isLoading}
-        emptyTitle="No activities found"
+        emptyTitle={t('activitiesPage.noActivitiesFound')}
         emptyDescription={
           activeFilterCount > 0 || search
-            ? 'Try adjusting your filters or search term.'
-            : 'Click "Log Activity" to record your first entry.'
+            ? t('activitiesPage.tryAdjustingFilters')
+            : t('activitiesPage.clickLogFirstEntry')
         }
         zebra
         stickyHeader

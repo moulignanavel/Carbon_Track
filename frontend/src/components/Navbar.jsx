@@ -1,7 +1,9 @@
 import React from 'react';
-import { LogOut, Leaf, User, BarChart3, Settings, PlusCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { LogOut, Leaf, User, BarChart3, Settings, PlusCircle, HelpCircle } from 'lucide-react';
 
 export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout }) {
+  const { t } = useTranslation();
   return (
     <nav className="glass-panel sticky top-0 z-50 px-6 py-4 mb-8 rounded-none border-t-0 border-x-0 bg-opacity-80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -27,7 +29,7 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
             }`}
           >
             <BarChart3 className="w-4 h-4" />
-            Dashboard
+            {t('nav.dashboard', { defaultValue: 'Dashboard' })}
           </button>
           <button
             onClick={() => setActiveTab('log')}
@@ -38,7 +40,7 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
             }`}
           >
             <PlusCircle className="w-4 h-4" />
-            Log Activity
+            {t('nav.logActivity', { defaultValue: 'Log Activity' })}
           </button>
           <button
             onClick={() => setActiveTab('settings')}
@@ -49,12 +51,12 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
             }`}
           >
             <Settings className="w-4 h-4" />
-            Settings
+            {t('nav.settings', { defaultValue: 'Settings' })}
           </button>
         </div>
 
         {/* User profile details and Logout */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
           {currentUser && (
             <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/5 rounded-xl border border-white/5">
               <User className="w-4 h-4 text-emerald-400" />
@@ -63,12 +65,19 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
               </span>
             </div>
           )}
+          <a
+            href="mailto:admin@carbontrack.com"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-gray-200 transition-colors bg-white/5 rounded-xl border border-white/5 hover:bg-white/10"
+          >
+            <HelpCircle className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('common.help', { defaultValue: 'Help' })}</span>
+          </a>
           <button
             onClick={onLogout}
             className="flex items-center gap-2 px-4 py-2 text-sm font-semibold text-gray-400 hover:text-red-400 transition-colors bg-white/5 rounded-xl border border-white/5 hover:bg-red-500/5 hover:border-red-500/20"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Logout</span>
+            <span className="hidden sm:inline">{t('common.logout', { defaultValue: 'Logout' })}</span>
           </button>
         </div>
 
@@ -76,3 +85,4 @@ export default function Navbar({ currentUser, activeTab, setActiveTab, onLogout 
     </nav>
   );
 }
+

@@ -4,9 +4,11 @@ import com.carbontrack.backend.dto.UserProfileRequest;
 import com.carbontrack.backend.dto.UserProfileResponse;
 import com.carbontrack.backend.service.UserService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 import com.carbontrack.backend.service.FileUploadService;
 import com.carbontrack.backend.entity.User;
 import com.carbontrack.backend.repository.UserRepository;
@@ -47,5 +49,15 @@ public class UserController {
     @PutMapping("/profile")
     public ResponseEntity<UserProfileResponse> updateProfile(@Valid @RequestBody UserProfileRequest request) {
         return ResponseEntity.ok(userService.updateProfile(request));
+    }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@RequestBody java.util.Map<String, String> body) {
+        try {
+            userService.changePassword(body.get("currentPassword"), body.get("newPassword"));
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 }

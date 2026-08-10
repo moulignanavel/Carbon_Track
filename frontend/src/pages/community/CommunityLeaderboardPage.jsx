@@ -14,6 +14,7 @@ import WeeklyChallengeWidget from '@/components/leaderboard/WeeklyChallengeWidge
 import RecentAchievementsFeed from '@/components/leaderboard/RecentAchievementsFeed.jsx';
 import Spinner from '@/components/ui/Spinner';
 import Alert from '@/components/ui/Alert';
+import Modal from '@/components/ui/Modal';
 import BadgeSidebar from '@/components/badges/BadgeSidebar';
 
 export default function CommunityLeaderboardPage() {
@@ -35,6 +36,7 @@ export default function CommunityLeaderboardPage() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarUser, setSidebarUser] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const loadLeaderboardData = async () => {
     try {
@@ -103,6 +105,11 @@ export default function CommunityLeaderboardPage() {
   const filteredUsers = useMemo(() => {
     let list = [...rawUsers];
 
+    // 0. Scope Filter (Global vs Organization)
+    if (selectedScope === 'organization' && currentUser?.organisationId) {
+      list = list.filter(u => u.organisationId === currentUser.organisationId);
+    }
+
     // 1. Text Search Filter (Username, Email, Rank, Badge)
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
@@ -137,14 +144,20 @@ export default function CommunityLeaderboardPage() {
       return (a.totalCO2Saved || 0) - (b.totalCO2Saved || 0);
     });
 
-    return list;
-  }, [rawUsers, searchQuery, selectedBadge, selectedSort]);
+    // Re-index ranks to represent local ranking within the filtered scope (e.g. organization ranking)
+    return list.map((user, idx) => ({
+      ...user,
+      rank: idx + 1
+    }));
+  }, [rawUsers, searchQuery, selectedBadge, selectedSort, selectedScope, currentUser]);
 
   if (isLoading) {
     return <Spinner fullPage label="Loading Community Leaderboard…" />;
   }
 
-  const topThree = leaderboardData?.topThree || rawUsers.slice(0, 3);
+  const topThree = searchQuery.trim() || selectedScope === 'organization' || selectedBadge !== 'all'
+    ? filteredUsers.slice(0, 3)
+    : (leaderboardData?.topThree || rawUsers.slice(0, 3));
   const activeUserCard = leaderboardData?.currentUser || (rawUsers.length > 0 ? rawUsers[0] : null);
 
   // Dynamic API metrics
@@ -155,7 +168,7 @@ export default function CommunityLeaderboardPage() {
   const recentAchievements = leaderboardData?.recentAchievements || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-3">
+    <div className="max-w-7xl mx-auto space-y-6">
       
       {/* Header Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
@@ -226,17 +239,26 @@ export default function CommunityLeaderboardPage() {
       )}
 
       {/* 5. Main Content Grid: Leaderboard Table & Sidebar Widgets */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 items-start">
+      <div className="grid grid-cols-1 gap-3 items-start">
         
-        {/* Main Table (Span 2) */}
-        <div className="lg:col-span-2 space-y-2">
+        {/* Main Table */}
+        <div className="space-y-2">
           <div className="flex items-center justify-between gap-2 py-0">
             <h2 className="text-base font-extrabold text-slate-900 dark:text-slate-50">
               {searchQuery.trim() ? `🔍 ${t('community.searchResults')} (${filteredUsers.length})` : `📊 ${t('community.rankings')}`}
             </h2>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-              {t('community.showing')} {filteredUsers.length} {t('community.of')} {rawUsers.length} {t('community.members')}
-            </span>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setShowDetails(true)}
+                className="text-xs font-bold px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white hover:bg-slate-50 dark:bg-slate-950 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-200 transition-colors shadow-sm"
+              >
+                ℹ️ Show Community Details
+              </button>
+              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                {t('community.showing')} {filteredUsers.length} {t('community.of')} {rawUsers.length} {t('community.members')}
+              </span>
+            </div>
           </div>
 
           <LeaderboardTable
@@ -244,13 +266,6 @@ export default function CommunityLeaderboardPage() {
             currentUserId={currentUser?.userId}
             isSearching={isSearching}
           />
-        </div>
-
-        {/* Sidebar Widgets (Span 1) */}
-        <div className="space-y-3">
-          <WeeklyChallengeWidget />
-          <CommunityInsights totalCO2Saved={totalCO2Saved} />
-          <RecentAchievementsFeed achievements={recentAchievements} />
         </div>
       </div>
 
@@ -260,6 +275,24 @@ export default function CommunityLeaderboardPage() {
         onClose={() => setSidebarOpen(false)}
         user={sidebarUser}
       />
+
+      {/* Community Details Modal */}
+      <Modal
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        title="Community Details & Stats"
+        size="4xl"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start max-h-[70vh] overflow-y-auto pr-1">
+          <div className="space-y-4">
+            <WeeklyChallengeWidget />
+            <CommunityInsights totalCO2Saved={totalCO2Saved} />
+          </div>
+          <div>
+            <RecentAchievementsFeed achievements={recentAchievements} />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

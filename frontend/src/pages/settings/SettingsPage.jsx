@@ -1,25 +1,23 @@
 import { useState, useEffect, useRef } from 'react';
-import { User, Moon, Sun, Bell, Shield, Leaf } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { User, Moon, Sun, Bell, Shield, Leaf, Building2, Lock } from 'lucide-react';
 import { useAuth }  from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useDensity } from '@/context/DensityContext';
 import { Card, Button, Input, Badge, Alert, Tabs } from '@/components/ui';
-import { getMyProfile, updateMyProfile, uploadAvatar } from '@/api';
+import { getMyProfile, updateMyProfile, uploadAvatar, changeUserPassword } from '@/api';
 import toast from 'react-hot-toast';
 
-const SETTING_TABS = [
-  { id: 'profile',       label: 'Profile',       icon: User   },
-  { id: 'appearance',    label: 'Appearance',     icon: Sun    },
-  { id: 'notifications', label: 'Notifications',  icon: Bell   },
-  { id: 'security',      label: 'Security',       icon: Shield },
-];
-
 function ProfileTab({ user }) {
+  const { t } = useTranslation();
   const { updateUser } = useAuth();
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(false);
   const [username, setUsername] = useState(user?.username ?? '');
   const [email, setEmail] = useState('');
+  const [organisationName, setOrganisationName] = useState(user?.organisationName ?? '');
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [anonymousName, setAnonymousName] = useState('');
   const [errorMsg, setErrorMsg] = useState(null);
   const fileInputRef = useRef(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -31,6 +29,9 @@ function ProfileTab({ user }) {
         if (!active) return;
         setUsername(profile.username || '');
         setEmail(profile.email || '');
+        setOrganisationName(profile.organisationName || user?.organisationName || 'Greenfield Technologies');
+        setIsAnonymous(!!profile.isAnonymous);
+        setAnonymousName(profile.anonymousName || '');
       })
       .catch((err) => {
         console.error('Failed to load profile details:', err);
@@ -38,7 +39,7 @@ function ProfileTab({ user }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [user]);
 
   const handleSave = async (e) => {
     e.preventDefault();
@@ -46,10 +47,10 @@ function ProfileTab({ user }) {
     setSaved(false);
     setErrorMsg(null);
     try {
-      const updated = await updateMyProfile({ username, email });
+      const updated = await updateMyProfile({ username, email, isAnonymous, anonymousName });
       updateUser({ username: updated.username });
       setSaved(true);
-      toast.success('Profile updated successfully!');
+      toast.success(t('settingsPage.profileUpdated', { defaultValue: 'Profile updated successfully.' }));
     } catch (err) {
       console.error(err);
       const msg = err.response?.data?.message || err.message || 'Failed to update profile';
@@ -82,7 +83,7 @@ function ProfileTab({ user }) {
     <form className="space-y-8 flex flex-col items-center py-6" onSubmit={handleSave}>
       {saved && (
         <Alert variant="success" dismissible onClose={() => setSaved(false)}>
-          Profile updated successfully.
+          {t('settingsPage.profileUpdated', { defaultValue: 'Profile updated successfully.' })}
         </Alert>
       )}
       {errorMsg && (
@@ -107,7 +108,7 @@ function ProfileTab({ user }) {
             </div>
           )}
           <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity overflow-hidden">
-            <span className="text-white text-xs font-medium">Change</span>
+            <span className="text-white text-xs font-medium">{t('settingsPage.changePhoto', { defaultValue: 'Change' })}</span>
           </div>
           <input 
             type="file" 
@@ -119,25 +120,84 @@ function ProfileTab({ user }) {
         </div>
         <div className="text-center">
           <p className="font-semibold text-slate-900 dark:text-slate-100 text-lg">{user?.username}</p>
-          <Badge variant="green" size="sm" dot className="mt-1">{user?.role ?? 'USER'}</Badge>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <Badge variant="green" size="sm" dot>{user?.role ?? 'USER'}</Badge>
+            {organisationName && (
+              <Badge variant="slate" size="sm" className="flex items-center gap-1">
+                <Building2 className="h-3 w-3" /> {organisationName}
+              </Badge>
+            )}
+          </div>
         </div>
       </div>
       <div className="flex flex-col gap-4 w-full max-w-md">
         <Input 
-          label="Username" 
+          label={t('settingsPage.username', { defaultValue: 'Username' })} 
           value={username} 
           onChange={(e) => setUsername(e.target.value)} 
           leftIcon={<User className="h-4 w-4" />} 
           required
         />
         <Input 
-          label="Email" 
+          label={t('settingsPage.email', { defaultValue: 'Email' })} 
           type="email" 
           value={email} 
           onChange={(e) => setEmail(e.target.value)} 
           placeholder="your@email.com" 
           required
         />
+        <Input 
+          label={t('settingsPage.organization', { defaultValue: 'Organization' })} 
+          value={organisationName || 'Greenfield Technologies'} 
+          disabled 
+          leftIcon={<Building2 className="h-4 w-4" />} 
+          hint={t('settingsPage.managedByAdmin', { defaultValue: 'Managed by your organization administrator' })}
+        />
+
+        {/* Milestone 3: Leaderboard Anonymity & Custom Alias */}
+        <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/50 p-4.5 space-y-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                <span>🛡️ {t('settingsPage.leaderboardAnonymity', { defaultValue: 'Leaderboard Anonymous Mode' })}</span>
+              </p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {t('settingsPage.anonymousDesc', { defaultValue: 'Hide your real name from other users on public leaderboards' })}
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={isAnonymous}
+              onClick={() => setIsAnonymous(!isAnonymous)}
+              className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                isAnonymous ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-700'
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform duration-200 ${
+                  isAnonymous ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
+          </div>
+
+          {isAnonymous && (
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 space-y-2">
+              <Input
+                label={t('settingsPage.anonymousName', { defaultValue: 'Anonymous Display Name / Alias' })}
+                value={anonymousName}
+                onChange={(e) => setAnonymousName(e.target.value)}
+                placeholder="e.g. EcoWarrior, SilentSaver, TreePioneer (optional)"
+                hint={
+                  anonymousName.trim()
+                    ? `Public display name: "🕶️ ${anonymousName.trim()}"`
+                    : 'If empty, "Anonymous User #ID" will be shown.'
+                }
+              />
+            </div>
+          )}
+        </div>
       </div>
       <Button 
         type="submit"
@@ -147,30 +207,31 @@ function ProfileTab({ user }) {
         isLoading={loading} 
         disabled={!username || !email}
       >
-        Save Changes
+        {t('settingsPage.saveChanges', { defaultValue: 'Save Changes' })}
       </Button>
     </form>
   );
 }
 
 function AppearanceTab() {
+  const { t } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { density, setDensity } = useDensity();
 
   const densityOptions = [
-    { id: 'compact',     label: 'Compact'     },
-    { id: 'default',     label: 'Default'     },
-    { id: 'comfortable', label: 'Comfortable' },
+    { id: 'compact',     label: t('settingsPage.compact', { defaultValue: 'Compact' }) },
+    { id: 'default',     label: t('settingsPage.default', { defaultValue: 'Default' }) },
+    { id: 'comfortable', label: t('settingsPage.comfortable', { defaultValue: 'Comfortable' }) },
   ];
 
   return (
     <div className="space-y-5">
       <div>
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">Theme</p>
+        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-3">{t('settingsPage.theme', { defaultValue: 'Theme' })}</p>
         <div className="grid grid-cols-2 gap-3">
           {[
-            { id: 'light', label: 'Light', icon: Sun  },
-            { id: 'dark',  label: 'Dark',  icon: Moon },
+            { id: 'light', label: t('settingsPage.light', { defaultValue: 'Light' }), icon: Sun  },
+            { id: 'dark',  label: t('settingsPage.dark', { defaultValue: 'Dark' }),  icon: Moon },
           ].map(({ id, label, icon: Icon }) => (
             <button
               key={id}
@@ -185,18 +246,19 @@ function AppearanceTab() {
             >
               <Icon className="h-5 w-5" />
               {label}
-              {theme === id && <Badge variant="green" size="xs" className="ml-auto">Active</Badge>}
+              {theme === id && <Badge variant="green" size="xs" className="ml-auto">{t('settingsPage.active', { defaultValue: 'Active' })}</Badge>}
             </button>
           ))}
         </div>
       </div>
       <div>
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">Density</p>
-        <p className="text-xs text-slate-500 mb-3">Control spacing of UI elements</p>
+        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-1">{t('settingsPage.density', { defaultValue: 'Density' })}</p>
+        <p className="text-xs text-slate-500 mb-3">{t('settingsPage.densitySubtitle', { defaultValue: 'Control spacing of UI elements' })}</p>
         <div className="flex gap-2">
           {densityOptions.map(({ id, label }) => (
             <button
               key={id}
+              type="button"
               onClick={() => setDensity(id)}
               className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer ${
                 density === id
@@ -214,6 +276,7 @@ function AppearanceTab() {
 }
 
 function NotificationsTab() {
+  const { t } = useTranslation();
   const [prefs, setPrefs] = useState({
     weeklyDigest: true,
     goalAlerts: true,
@@ -223,10 +286,22 @@ function NotificationsTab() {
   return (
     <div className="space-y-4">
       {Object.entries({
-        weeklyDigest: { label: 'Weekly digest',      desc: 'Summary of your carbon activity' },
-        goalAlerts:   { label: 'Goal alerts',         desc: 'Notify when approaching budget'  },
-        badgeEarned:  { label: 'Badge notifications', desc: 'When you earn a new achievement' },
-        newTips:      { label: 'Eco tips',            desc: 'Sustainability tips & tricks'    },
+        weeklyDigest: { 
+          label: t('settingsPage.notifications.weeklyDigest', { defaultValue: 'Weekly digest' }),      
+          desc: t('settingsPage.notifications.weeklyDigestDesc', { defaultValue: 'Summary of your carbon activity' }) 
+        },
+        goalAlerts:   { 
+          label: t('settingsPage.notifications.goalAlerts', { defaultValue: 'Goal alerts' }),         
+          desc: t('settingsPage.notifications.goalAlertsDesc', { defaultValue: 'Notify when approaching budget' })  
+        },
+        badgeEarned:  { 
+          label: t('settingsPage.notifications.badgeEarned', { defaultValue: 'Badge notifications' }), 
+          desc: t('settingsPage.notifications.badgeEarnedDesc', { defaultValue: 'When you earn a new achievement' }) 
+        },
+        newTips:      { 
+          label: t('settingsPage.notifications.newTips', { defaultValue: 'Eco tips' }),            
+          desc: t('settingsPage.notifications.newTipsDesc', { defaultValue: 'Sustainability tips & tricks' })    
+        },
       }).map(([key, { label, desc }]) => (
         <div key={key} className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-slate-800 p-4">
           <div>
@@ -249,29 +324,127 @@ function NotificationsTab() {
 }
 
 function SecurityTab() {
+  const { t } = useTranslation();
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword]         = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const [loading, setLoading]   = useState(false);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [success, setSuccess]   = useState(false);
+
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    setErrorMsg(null);
+    setSuccess(false);
+
+    if (newPassword.length < 6) {
+      setErrorMsg(t('settingsPage.minPassword', { defaultValue: 'New password must be at least 6 characters long.' }));
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMsg(t('settingsPage.passwordMismatch', { defaultValue: 'New password and confirmation do not match.' }));
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await changeUserPassword({ currentPassword, newPassword });
+      setSuccess(true);
+      toast.success(t('settingsPage.passwordUpdated', { defaultValue: 'Password updated successfully!' }));
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error(err);
+      const msg = err.response?.data?.message || err.message || 'Failed to change password.';
+      setErrorMsg(msg);
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="space-y-5">
-      <Alert variant="info">
-        Password changes are not yet available. Please contact support.
-      </Alert>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <Input label="Current Password" type="password" disabled placeholder="••••••••" />
-        <Input label="New Password"     type="password" disabled placeholder="••••••••" />
+    <form className="space-y-6 max-w-md mx-auto py-2" onSubmit={handlePasswordChange}>
+      {success && (
+        <Alert variant="success" dismissible onClose={() => setSuccess(false)}>
+          {t('settingsPage.passwordUpdated', { defaultValue: 'Your password has been updated successfully.' })}
+        </Alert>
+      )}
+
+      {errorMsg && (
+        <Alert variant="danger" dismissible onClose={() => setErrorMsg(null)}>
+          {errorMsg}
+        </Alert>
+      )}
+
+      <div className="space-y-4">
+        <Input 
+          label={t('settingsPage.currentPassword', { defaultValue: 'Current Password' })} 
+          type="password"
+          value={currentPassword}
+          onChange={(e) => setCurrentPassword(e.target.value)}
+          placeholder={t('settingsPage.currentPasswordPlaceholder', { defaultValue: 'Enter current password' })} 
+          required
+          leftIcon={<Lock className="h-4 w-4" />}
+        />
+
+        <Input 
+          label={t('settingsPage.newPassword', { defaultValue: 'New Password' })} 
+          type="password"
+          value={newPassword}
+          onChange={(e) => setNewPassword(e.target.value)}
+          placeholder={t('settingsPage.newPasswordPlaceholder', { defaultValue: 'Enter new password (min. 6 chars)' })} 
+          required
+          leftIcon={<Lock className="h-4 w-4" />}
+        />
+
+        <Input 
+          label={t('settingsPage.confirmNewPassword', { defaultValue: 'Confirm New Password' })} 
+          type="password"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+          placeholder={t('settingsPage.confirmNewPasswordPlaceholder', { defaultValue: 'Confirm new password' })} 
+          required
+          leftIcon={<Lock className="h-4 w-4" />}
+        />
       </div>
-      <div className="card border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10 p-4">
-        <p className="text-sm font-semibold text-red-800 dark:text-red-300">Danger Zone</p>
+
+      <Button 
+        type="submit"
+        variant="primary" 
+        size="md"
+        className="w-full"
+        isLoading={loading} 
+        disabled={!currentPassword || !newPassword || !confirmPassword}
+      >
+        {t('settingsPage.updatePassword', { defaultValue: 'Update Password' })}
+      </Button>
+
+      <div className="card border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-900/10 p-4 mt-6">
+        <p className="text-sm font-semibold text-red-800 dark:text-red-300">{t('settingsPage.dangerZone', { defaultValue: 'Danger Zone' })}</p>
         <p className="text-xs text-red-600 dark:text-red-400 mt-1 mb-3">
-          Permanently delete your account and all associated data.
+          {t('settingsPage.dangerZoneDesc', { defaultValue: 'Permanently delete your account and all associated data.' })}
         </p>
-        <Button variant="danger" size="sm">Delete Account</Button>
+        <Button type="button" variant="danger" size="sm">{t('settingsPage.deleteAccount', { defaultValue: 'Delete Account' })}</Button>
       </div>
-    </div>
+    </form>
   );
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [tab, setTab] = useState('profile');
+
+  const settingTabs = [
+    { id: 'profile',       label: t('settingsPage.tabProfile', { defaultValue: 'Profile' }),       icon: User   },
+    { id: 'appearance',    label: t('settingsPage.tabAppearance', { defaultValue: 'Appearance' }),     icon: Sun    },
+    { id: 'notifications', label: t('settingsPage.tabNotifications', { defaultValue: 'Notifications' }),  icon: Bell   },
+    { id: 'security',      label: t('settingsPage.tabSecurity', { defaultValue: 'Security' }),       icon: Shield },
+  ];
 
   const PANELS = {
     profile:       <ProfileTab user={user} />,
@@ -287,15 +460,16 @@ export default function SettingsPage() {
           <Leaf className="h-5 w-5 text-green-600 dark:text-green-400" />
         </div>
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Settings</h2>
-          <p className="text-sm text-slate-500">Manage your account and preferences</p>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('settingsPage.title', { defaultValue: 'Settings' })}</h2>
+          <p className="text-sm text-slate-500">{t('settingsPage.subtitle', { defaultValue: 'Manage your account and preferences' })}</p>
         </div>
       </div>
 
       <Card>
-        <Tabs tabs={SETTING_TABS} variant="line" activeTab={tab} onChange={setTab} />
+        <Tabs tabs={settingTabs} variant="line" activeTab={tab} onChange={setTab} />
         <div className="mt-5">{PANELS[tab]}</div>
       </Card>
     </div>
   );
 }
+

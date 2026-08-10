@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard, Zap, Target, BarChart2,
-  Settings, Leaf, ShieldCheck, TrendingDown, Lightbulb, Trophy, Building2, Flag, Users,
+  Settings, Leaf, ShieldCheck, TrendingDown, Lightbulb, Trophy, Building2, Flag, Users, Navigation, HeartHandshake, Home,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -11,24 +11,26 @@ export default function Sidebar({ isOpen, onClose }) {
   const { isAdmin, user } = useAuth();
 
   const NAV_ITEMS = [
-    { to: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
-    { to: '/activities', label: t('nav.activities'), icon: Zap },
-    { to: '/goals', label: t('nav.goals'), icon: Target },
-    { to: '/challenges', label: t('nav.challenges'), icon: Flag },
-    { to: '/reports', label: t('nav.reports'), icon: BarChart2 },
-    { to: '/badges', label: t('nav.myBadges'), icon: Trophy },
-    { to: '/community', label: t('nav.community'), icon: Trophy },
-    { to: '/recommendations', label: t('nav.recommendations'), icon: Lightbulb },
-    { to: '/settings', label: t('nav.settings'), icon: Settings },
+    { to: '/dashboard', label: t('nav.dashboard', { defaultValue: 'Dashboard' }), icon: LayoutDashboard },
+    { to: '/activities', label: t('nav.activities', { defaultValue: 'Activities' }), icon: Zap },
+    { to: '/energy-simulator', label: t('nav.energySimulator', { defaultValue: 'Energy Auditor' }), icon: Home },
+    { to: '/route-planner', label: t('nav.routePlanner', { defaultValue: 'Route Planner' }), icon: Navigation },
+    { to: '/offsets', label: t('nav.carbonOffsets', { defaultValue: 'Carbon Offsets' }), icon: HeartHandshake },
+    { to: '/goals', label: t('nav.goals', { defaultValue: 'Goals' }), icon: Target },
+    { to: '/challenges', label: t('nav.challenges', { defaultValue: 'Challenges' }), icon: Flag },
+    { to: '/reports', label: t('nav.reports', { defaultValue: 'Reports' }), icon: BarChart2 },
+    { to: '/badges', label: t('nav.myBadges', { defaultValue: 'My Badges' }), icon: Trophy },
+    { to: '/community', label: t('nav.community', { defaultValue: 'Community' }), icon: Trophy },
+    { to: '/recommendations', label: t('nav.recommendations', { defaultValue: 'Recommendations' }), icon: Lightbulb },
+    { to: '/settings', label: t('nav.settings', { defaultValue: 'Settings' }), icon: Settings },
   ];
 
   const ADMIN_NAV_ITEMS = [
     { to: '/admin', label: t('nav.adminDashboard'), icon: ShieldCheck },
-    { to: '/admin', label: t('nav.userManagement'), icon: Users },
-    { to: '/admin', label: t('nav.organisationManagement'), icon: Building2 },
-    { to: '/admin', label: t('nav.platformAnalytics'), icon: BarChart2 },
-    { to: '/admin', label: t('nav.emissionFactors'), icon: Leaf },
-    { to: '/admin', label: t('nav.auditLogs'), icon: Flag },
+    { to: '/dashboard', label: t('nav.dashboard'), icon: LayoutDashboard },
+    { to: '/activities', label: t('nav.activities'), icon: Zap },
+    { to: '/reports', label: t('nav.reports'), icon: BarChart2 },
+    { to: '/settings', label: t('nav.settings'), icon: Settings },
   ];
 
   const ORG_ADMIN_NAV_ITEMS = [
@@ -115,10 +117,10 @@ export default function Sidebar({ isOpen, onClose }) {
         <div className="mx-3 mb-4 rounded-xl bg-gradient-to-br from-green-50 to-teal-50 dark:from-[#0a1815]/60 dark:to-[#081a17]/60 border border-green-100 dark:border-[#1E4432]/50 p-3">
           <div className="flex items-center gap-2 mb-1">
             <TrendingDown className="h-3.5 w-3.5 text-green-600 dark:text-green-400" aria-hidden="true" />
-            <p className="text-xs font-semibold text-green-800 dark:text-green-300">Eco Tip</p>
+            <p className="text-xs font-semibold text-green-800 dark:text-green-300">{t('nav.ecoTipTitle')}</p>
           </div>
           <p className="text-[11px] text-green-700 dark:text-green-400 leading-relaxed">
-            Switching to LED bulbs saves ~75% of lighting energy.
+            {t('nav.ecoTipText')}
           </p>
         </div>
       </aside>

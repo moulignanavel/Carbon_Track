@@ -1,14 +1,20 @@
 import { useState, useEffect, useRef } from 'react';
-import { Bot, Sparkles, X, Send, Loader2, User, RefreshCw } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/context/AuthContext';
+import { Leaf, Sparkles, X, Send, Loader2, User, RefreshCw } from 'lucide-react';
 import aiAssistantService from '@/services/api/aiAssistantService';
 
 export default function CarbonBotWidget() {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const { isAuthenticated, user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
       id: 'welcome',
       sender: 'bot',
-      text: "👋 Hi! I'm **CarbonBot**, your AI Sustainability Assistant.\n\nAsk me anything about reducing your carbon footprint, green travel, eco diets, or energy savings!",
+      text: t('ai.welcome', { defaultValue: "👋 Hi! I'm **CarbonBot**, your AI Sustainability Assistant.\n\nAsk me anything about reducing your carbon footprint, green travel, eco diets, or energy savings!" }),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -39,7 +45,7 @@ export default function CarbonBotWidget() {
         .then((data) => {
           if (data && data.length > 0) setSuggestions(data);
         })
-        .catch(() => {});
+        .catch(() => { });
     }
   }, [isOpen]);
 
@@ -71,7 +77,7 @@ export default function CarbonBotWidget() {
       const botMsg = {
         id: (Date.now() + 1).toString(),
         sender: 'bot',
-        text: res.reply || "I'm here to help you live more sustainably!",
+        text: res.reply || t('ai.defaultReply', { defaultValue: "I'm here to help you live more sustainably!" }),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
 
@@ -85,7 +91,7 @@ export default function CarbonBotWidget() {
         {
           id: Date.now().toString(),
           sender: 'bot',
-          text: "I'm having trouble connecting to Gemini AI right now. Tip: Switching to public transit twice a week saves ~15 kg CO₂e weekly!",
+          text: t('ai.fallbackReply', { defaultValue: "I'm having trouble connecting to Gemini AI right now. Tip: Switching to public transit twice a week saves ~15 kg CO₂e weekly!" }),
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         },
       ]);
@@ -98,86 +104,87 @@ export default function CarbonBotWidget() {
   const renderFormattedText = (txt) => {
     if (!txt) return null;
     return txt.split('\n').map((line, idx) => {
-      // Remove horizontal dividers like ---
-      if (line.trim() === '---') {
-        return <hr key={idx} className="my-2 border-slate-200 dark:border-slate-700/60" />;
-      }
-
-      // Strip markdown header symbols like ###, ##, #
-      const isHeader = /^#{1,6}\s+/.test(line);
-      const cleanLine = line.replace(/^#{1,6}\s+/, '').trim();
-      if (!cleanLine) return <div key={idx} className="h-1" />;
-
-      const formattedHtml = cleanLine.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-
+      const parts = line.split(/(\*\*.*?\*\*)/g);
       return (
-        <p
-          key={idx}
-          className={`mb-1 last:mb-0 ${isHeader ? 'font-bold text-emerald-700 dark:text-emerald-300 text-[13px] mt-2 mb-1' : ''}`}
-          dangerouslySetInnerHTML={{ __html: formattedHtml }}
-        />
+        <span key={idx} className="block min-h-[1.2rem]">
+          {parts.map((part, pIdx) => {
+            if (part.startsWith('**') && part.endsWith('**')) {
+              return (
+                <strong key={pIdx} className="font-bold text-emerald-950 dark:text-emerald-300">
+                  {part.slice(2, -2)}
+                </strong>
+              );
+            }
+            return part;
+          })}
+        </span>
       );
     });
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 font-sans">
-      {/* ── Chat Drawer Window ── */}
+    <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
+      {/* ── Chat Window ── */}
       {isOpen && (
-        <div className="mb-4 w-[360px] sm:w-[420px] h-[520px] bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-emerald-200/80 dark:border-emerald-800/50 flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 duration-200">
+        <div
+          className="mb-4 w-[92vw] sm:w-[420px] h-[580px] max-h-[85vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-5 fade-in duration-300 backdrop-blur-xl"
+          role="dialog"
+          aria-label="CarbonBot Assistant"
+        >
           {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 text-white flex items-center justify-between">
+          <div className="p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-700 text-white flex items-center justify-between shadow-md">
             <div className="flex items-center gap-3">
-              <div className="relative p-2 bg-white/20 backdrop-blur-md rounded-2xl">
-                <Bot className="h-6 w-6 text-white" />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 bg-emerald-300 rounded-full ring-2 ring-emerald-700" />
+              <div className="h-9 w-9 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white border border-white/30 shadow-xs">
+                <Sparkles className="h-5 w-5 animate-pulse" />
               </div>
               <div>
                 <h3 className="font-bold text-sm leading-tight flex items-center gap-1.5">
-                  CarbonBot AI
-                  <Sparkles className="h-3.5 w-3.5 text-emerald-200 fill-emerald-200 animate-pulse" />
+                  CarbonBot <span className="text-[10px] bg-emerald-400/30 px-1.5 py-0.5 rounded-full font-medium">AI 2.5</span>
                 </h3>
-                <p className="text-[11px] text-emerald-100/90 font-medium">Sustainability Coach • Gemini 3.5 Flash</p>
+                <p className="text-[11px] text-emerald-100/90 font-medium">
+                  {t('ai.sustainabilityCoach', { defaultValue: 'Sustainability & Eco Coach' })}
+                </p>
               </div>
             </div>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1.5 rounded-full hover:bg-white/20 transition-colors text-white/80 hover:text-white"
+              className="p-1.5 hover:bg-white/20 rounded-xl transition-colors text-emerald-100 hover:text-white"
+              aria-label="Close chat"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
-          {/* Chat Body */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-slate-50/60 dark:bg-slate-950/40 text-xs">
-            {messages.map((msg) => (
+          {/* Messages Container */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 bg-slate-50/50 dark:bg-slate-950/40 text-xs">
+            {messages.map((m) => (
               <div
-                key={msg.id}
-                className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                key={m.id}
+                className={`flex gap-2.5 ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {msg.sender === 'bot' && (
+                {m.sender === 'bot' && (
                   <div className="h-7 w-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
-                    <Bot className="h-4 w-4" />
+                    <Leaf className="h-4 w-4" />
                   </div>
                 )}
                 <div
-                  className={`max-w-[82%] p-3 rounded-2xl text-xs leading-relaxed shadow-sm ${
-                    msg.sender === 'user'
-                      ? 'bg-emerald-600 text-white rounded-br-none'
+                  className={`max-w-[82%] p-3.5 rounded-2xl leading-relaxed shadow-xs ${
+                    m.sender === 'user'
+                      ? 'bg-emerald-600 text-white rounded-br-none font-medium'
                       : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-100 dark:border-slate-700/60 rounded-bl-none'
                   }`}
                 >
-                  {renderFormattedText(msg.text)}
+                  <div className="space-y-1">{renderFormattedText(m.text)}</div>
                   <span
-                    className={`block text-[9px] mt-1 text-right ${
-                      msg.sender === 'user' ? 'text-emerald-200' : 'text-slate-400'
+                    className={`block text-[9px] mt-1.5 text-right ${
+                      m.sender === 'user' ? 'text-emerald-200' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
-                    {msg.timestamp}
+                    {m.timestamp}
                   </span>
                 </div>
-                {msg.sender === 'user' && (
-                  <div className="h-7 w-7 rounded-xl bg-slate-700 text-white flex items-center justify-center shrink-0 shadow-sm mt-0.5">
+                {m.sender === 'user' && (
+                  <div className="h-7 w-7 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center shrink-0 mt-0.5">
                     <User className="h-4 w-4" />
                   </div>
                 )}
@@ -187,11 +194,11 @@ export default function CarbonBotWidget() {
             {loading && (
               <div className="flex gap-2.5 justify-start">
                 <div className="h-7 w-7 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <Bot className="h-4 w-4 animate-spin" />
+                  <Leaf className="h-4 w-4 text-white animate-pulse" />
                 </div>
                 <div className="bg-white dark:bg-slate-800 p-3 rounded-2xl rounded-bl-none border border-slate-100 dark:border-slate-700/60 flex items-center gap-2">
                   <Loader2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 animate-spin" />
-                  <span className="text-slate-500 dark:text-slate-400 text-xs italic">CarbonBot is thinking...</span>
+                  <span className="text-slate-500 dark:text-slate-400 text-xs italic">{t('ai.thinking', { defaultValue: 'CarbonBot is thinking...' })}</span>
                 </div>
               </div>
             )}
@@ -224,7 +231,7 @@ export default function CarbonBotWidget() {
             >
               <input
                 type="text"
-                placeholder="Ask CarbonBot anything..."
+                placeholder={t('ai.askPlaceholder', { defaultValue: 'Ask CarbonBot anything...' })}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 disabled={loading}
@@ -248,7 +255,7 @@ export default function CarbonBotWidget() {
         className="group relative flex items-center justify-center p-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white rounded-full shadow-2xl transition-all duration-300 transform hover:scale-105 active:scale-95 ring-4 ring-emerald-500/20"
         aria-label="Open CarbonBot AI Assistant"
       >
-        <Bot className="h-6 w-6 text-white group-hover:rotate-12 transition-transform duration-300" />
+        <Leaf className="h-6 w-6 text-white group-hover:rotate-12 transition-transform duration-300" />
         <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
           <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-300 border-2 border-white dark:border-slate-900" />

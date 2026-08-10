@@ -68,10 +68,11 @@ export async function loginUser(credentials) {
  */
 export async function registerUser(payload) {
   const { data } = await axiosInstance.post('/auth/register/user', {
-    fullName: payload.fullName,
-    username: payload.username,
-    email:    payload.email,
-    password: payload.password,
+    fullName:       payload.fullName,
+    username:       payload.username,
+    email:          payload.email,
+    password:       payload.password,
+    organisationId: payload.organisationId,
   });
   return data;
 }

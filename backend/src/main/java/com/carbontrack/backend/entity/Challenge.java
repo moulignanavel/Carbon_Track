@@ -47,4 +47,8 @@ public class Challenge {
     /** weekly | one_time */
     @Column(nullable = false, length = 20)
     private String period;
+
+    /** Optional organisation ID for custom org-created challenges */
+    @Column(name = "organisation_id")
+    private Long organisationId;
 }

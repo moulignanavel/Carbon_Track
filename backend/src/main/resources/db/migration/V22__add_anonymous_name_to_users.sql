@@ -1,0 +1,1 @@
+ALTER TABLE users ADD COLUMN anonymous_name VARCHAR(50) DEFAULT NULL;

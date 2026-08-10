@@ -71,10 +71,22 @@ public class AuthServiceImpl implements AuthService {
         
         // Registration is never a role-assignment workflow.
         user.setRole("USER");
-        user.setStatus("ACTIVE");
+
+        if (request.getOrganisationId() != null) {
+            Organisation org = organisationRepository.findById(request.getOrganisationId())
+                    .orElseThrow(() -> new com.carbontrack.backend.exception.ResourceNotFoundException("Organisation not found"));
+            user.setOrganisation(org);
+            user.setStatus("PENDING_APPROVAL");
+        } else {
+            user.setStatus("ACTIVE");
+        }
 
         User savedUser = userRepository.save(user);
-        return new AuthResponse(null, savedUser.getId(), savedUser.getUsername(), savedUser.getRole());
+        
+        AuthResponse response = new AuthResponse(null, savedUser.getId(), savedUser.getUsername(), savedUser.getRole());
+        response.setOrganisationId(savedUser.getOrganisation() != null ? savedUser.getOrganisation().getId() : null);
+        response.setStatus(savedUser.getStatus());
+        return response;
     }
 
     @Override
@@ -140,6 +152,7 @@ public class AuthServiceImpl implements AuthService {
         String token = jwtUtil.generateToken(user);
         AuthResponse response = new AuthResponse(token, user.getId(), user.getUsername(), user.getRole());
         response.setOrganisationId(user.getOrganisation() != null ? user.getOrganisation().getId() : null);
+        response.setStatus(user.getStatus());
         return response;
     }
 
@@ -184,11 +197,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @org.springframework.transaction.annotation.Transactional
     public void forgotPassword(com.carbontrack.backend.dto.ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail()).orElse(null);
+        User user = userRepository.findByEmailIgnoreCaseOrUsernameIgnoreCase(request.getEmail(), request.getEmail()).orElse(null);
         if (user == null) {
             // Silently return to prevent email enumeration
             return;
         }
+
+        // Clean up any existing reset tokens for this user
+        try {
+            passwordResetTokenRepository.deleteByUserId(user.getId());
+        } catch (Exception ignored) {}
 
         // Generate token and save
         String token = UUID.randomUUID().toString();

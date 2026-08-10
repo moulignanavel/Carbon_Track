@@ -22,6 +22,17 @@ public class UserProfileRequest {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
+    private Boolean isAnonymous;
+
+    public Boolean getIsAnonymous() { return isAnonymous; }
+    public void setIsAnonymous(Boolean isAnonymous) { this.isAnonymous = isAnonymous; }
+
+    @Size(max = 50, message = "Anonymous display name cannot exceed 50 characters")
+    private String anonymousName;
+
+    public String getAnonymousName() { return anonymousName; }
+    public void setAnonymousName(String anonymousName) { this.anonymousName = anonymousName; }
+
     public SustainabilityPreferences getSustainabilityPreferences() { return sustainabilityPreferences; }
     public void setSustainabilityPreferences(SustainabilityPreferences sustainabilityPreferences) { 
         this.sustainabilityPreferences = sustainabilityPreferences; 

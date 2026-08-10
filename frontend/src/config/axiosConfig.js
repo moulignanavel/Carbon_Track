@@ -20,6 +20,9 @@ import { HTTP_STATUS, API_ERRORS } from './constants';
 /**
  * Create configured Axios instance
  */
+// Debounce flag — prevents multiple simultaneous 401s from each triggering a redirect
+let _redirectingTo401 = false;
+
 export function createAxiosInstance() {
   const instance = axios.create({
     baseURL: `${env.api.baseURL}/api`,
@@ -85,13 +88,23 @@ export function createAxiosInstance() {
 
       // Handle 401 Unauthorized
       if (response?.status === HTTP_STATUS.UNAUTHORIZED) {
-        // Do not redirect on 401 from login endpoints or if already on session_expired URL
-        const isAuthEndpoint = config.url?.includes('/auth/login') || config.url?.includes('/auth/register');
-        if (env.auth.autoLogoutOn401 && !isAuthEndpoint) {
+        // Do not redirect on 401 from login/register endpoints (wrong password ≠ expired session)
+        const isAuthEndpoint =
+          config.url?.includes('/auth/login') ||
+          config.url?.includes('/auth/register') ||
+          config.url?.includes('/auth/google');
+        // Do not redirect if already on an auth page path
+        const isAuthPage =
+          window.location.pathname === '/' ||
+          window.location.pathname.startsWith('/login') ||
+          window.location.pathname.startsWith('/register') ||
+          window.location.pathname.startsWith('/forgot-password') ||
+          window.location.pathname.startsWith('/reset-password');
+
+        if (env.auth.autoLogoutOn401 && !isAuthEndpoint && !isAuthPage && !_redirectingTo401) {
+          _redirectingTo401 = true;
           clearAuth();
-          if (!window.location.search.includes('session_expired')) {
-            window.location.replace('/?reason=session_expired');
-          }
+          window.location.replace('/?reason=session_expired');
         }
       }
 

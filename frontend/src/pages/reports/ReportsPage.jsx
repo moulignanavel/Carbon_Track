@@ -14,6 +14,7 @@
  */
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Download, BarChart2, TrendingDown, TrendingUp,
   Calendar, Zap, Leaf, Target, FileText, Loader2,
@@ -35,23 +36,6 @@ import CategoryPieChart                     from '@/components/charts/CategoryPi
 import WeeklyTrendChart                     from '@/components/charts/WeeklyTrendChart';
 import MonthlyComparisonChart               from '@/components/charts/MonthlyComparisonChart';
 
-/* ──────────────────────────────────────────────────────────────
-   Period config
-   ────────────────────────────────────────────────────────────── */
-const PERIOD_TABS = [
-  { id: 'daily',   label: 'Daily'   },
-  { id: 'weekly',  label: 'Weekly'  },
-  { id: 'monthly', label: 'Monthly' },
-  { id: 'yearly',  label: 'Yearly'  },
-];
-
-const PERIOD_LABELS = {
-  daily:   'Today vs Yesterday',
-  weekly:  'This Week vs Last Week',
-  monthly: 'This Month vs Last Month',
-  yearly:  'YTD vs Last Year',
-};
-
 /* Category badge colours */
 const CAT_BADGE = {
   transport:   'green',
@@ -61,10 +45,13 @@ const CAT_BADGE = {
   energy:      'red',
 };
 
-/* Trend-line series */
-const TREND_SERIES = [
-  { key: 'total', name: 'Total CO₂e', color: COLORS.green[500] },
-];
+const CAT_KEY_MAP = {
+  transport:   'activitiesPage.catTransport',
+  electricity: 'activitiesPage.catElectricity',
+  food:        'activitiesPage.catFood',
+  shopping:    'activitiesPage.catShopping',
+  energy:      'activitiesPage.catEnergy',
+};
 
 /* ──────────────────────────────────────────────────────────────
    Date helpers
@@ -106,10 +93,21 @@ function prevEnd(period) {
   return new Date(start.getTime() - 1); // 1 ms before current period
 }
 
+function normalizeCat(log) {
+  const cat = (log.category ?? '').toLowerCase();
+  const act = (log.activityType ?? '').toLowerCase();
+
+  if (cat.includes('transport') || act.includes('car') || act.includes('bus') || act.includes('flight') || act.includes('bike') || act.includes('train')) return 'transport';
+  if (cat.includes('electric') || cat.includes('energy') || act.includes('kwh') || act.includes('grid')) return 'electricity';
+  if (cat.includes('food') || cat.includes('diet') || act.includes('meal') || act.includes('dairy') || act.includes('meat') || act.includes('chicken') || act.includes('water')) return 'food';
+  if (cat.includes('shop') || cat.includes('retail') || act.includes('spend') || act.includes('clothes') || act.includes('item')) return 'shopping';
+  return 'other';
+}
+
 /* ──────────────────────────────────────────────────────────────
    Analytics derivation hook
    ────────────────────────────────────────────────────────────── */
-function useAnalytics(logs, period) {
+function useAnalytics(logs, period, t) {
   return useMemo(() => {
     const pStart = startOf(period);
     const pEnd   = new Date();                         // now
@@ -121,8 +119,13 @@ function useAnalytics(logs, period) {
       return d >= from && d <= to;
     };
 
-    const current = logs.filter((l) => inRange(l, pStart, pEnd));
-    const prior   = logs.filter((l) => inRange(l, qStart, qEnd));
+    let current = logs.filter((l) => inRange(l, pStart, pEnd));
+    let prior   = logs.filter((l) => inRange(l, qStart, qEnd));
+
+    // Fallback: if period filter yields 0 logs but user has logs in history, use all logs
+    if (current.length === 0 && logs.length > 0) {
+      current = logs;
+    }
 
     const sumEmissions = (arr) =>
       arr.reduce((s, l) => s + (l.calculatedEmissions ?? l.co2eKg ?? 0), 0);
@@ -134,18 +137,18 @@ function useAnalytics(logs, period) {
     const catMap = {};
     const catPrev = {};
     for (const l of current) {
-      const cat = (l.category ?? 'other').toLowerCase();
+      const cat = normalizeCat(l);
       catMap[cat] = (catMap[cat] ?? 0) + (l.calculatedEmissions ?? l.co2eKg ?? 0);
     }
     for (const l of prior) {
-      const cat = (l.category ?? 'other').toLowerCase();
+      const cat = normalizeCat(l);
       catPrev[cat] = (catPrev[cat] ?? 0) + (l.calculatedEmissions ?? l.co2eKg ?? 0);
     }
 
     const catData = Object.entries(catMap)
       .map(([cat, value]) => ({
         category: cat,
-        name:     CATEGORY_META[cat]?.label ?? capitalize(cat),
+        name:     CAT_KEY_MAP[cat] ? t(CAT_KEY_MAP[cat]) : (CATEGORY_META[cat]?.label ?? capitalize(cat)),
         value,
         prev:     catPrev[cat] ?? 0,
       }))
@@ -194,7 +197,7 @@ function useAnalytics(logs, period) {
 
     for (const l of current) {
       const key = groupKey(l);
-      const cat = (l.category ?? 'other').toLowerCase();
+      const cat = normalizeCat(l);
       if (!grouped[key]) grouped[key] = { label: key };
       grouped[key][cat] = (grouped[key][cat] ?? 0) + (l.calculatedEmissions ?? l.co2eKg ?? 0);
     }
@@ -204,26 +207,60 @@ function useAnalytics(logs, period) {
       total: DEFAULT_SERIES.reduce((s, ser) => s + (row[ser.key] ?? 0), 0),
     }));
 
-    /* 7-day trend (always last 7 days, independent of period) */
-    const sevenDaysAgo = new Date();
+    /* 7-day trend (anchored to latest activity date if system date has no recent logs) */
+    const latestLogDate = logs.reduce((latest, l) => {
+      const d = parseDate(l);
+      return !latest || d > latest ? d : latest;
+    }, null);
+
+    const anchorDate = (latestLogDate && (new Date() - latestLogDate) > 3 * 86_400_000)
+      ? new Date(latestLogDate)
+      : new Date();
+
+    const sevenDaysAgo = new Date(anchorDate);
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
     sevenDaysAgo.setHours(0, 0, 0, 0);
-    const recent7 = logs.filter((l) => parseDate(l) >= sevenDaysAgo);
+
+    const recent7 = logs.filter((l) => {
+      const d = parseDate(l);
+      return d >= sevenDaysAgo && d <= anchorDate;
+    });
     
     const days7 = [];
     for (let i = 6; i >= 0; i--) {
-      const d = new Date();
+      const d = new Date(anchorDate);
       d.setDate(d.getDate() - i);
       const dayLabel = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][d.getDay()];
       const dayDateStr = d.toISOString().split('T')[0];
+
+      const prevD = new Date(d);
+      prevD.setDate(prevD.getDate() - 7);
+      const prevDayDateStr = prevD.toISOString().split('T')[0];
 
       const dayLogs = recent7.filter((l) => {
         const ld = parseDate(l);
         return ld && ld.toISOString().split('T')[0] === dayDateStr;
       });
 
+      const prevDayLogs = logs.filter((l) => {
+        const ld = parseDate(l);
+        return ld && ld.toISOString().split('T')[0] === prevDayDateStr;
+      });
+
+      let currentSum = 0;
+      for (const l of dayLogs) {
+        currentSum += (l.calculatedEmissions ?? l.co2eKg ?? 0);
+      }
+
+      let prevSum = 0;
+      for (const l of prevDayLogs) {
+        prevSum += (l.calculatedEmissions ?? l.co2eKg ?? 0);
+      }
+
       const dayObj = {
         day: dayLabel,
+        currentWeek: Number(currentSum.toFixed(2)),
+        previousWeek: Number(prevSum.toFixed(2)),
         transport: 0,
         energy: 0,
         food: 0,
@@ -232,7 +269,7 @@ function useAnalytics(logs, period) {
       };
 
       for (const l of dayLogs) {
-        const cat = (l.category ?? 'other').toLowerCase();
+        const cat = normalizeCat(l);
         const value = l.calculatedEmissions ?? l.co2eKg ?? 0;
         if (cat in dayObj) {
           dayObj[cat] += value;
@@ -289,7 +326,7 @@ function useAnalytics(logs, period) {
       avgPerEntry: current.length > 0 ? totalNow / current.length : 0,
       avgPerEntryPrev: prior.length > 0 ? totalPrev / prior.length : 0,
     };
-  }, [logs, period]);
+  }, [logs, period, t]);
 }
 
 /* ──────────────────────────────────────────────────────────────
@@ -310,22 +347,23 @@ function DeltaBadge({ current, prev }) {
   );
 }
 
-function SummaryRow({ totalNow, totalPrev, topCat, avgPerEntry, avgPerEntryPrev, entries, entriesPrev, period }) {
+function SummaryRow({ totalNow, totalPrev, topCat, avgPerEntry, avgPerEntryPrev, entries, entriesPrev, period, periodSub }) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
       <div className="card p-5">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Total Emissions</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('reportsPage.totalEmissions')}</p>
         <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-tight">
           {formatEmission(totalNow)}
         </p>
         <div className="mt-2 flex items-center gap-2">
           <DeltaBadge current={totalNow} prev={totalPrev} />
-          <span className="text-xs text-slate-400">{PERIOD_LABELS[period]}</span>
+          <span className="text-xs text-slate-400">{periodSub}</span>
         </div>
       </div>
 
       <div className="card p-5">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Top Source</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('reportsPage.topSource')}</p>
         {topCat ? (
           <div className="flex items-center gap-2 mt-1">
             <span className="text-xl" aria-hidden="true">
@@ -334,7 +372,7 @@ function SummaryRow({ totalNow, totalPrev, topCat, avgPerEntry, avgPerEntryPrev,
             <div>
               <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{topCat.name}</p>
               <p className="text-xs text-slate-400">
-                {totalNow > 0 ? ((topCat.value / totalNow) * 100).toFixed(0) : 0}% of total
+                {t('reportsPage.ofTotal', { pct: totalNow > 0 ? ((topCat.value / totalNow) * 100).toFixed(0) : 0 })}
               </p>
             </div>
           </div>
@@ -344,7 +382,7 @@ function SummaryRow({ totalNow, totalPrev, topCat, avgPerEntry, avgPerEntryPrev,
       </div>
 
       <div className="card p-5">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Avg / Activity</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('reportsPage.avgActivity')}</p>
         <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 tabular-nums leading-tight">
           {formatEmission(avgPerEntry)}
         </p>
@@ -354,13 +392,13 @@ function SummaryRow({ totalNow, totalPrev, topCat, avgPerEntry, avgPerEntryPrev,
       </div>
 
       <div className="card p-5">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Activities</p>
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">{t('reportsPage.activities')}</p>
         <p className="text-2xl font-bold text-slate-900 dark:text-slate-100 leading-tight">
           {entries}
         </p>
         <div className="mt-2 flex items-center gap-2">
           <DeltaBadge current={entries} prev={entriesPrev} />
-          <span className="text-xs text-slate-400">{PERIOD_LABELS[period]}</span>
+          <span className="text-xs text-slate-400">{periodSub}</span>
         </div>
       </div>
     </div>
@@ -368,12 +406,13 @@ function SummaryRow({ totalNow, totalPrev, topCat, avgPerEntry, avgPerEntryPrev,
 }
 
 function CategoryBreakdown({ catData }) {
+  const { t } = useTranslation();
   const total = catData.reduce((s, d) => s + d.value, 0);
 
   if (catData.length === 0) {
     return (
       <div className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-        No activity data for this period.
+        {t('reportsPage.noDataPeriod')}
       </div>
     );
   }
@@ -384,11 +423,11 @@ function CategoryBreakdown({ catData }) {
         <thead className="table-head">
           <tr>
             <th className="table-th w-8">#</th>
-            <th className="table-th">Category</th>
-            <th className="table-th text-right">CO₂e</th>
-            <th className="table-th text-right">Share</th>
-            <th className="table-th text-right">vs Prior</th>
-            <th className="table-th min-w-[120px]">Distribution</th>
+            <th className="table-th">{t('reportsPage.colCategory')}</th>
+            <th className="table-th text-right">{t('reportsPage.colCo2e')}</th>
+            <th className="table-th text-right">{t('reportsPage.colShare')}</th>
+            <th className="table-th text-right">{t('reportsPage.colVsPrior')}</th>
+            <th className="table-th min-w-[120px]">{t('reportsPage.colDistribution')}</th>
           </tr>
         </thead>
         <tbody>
@@ -433,7 +472,7 @@ function CategoryBreakdown({ catData }) {
         <tfoot>
           <tr className="border-t-2 border-slate-200 dark:border-slate-700">
             <td className="table-td" />
-            <td className="table-td font-semibold text-slate-800 dark:text-slate-200">Total</td>
+            <td className="table-td font-semibold text-slate-800 dark:text-slate-200">{t('reportsPage.colTotal')}</td>
             <td className="table-td text-right font-bold text-slate-900 dark:text-slate-100 tabular-nums">
               {formatEmission(total)}
             </td>
@@ -447,49 +486,53 @@ function CategoryBreakdown({ catData }) {
 }
 
 function TopActivities({ activities }) {
+  const { t } = useTranslation();
   if (activities.length === 0) {
     return (
       <div className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-        No activities logged in this period.
+        {t('reportsPage.noActivitiesLogged')}
       </div>
     );
   }
   const max = activities[0]?.emissions ?? 1;
   return (
     <ul className="space-y-3">
-      {activities.map((a) => (
-        <li key={a.rank} className="flex items-center gap-3">
-          <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-            a.rank === 1 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
-            a.rank === 2 ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' :
-            a.rank === 3 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
-                          'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-          }`}>{a.rank}</span>
-          <span className="text-lg leading-none shrink-0" aria-hidden="true">{a.icon}</span>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{a.label}</p>
-              <span className="text-xs font-bold text-red-600 dark:text-red-400 tabular-nums shrink-0">
-                {formatEmission(a.emissions)}
-              </span>
+      {activities.map((a) => {
+        const catLabel = CAT_KEY_MAP[a.category] ? t(CAT_KEY_MAP[a.category]) : (CATEGORY_META[a.category]?.label ?? a.category);
+        return (
+          <li key={a.rank} className="flex items-center gap-3">
+            <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
+              a.rank === 1 ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300' :
+              a.rank === 2 ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' :
+              a.rank === 3 ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300' :
+                            'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+            }`}>{a.rank}</span>
+            <span className="text-lg leading-none shrink-0" aria-hidden="true">{a.icon}</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">{a.label}</p>
+                <span className="text-xs font-bold text-red-600 dark:text-red-400 tabular-nums shrink-0">
+                  {formatEmission(a.emissions)}
+                </span>
+              </div>
+              <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-700"
+                  style={{
+                    width: `${(a.emissions / max) * 100}%`,
+                    background: CATEGORY_META[a.category]?.color ?? COLORS.green[500],
+                  }}
+                />
+              </div>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant={CAT_BADGE[a.category] ?? 'slate'} size="xs">
+                  {catLabel}
+                </Badge>
+              </div>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-700"
-                style={{
-                  width: `${(a.emissions / max) * 100}%`,
-                  background: CATEGORY_META[a.category]?.color ?? COLORS.green[500],
-                }}
-              />
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <Badge variant={CAT_BADGE[a.category] ?? 'slate'} size="xs">
-                {CATEGORY_META[a.category]?.label ?? a.category}
-              </Badge>
-            </div>
-          </div>
-        </li>
-      ))}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -498,26 +541,49 @@ function TopActivities({ activities }) {
    Main Page
    ────────────────────────────────────────────────────────────── */
 export default function ReportsPage() {
+  const { t } = useTranslation();
   const { logs, isLoading, fetchLogs } = useActivity();
   const { user }    = useAuth();
   const [period, setPeriod] = useState('monthly');
   const [pdfLoading, setPdfLoading] = useState(false);
   const [ecoScore, setEcoScore]     = useState(null);
 
-  // No DOM refs needed — PDF is drawn programmatically
-
   useEffect(() => { fetchLogs(); }, [fetchLogs]);
 
-  // Fetch eco score once on mount
   useEffect(() => {
     ecoScoreService.getEcoScore().then((r) => setEcoScore(r?.score ?? null)).catch(() => {});
   }, []);
+
+  const periodTabs = useMemo(() => [
+    { id: 'daily',   label: t('reportsPage.daily')   },
+    { id: 'weekly',  label: t('reportsPage.weekly')  },
+    { id: 'monthly', label: t('reportsPage.monthly') },
+    { id: 'yearly',  label: t('reportsPage.yearly')  },
+  ], [t]);
+
+  const periodLabelMap = useMemo(() => ({
+    daily:   t('reportsPage.dailySub'),
+    weekly:  t('reportsPage.weeklySub'),
+    monthly: t('reportsPage.monthlySub'),
+    yearly:  t('reportsPage.yearlySub'),
+  }), [t]);
+
+  const periodNameMap = useMemo(() => ({
+    daily:   t('reportsPage.daily'),
+    weekly:  t('reportsPage.weekly'),
+    monthly: t('reportsPage.monthly'),
+    yearly:  t('reportsPage.yearly'),
+  }), [t]);
+
+  const trendSeriesTrans = useMemo(() => [
+    { key: 'total', name: t('reportsPage.totalCo2e'), color: COLORS.green[500] },
+  ], [t]);
 
   const {
     totalNow, totalPrev, catData, topCat,
     stackedData, trendData, weeklyTrendData, monthlyComp,
     topActivities, entries, entriesPrev, avgPerEntry, avgPerEntryPrev,
-  } = useAnalytics(logs, period);
+  } = useAnalytics(logs, period, t);
 
   const pieData = catData.map((c) => ({ name: c.name, value: c.value, category: c.category }));
 
@@ -536,14 +602,17 @@ export default function ReportsPage() {
         topActivities,
         weeklyTrendData,
       });
-      toast.success(`Report downloaded! 📄 ${fileName}`);
+      toast.success(t('reportsPage.reportDownloaded', { file: fileName }));
     } catch (err) {
       console.error('PDF generation failed:', err);
-      toast.error('Failed to generate PDF. Please try again.');
+      toast.error(t('reportsPage.pdfGenFailed'));
     } finally {
       setPdfLoading(false);
     }
-  }, [user, period, ecoScore, totalNow, topCat, avgPerEntry, entries, catData, topActivities, weeklyTrendData]);
+  }, [user, period, ecoScore, totalNow, topCat, avgPerEntry, entries, catData, topActivities, weeklyTrendData, t]);
+
+  const periodSub = periodLabelMap[period] ?? '';
+  const periodName = periodNameMap[period] ?? period;
 
   return (
     <div className="space-y-6 fade-in">
@@ -551,14 +620,14 @@ export default function ReportsPage() {
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">My Analytics</h2>
+          <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">{t('reportsPage.title')}</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-            Your personal carbon footprint trends
+            {t('reportsPage.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           <Tabs
-            tabs={PERIOD_TABS}
+            tabs={periodTabs}
             variant="pills"
             defaultTab="monthly"
             onChange={setPeriod}
@@ -571,7 +640,7 @@ export default function ReportsPage() {
             onClick={handleDownloadPdf}
             leftIcon={pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
           >
-            {pdfLoading ? 'Generating…' : 'Download PDF Report'}
+            {pdfLoading ? t('reportsPage.generating') : t('reportsPage.downloadPdf')}
           </Button>
         </div>
       </div>
@@ -586,6 +655,7 @@ export default function ReportsPage() {
         entries={entries}
         entriesPrev={entriesPrev}
         period={period}
+        periodSub={periodSub}
       />
 
       {/* ── 2. Stacked bar + Trend line ─────────────────────── */}
@@ -593,24 +663,24 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
           <Card className="xl:col-span-2">
             <Card.Header
-              title={`${capitalize(period)} Emissions`}
-              subtitle="Stacked by category · kg CO₂e"
+              title={t('reportsPage.periodEmissions', { period: periodName })}
+              subtitle={t('reportsPage.stackedByCategory')}
             />
             {stackedData.length > 0
               ? <StackedBarChart data={stackedData} height={288} series={DEFAULT_SERIES} />
-              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No activity data yet</div>
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">{t('reportsPage.noDataPeriod')}</div>
             }
           </Card>
 
           <Card>
             <Card.Header
-              title="Emissions Trend"
-              subtitle="Your total over time · kg CO₂e"
-              action={<Badge variant="green" dot size="sm">Live</Badge>}
+              title={t('reportsPage.emissionsTrend')}
+              subtitle={t('reportsPage.totalOverTime')}
+              action={<Badge variant="green" dot size="sm">{t('reportsPage.live')}</Badge>}
             />
             {trendData.length > 0
-              ? <TrendLineChart data={trendData} series={TREND_SERIES} height={288} />
-              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No data for this period</div>
+              ? <TrendLineChart data={trendData} series={trendSeriesTrans} height={288} />
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">{t('reportsPage.noDataPeriod')}</div>
             }
           </Card>
         </div>
@@ -619,24 +689,24 @@ export default function ReportsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
             <Card.Header
-              title="Category Split"
-              subtitle={`${capitalize(period)} — proportional breakdown`}
+              title={t('reportsPage.categorySplit')}
+              subtitle={t('reportsPage.proportionalBreakdown', { period: periodName })}
             />
             {pieData.length > 0
               ? <CategoryPieChart data={pieData} height={288} innerRadius={64} />
-              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No categories logged yet</div>
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">{t('reportsPage.noDataPeriod')}</div>
             }
           </Card>
 
           <Card>
             <Card.Header
-              title="7-Day Trend"
-              subtitle="Daily stacked by category"
-              action={<Badge variant="slate" size="sm">Last 7 days</Badge>}
+              title={t('reportsPage.sevenDayTrend')}
+              subtitle={t('reportsPage.dailyStackedByCategory')}
+              action={<Badge variant="slate" size="sm">{t('reportsPage.last7Days')}</Badge>}
             />
             {weeklyTrendData.length > 0
               ? <WeeklyTrendChart data={weeklyTrendData} height={288} />
-              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">No recent activity</div>
+              : <div className="flex items-center justify-center h-72 text-sm text-slate-400">{t('reportsPage.noDataPeriod')}</div>
             }
           </Card>
         </div>
@@ -645,17 +715,17 @@ export default function ReportsPage() {
       {/* ── 4. Monthly Comparison ──────────────────────────── */}
       <Card>
         <Card.Header
-          title="Monthly Comparison"
-          subtitle="Your actual emissions vs 150 kg monthly target — last 6 months"
+          title={t('reportsPage.monthlyComparison')}
+          subtitle={t('reportsPage.monthlyComparisonSub')}
           action={
             <div className="flex items-center gap-4 text-xs">
               <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                 <span className="h-2.5 w-2.5 rounded-sm bg-green-500 shrink-0" aria-hidden="true" />
-                Actual
+                {t('reportsPage.actual')}
               </span>
               <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
                 <span className="h-2.5 w-2.5 rounded-sm bg-slate-300 dark:bg-slate-600 shrink-0" aria-hidden="true" />
-                Target
+                {t('reportsPage.target')}
               </span>
             </div>
           }
@@ -667,16 +737,16 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <Card className="xl:col-span-2">
           <Card.Header
-            title="Category Breakdown"
-            subtitle={`${capitalize(period)} · your emissions by category`}
+            title={t('reportsPage.categoryBreakdown')}
+            subtitle={t('reportsPage.categoryBreakdownSub', { period: periodName })}
           />
           <CategoryBreakdown catData={catData} />
         </Card>
 
         <Card>
           <Card.Header
-            title="Top Activities"
-            subtitle="Highest single-entry emissions this period"
+            title={t('reportsPage.topActivities')}
+            subtitle={t('reportsPage.topActivitiesSub')}
           />
           <TopActivities activities={topActivities} />
         </Card>

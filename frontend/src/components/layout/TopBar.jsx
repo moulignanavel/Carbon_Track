@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { Menu, Sun, Moon, Bell, LogOut, ChevronDown, Search, Settings, UserCircle } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, LogOut, ChevronDown, Search, Settings, UserCircle, HelpCircle } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useAlerts } from '@/context/AlertContext';
@@ -127,6 +127,15 @@ export default function TopBar({ onMenuClick, title, hasScrolled }) {
             ? <Sun className="h-4 w-4" aria-hidden="true" />
             : <Moon className="h-4 w-4" aria-hidden="true" />}
         </button>
+
+        <a
+          href="mailto:admin@carbontrack.com"
+          className="rounded-xl p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          aria-label="Help"
+          title="Contact Admin"
+        >
+          <HelpCircle className="h-4 w-4 text-slate-600 dark:text-slate-300" aria-hidden="true" />
+        </a>
 
         <button
           onClick={() => setNotifOpen(true)}
