@@ -1,8 +1,8 @@
-# Stage 1: Build static bundle with Node.js
+# Stage 1: Build static bundle with Node.js 20
 FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci || npm install --legacy-peer-deps
 COPY . .
 RUN npm run build
 
