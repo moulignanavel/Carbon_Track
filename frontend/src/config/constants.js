@@ -153,9 +153,9 @@ export const UI = {
 
 // ── Request Timeout ───────────────────────────────────────────────
 export const REQUEST_TIMEOUT = {
-  DEFAULT: 15000,
-  LONG_RUNNING: 60000,
-  REPORT_EXPORT: 30000,
+  DEFAULT: 60000,
+  LONG_RUNNING: 90000,
+  REPORT_EXPORT: 60000,
 };
 
 // ── Validation ────────────────────────────────────────────────────

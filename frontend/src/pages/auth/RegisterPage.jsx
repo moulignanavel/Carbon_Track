@@ -10,6 +10,8 @@ import { registerSchema, organisationRegisterSchema } from '@/utils/validators';
 import { extractErrorMessage } from '@/utils/errorHandler';
 import { Button, Input, Alert } from '@/components/ui';
 
+import { axiosInstance } from '@/config/axiosConfig';
+
 const inputClass = '!bg-white border-slate-200 text-slate-900 placeholder:text-slate-400 !rounded-xl shadow-sm';
 const passwordTests = [(v) => v.length >= 8, (v) => /[A-Z]/.test(v), (v) => /\d/.test(v), (v) => /[^A-Za-z0-9]/.test(v)];
 
@@ -45,9 +47,8 @@ function IndividualForm() {
   const [organisations, setOrganisations] = useState([]);
 
   useEffect(() => {
-    fetch('/api/organisations/public')
-      .then(res => res.json())
-      .then(data => setOrganisations(data || []))
+    axiosInstance.get('/organisations/public')
+      .then(res => setOrganisations(res.data || []))
       .catch(err => console.error('Failed to load organisations', err));
   }, []);
 

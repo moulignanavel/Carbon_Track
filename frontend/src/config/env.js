@@ -75,7 +75,7 @@ export const env = {
   api: {
     // Base URL without /api suffix (Axios instance adds it)
     baseURL: getEnv('VITE_API_BASE_URL', 'http://localhost:8080'),
-    timeout: getNumberEnv('VITE_API_TIMEOUT', 15000),
+    timeout: getNumberEnv('VITE_API_TIMEOUT', 60000),
     debugAPI: getBooleanEnv('VITE_DEBUG_API', false),
   },
 

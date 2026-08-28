@@ -58,9 +58,9 @@ export function formatError(error, fallback = 'Something went wrong. Please try 
   // Network or request error (no response received)
   if (error.request && !error.response) {
     if (error.code === 'ECONNABORTED') {
-      return 'Request timed out. Please check your connection and try again.';
+      return 'Request timed out. The server may be waking up (cold start) or slow to respond. Please wait a moment and try again.';
     }
-    return 'Cannot reach the server. Please check your connection.';
+    return 'Cannot reach the server. Please verify your connection or check if the backend is running.';
   }
 
   // Generic JavaScript error

@@ -8,4 +8,4 @@ target/
 .mvn/
 .idea/
 *.log
-carbontrack/
+/carbontrack/
