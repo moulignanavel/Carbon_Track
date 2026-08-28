@@ -45,7 +45,7 @@ export default function GoogleLoginButton() {
 
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: 'email profile',
+      scope: 'openid email profile',
       callback: async (tokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
           try {
@@ -61,7 +61,7 @@ export default function GoogleLoginButton() {
             navigate(destination);
           } catch (error) {
             console.error('Google Sign-In Error:', error);
-            const msg = error.response?.data?.message || error.message || 'Failed to sign in with Google';
+            const msg = error.response?.data?.message || error.response?.data?.username || error.message || 'Failed to sign in with Google';
             alert(msg);
           }
         }

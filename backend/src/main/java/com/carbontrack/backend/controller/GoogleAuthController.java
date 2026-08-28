@@ -52,7 +52,7 @@ public class GoogleAuthController {
         try {
             if (request.getToken() == null || request.getToken().isEmpty()) {
                 return ResponseEntity.badRequest().body(
-                    new AuthResponse(null, null, "Token is required", "ERROR")
+                    new AuthResponse(null, null, null, "ERROR", "Token is required", "ERROR")
                 );
             }
             
@@ -78,7 +78,7 @@ public class GoogleAuthController {
             
             if (email == null || email.isBlank()) {
                 return ResponseEntity.badRequest().body(
-                    new AuthResponse(null, null, "Google token missing email information", "ERROR")
+                    new AuthResponse(null, null, null, "ERROR", "Google token missing email information", "ERROR")
                 );
             }
             
@@ -110,7 +110,7 @@ public class GoogleAuthController {
         } catch (Exception e) {
             logger.error("Google token verification failed: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().body(
-                new AuthResponse(null, null, "Authentication failed: " + e.getMessage(), "ERROR")
+                new AuthResponse(null, null, null, "ERROR", "Authentication failed: " + e.getMessage(), "ERROR")
             );
         }
     }
