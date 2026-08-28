@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { axiosInstance } from '@/config/axiosConfig';
 import { useAuth } from '@/context/AuthContext';
 
 /**
@@ -48,21 +49,11 @@ export default function GoogleLoginButton() {
       callback: async (tokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
           try {
-            const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-            const targetUrl = apiBase ? `${apiBase.replace(/\/$/, '')}/api/auth/google/verify` : '/api/auth/google/verify';
-            const result = await fetch(targetUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token: tokenResponse.access_token }),
+            const res = await axiosInstance.post('/auth/google/verify', {
+              token: tokenResponse.access_token,
             });
 
-            if (!result.ok) {
-              const problem = await result.json().catch(() => null);
-              throw new Error(problem?.message || 'Google authentication failed on backend');
-            }
-
-            const data = await result.json();
-            // Google sign-in is persistent until the user explicitly logs out.
+            const data = res.data;
             applyAuth(data, true);
             const destination = data.role === 'ORG_ADMIN'
               ? '/organisation/dashboard'
@@ -70,7 +61,8 @@ export default function GoogleLoginButton() {
             navigate(destination);
           } catch (error) {
             console.error('Google Sign-In Error:', error);
-            alert(error.message || 'Failed to sign in with Google');
+            const msg = error.response?.data?.message || error.message || 'Failed to sign in with Google';
+            alert(msg);
           }
         }
       },

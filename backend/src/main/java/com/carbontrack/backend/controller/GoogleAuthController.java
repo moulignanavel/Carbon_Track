@@ -63,6 +63,12 @@ public class GoogleAuthController {
             
             String email = (String) claims.get("email");
             String name = (String) claims.get("name");
+            if (name == null || name.isBlank()) {
+                name = (String) claims.get("given_name");
+            }
+            if (name == null || name.isBlank()) {
+                name = (email != null && email.contains("@")) ? email.substring(0, email.indexOf('@')) : "Google User";
+            }
             Object emailVerified = claims.get("email_verified");
             String picture = (String) claims.get("picture");
             
@@ -70,9 +76,9 @@ public class GoogleAuthController {
             boolean isEmailVerified = Boolean.TRUE.equals(emailVerified) || 
                                      "true".equalsIgnoreCase(String.valueOf(emailVerified));
             
-            if (email == null || name == null) {
+            if (email == null || email.isBlank()) {
                 return ResponseEntity.badRequest().body(
-                    new AuthResponse(null, null, "Google token missing required information", "ERROR")
+                    new AuthResponse(null, null, "Google token missing email information", "ERROR")
                 );
             }
             
