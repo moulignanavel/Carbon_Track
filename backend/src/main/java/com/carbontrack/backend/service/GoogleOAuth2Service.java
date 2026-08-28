@@ -80,28 +80,47 @@ public class GoogleOAuth2Service {
     private Map<String, Object> fetchUserInfoFromAccessToken(String accessToken) {
         logger.info("Verifying Google token as OAuth2 Access Token");
         RestTemplate restTemplate = new RestTemplate();
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(accessToken);
-        HttpEntity<Void> entity = new HttpEntity<>(headers);
+        
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setBearerAuth(accessToken);
+            HttpEntity<Void> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<Map> response = restTemplate.exchange(
-                "https://www.googleapis.com/oauth2/v3/userinfo",
-                HttpMethod.GET,
-                entity,
-                Map.class
-        );
+            ResponseEntity<Map> response = restTemplate.exchange(
+                    "https://www.googleapis.com/oauth2/v3/userinfo",
+                    HttpMethod.GET,
+                    entity,
+                    Map.class
+            );
 
-        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> claims = response.getBody();
-            // Verify required fields
-            if (!claims.containsKey("email") || !claims.containsKey("sub")) {
-                throw new IllegalArgumentException("Google UserInfo response is missing email or sub");
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> claims = response.getBody();
+                if (claims.containsKey("email")) {
+                    logger.info("Google user info fetched successfully via access token for: {}", claims.get("email"));
+                    return claims;
+                }
             }
-            logger.info("Google user info fetched successfully via access token for: {}", claims.get("email"));
-            return claims;
-        } else {
-            throw new IllegalArgumentException("Google UserInfo API returned status: " + response.getStatusCode());
+        } catch (Exception e) {
+            logger.warn("UserInfo API failed, falling back to tokeninfo endpoint: {}", e.getMessage());
         }
+
+        // Fallback to tokeninfo endpoint
+        try {
+            String url = "https://oauth2.googleapis.com/tokeninfo?access_token=" + accessToken;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> claims = response.getBody();
+                if (claims.containsKey("email")) {
+                    logger.info("Google tokeninfo fetched successfully for: {}", claims.get("email"));
+                    return claims;
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Tokeninfo API also failed: {}", e.getMessage());
+        }
+
+        throw new IllegalArgumentException("Invalid or expired Google token");
     }
 }
