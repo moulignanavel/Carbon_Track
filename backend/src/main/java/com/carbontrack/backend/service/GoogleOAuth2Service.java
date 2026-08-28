@@ -81,6 +81,23 @@ public class GoogleOAuth2Service {
         logger.info("Verifying Google token as OAuth2 Access Token");
         RestTemplate restTemplate = new RestTemplate();
         
+        // 1. Try Google TokenInfo endpoint
+        try {
+            String url = "https://oauth2.googleapis.com/tokeninfo?access_token=" + accessToken;
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                @SuppressWarnings("unchecked")
+                Map<String, Object> claims = response.getBody();
+                if (claims.containsKey("email")) {
+                    logger.info("Google tokeninfo fetched successfully for: {}", claims.get("email"));
+                    return claims;
+                }
+            }
+        } catch (Exception e) {
+            logger.warn("Tokeninfo API failed, trying userinfo: {}", e.getMessage());
+        }
+
+        // 2. Fallback to Google UserInfo API
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(accessToken);
@@ -102,23 +119,7 @@ public class GoogleOAuth2Service {
                 }
             }
         } catch (Exception e) {
-            logger.warn("UserInfo API failed, falling back to tokeninfo endpoint: {}", e.getMessage());
-        }
-
-        // Fallback to tokeninfo endpoint
-        try {
-            String url = "https://oauth2.googleapis.com/tokeninfo?access_token=" + accessToken;
-            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
-            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
-                @SuppressWarnings("unchecked")
-                Map<String, Object> claims = response.getBody();
-                if (claims.containsKey("email")) {
-                    logger.info("Google tokeninfo fetched successfully for: {}", claims.get("email"));
-                    return claims;
-                }
-            }
-        } catch (Exception e) {
-            logger.error("Tokeninfo API also failed: {}", e.getMessage());
+            logger.error("UserInfo API failed: {}", e.getMessage());
         }
 
         throw new IllegalArgumentException("Invalid or expired Google token");
