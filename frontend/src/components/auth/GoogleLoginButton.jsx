@@ -35,16 +35,22 @@ export default function GoogleLoginButton() {
       return;
     }
 
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!clientId || clientId.includes('YOUR_GOOGLE_CLIENT_ID')) {
+      console.error('VITE_GOOGLE_CLIENT_ID is missing or not built into the frontend environment.');
+      alert('Google Sign-In is not configured yet. VITE_GOOGLE_CLIENT_ID is missing in Vercel.');
+      return;
+    }
+
     const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+      client_id: clientId,
       scope: 'email profile',
       callback: async (tokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
           try {
-            // Send to backend
-            // Keep API calls same-origin in development. Vite proxies /api to
-            // the backend, which avoids localhost/127.0.0.1 CORS mismatches.
-            const result = await fetch('/api/auth/google/verify', {
+            const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+            const targetUrl = apiBase ? `${apiBase.replace(/\/$/, '')}/api/auth/google/verify` : '/api/auth/google/verify';
+            const result = await fetch(targetUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ token: tokenResponse.access_token }),
